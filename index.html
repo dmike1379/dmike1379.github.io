@@ -3,171 +3,285 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DeLeo Family Bank</title>
+    <title>Family Bank</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#001f3f">
+    <meta name="theme-color" content="#4a90e2">
     <style>
-        :root { --primary: #001f3f; --secondary: #2ecc71; --bg: #f4f7f6; }
+        :root { --primary: #4a90e2; --secondary: #2ecc71; --bg: #f8f9fa; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; padding: 10px; }
-        
-        .app-card { background: white; width: 100%; max-width: 450px; border-radius: 25px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); touch-action: manipulation; }
-        .header { text-align: center; margin-bottom: 20px; }
-        .logo { width: 70px; height: 70px; border-radius: 50%; border: 3px solid var(--primary); }
-        
-        /* SIDE-BY-SIDE INTERFACE */
-        .balance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-        .account-box { background: var(--primary); color: white; padding: 15px; border-radius: 15px; text-align: center; }
-        .account-box.savings { background: #2c3e50; }
-        .amt { font-size: 1.4rem; font-weight: bold; display: block; margin-top: 5px; }
-
-        /* INPUTS & BUTTONS - CHROME MOBILE OPTIMIZED */
-        input, select { width: 100%; padding: 15px; border: 2px solid #eee; border-radius: 12px; margin-bottom: 12px; font-size: 16px; outline: none; }
-        input:focus { border-color: var(--primary); }
-        button { width: 100%; padding: 18px; border: none; border-radius: 15px; font-weight: bold; font-size: 16px; cursor: pointer; transition: transform 0.1s; }
-        button:active { transform: scale(0.97); }
-        .btn-main { background: var(--primary); color: white; margin-bottom: 10px; }
-        .btn-alt { background: var(--secondary); color: white; }
-        .btn-logout { background: none; color: #888; text-decoration: underline; font-size: 0.9rem; margin-top: 15px; padding: 5px; }
-
-        /* LEDGER */
-        .ledger-section { margin-top: 25px; border-top: 2px solid #f0f0f0; padding-top: 15px; }
-        .history-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #fafafa; font-size: 0.85rem; }
-        .hist-meta { color: #999; font-size: 0.75rem; }
-        .hist-note { color: #444; font-weight: 500; display: block; margin-top: 2px; }
-        .pos { color: #27ae60; font-weight: bold; }
-        .neg { color: #e74c3c; font-weight: bold; }
-        
+        body { font-family: sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 20px; margin: 0; }
+        .container { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 450px; touch-action: manipulation; }
         .hidden { display: none; }
+        h2, h3 { color: #333; text-align: center; margin-top: 0; }
+        .balance-card { background: #f0f4f8; padding: 15px; border-radius: 10px; margin-bottom: 10px; text-align: center; }
+        .balance-amt { font-size: 1.8rem; font-weight: bold; color: var(--primary); }
+        
+        /* Input Upgrades for Chrome Mobile */
+        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; font-size: 16px; outline: none; }
+        input:focus { border-color: var(--primary); }
+        
+        button { width: 100%; padding: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; font-size: 16px; transition: transform 0.1s; }
+        button:active { transform: scale(0.98); }
+        
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-secondary { background: var(--secondary); color: white; }
+        .btn-deposit { background: #f39c12; color: white; }
+        .btn-interest { background: #9b59b6; color: white; }
+        .btn-logout { background: #eee; color: #666; font-size: 0.8rem; width: auto; }
+        
+        .admin-section { border-top: 2px dashed #eee; margin-top: 20px; padding-top: 20px; }
+        .row { display: flex; gap: 10px; }
+        .col { flex: 1; }
+        label { font-size: 0.75rem; color: #666; font-weight: bold; display: block; margin-bottom: 4px; text-transform: uppercase; }
+
+        /* Ledger Styling */
+        .ledger-container { margin-top: 25px; border-top: 2px solid #eee; padding-top: 15px; }
+        .ledger-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f9f9f9; font-size: 0.85rem; }
+        .ledger-note { color: #555; display: block; font-style: italic; }
+        .ledger-date { color: #999; font-size: 0.7rem; }
+        .amt-pos { color: #2ecc71; font-weight: bold; }
+        .amt-neg { color: #e74c3c; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="app-card">
-    <div class="header">
-        <img src="images/logo.png" class="logo">
-        <h2 style="color:var(--primary); margin: 10px 0 0 0;">DeLeo Family Bank</h2>
+<div class="container">
+    <div id="login-screen">
+        <h2>Family Bank</h2>
+        <select id="user-select">
+            <option value="Linnea">Linnea</option>
+            <option value="Dad">Dad</option>
+        </select>
+        <input type="password" id="pin-input" placeholder="Enter PIN" inputmode="numeric" maxlength="4">
+        <button class="btn-primary" onclick="attemptLogin()">Login</button>
     </div>
 
-    <div id="login-ui">
-        <select id="user-pick"><option>Linnea</option><option>Dad</option></select>
-        <input type="password" id="pin-box" placeholder="Enter PIN" inputmode="numeric" pattern="[0-9]*">
-        <button class="btn-main" onclick="doAuth()">Enter Bank</button>
-    </div>
-
-    <div id="bank-ui" class="hidden">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <strong id="user-greeting"></strong>
-            <button class="btn-logout" onclick="location.reload()">Exit</button>
+    <div id="main-interface" class="hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <span id="welcome-msg" style="font-weight:bold"></span>
+            <button class="btn-logout" onclick="location.reload()">Logout</button>
         </div>
 
-        <div class="balance-grid">
-            <div class="account-box">
-                <small>Checking</small>
-                <span class="amt" id="val-chk">$0.00</span>
+        <div class="balance-card">
+            <small>Checking Balance</small>
+            <div class="balance-amt" id="checking-val">$0.00</div>
+            <small>Rate: <span id="int-chk-display">0</span>%</small>
+        </div>
+        <div class="balance-card">
+            <small>Savings Balance</small>
+            <div class="balance-amt" id="savings-val">$0.00</div>
+            <small>Rate: <span id="int-sav-display">0</span>%</small>
+        </div>
+
+        <div id="trans-input-area">
+            <label>Transaction Details</label>
+            <input type="number" id="trans-amt" placeholder="Amount $" inputmode="decimal">
+            <input type="text" id="trans-note" placeholder="What is this for? (Required)">
+        </div>
+
+        <div id="linnea-controls" class="hidden">
+            <button class="btn-secondary" onclick="transferToSavings()">Move to Savings</button>
+            <button class="btn-primary" onclick="withdraw()">Withdraw Cash</button>
+            <button class="btn-logout" style="width:100%; margin-top:20px;" onclick="changePinPrompt('Linnea')">Change My PIN</button>
+        </div>
+
+        <div id="dad-controls" class="hidden">
+            <div class="admin-section" style="background: #fff9eb; padding: 10px; border-radius: 10px; border: 1px solid #f39c12;">
+                <h3>Instant Adjustment</h3>
+                <button class="btn-deposit" onclick="multiInstantAdjust()">Apply to Checking</button>
             </div>
-            <div class="account-box savings">
-                <small>Savings</small>
-                <span class="amt" id="val-sav">$0.00</span>
+
+            <div class="admin-section">
+                <h3>Weekly Auto-Allowance</h3>
+                <div class="row">
+                    <div class="col"><label>Chk $</label><input type="number" id="auto-chk" step="0.01"></div>
+                    <div class="col"><label>Sav $</label><input type="number" id="auto-sav" step="0.01"></div>
+                </div>
+                <button class="btn-secondary" onclick="updateAutoDeposit()">Save Monday Amounts</button>
+            </div>
+
+            <div class="admin-section">
+                <h3>Interest Rates % (Annual)</h3>
+                <div class="row">
+                    <div class="col"><label>Chk Rate %</label><input type="number" id="set-int-chk" step="0.01"></div>
+                    <div class="col"><label>Sav Rate %</label><input type="number" id="set-int-sav" step="0.01"></div>
+                </div>
+                <button class="btn-primary" onclick="saveRatesOnly()">Save Annual Rates</button>
+                <button class="btn-interest" onclick="applyInterestNow()">Apply 1 Month Interest Now</button>
+            </div>
+
+            <div class="admin-section">
+                <button class="btn-logout" style="width:100%;" onclick="changePinPrompt('Dad')">Change Dad PIN</button>
+                <button class="btn-logout" style="width:100%; margin-top:10px;" onclick="adminResetPin()">Reset Linnea PIN (0000)</button>
             </div>
         </div>
 
-        <div id="controls">
-            <input type="number" id="amt-box" placeholder="Amount ($)" inputmode="decimal">
-            <input type="text" id="note-box" placeholder="Description (e.g. Allowance, Toy)">
-            
-            <div id="dad-tools" class="hidden">
-                <button class="btn-alt" onclick="process('deposit')">Add to Checking</button>
-                <button class="btn-main" onclick="process('adjust')">Manual Override</button>
-            </div>
-
-            <div id="linnea-tools" class="hidden">
-                <button class="btn-alt" onclick="process('save')">Transfer to Savings</button>
-                <button class="btn-main" onclick="process('withdraw')">Withdrawal</button>
-            </div>
-        </div>
-
-        <div class="ledger-section">
-            <h4 style="margin: 0 0 10px 0; color: #555;">Recent Activity</h4>
-            <div id="history-list">Loading history...</div>
+        <div class="ledger-container">
+            <h3>Recent Activity</h3>
+            <div id="ledger-list">Loading history...</div>
         </div>
     </div>
 </div>
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycby7ESNf6m1F33BJkcPs9BZSiVO0EPLHsSjKEbORMrGsstNEvMI_jbkBh4Dp3Kt0K5S3Nw/exec";
-    let appData = { pins: { Dad: "1234", Linnea: "0000" }, balances: { checking: 0, savings: 0 }, history: [] };
 
-    async function fetchData() {
-        try {
-            const resp = await fetch(API_URL);
-            const json = await resp.json();
-            if (json.balances) appData = json;
-            updateUI();
-        } catch(e) { document.getElementById('history-list').innerText = "Starting fresh!"; }
-    }
+    let state = {
+        pins: { Dad: "1234", Linnea: "0000" },
+        balances: { checking: 0, savings: 0 },
+        rates: { checking: 0, savings: 0 },
+        autoDeposit: { checking: 0, savings: 0 },
+        history: []
+    };
 
-    function updateUI() {
-        document.getElementById('val-chk').innerText = `$${appData.balances.checking.toFixed(2)}`;
-        document.getElementById('val-sav').innerText = `$${appData.balances.savings.toFixed(2)}`;
-        
-        const list = document.getElementById('history-list');
-        list.innerHTML = appData.history.slice(-8).reverse().map(i => `
-            <div class="history-row">
-                <div>
-                    <span class="hist-meta">${i.date}</span>
-                    <span class="hist-note">${i.user}: ${i.note}</span>
-                </div>
-                <span class="${i.amt >= 0 ? 'pos' : 'neg'}">${i.amt >= 0 ? '+' : ''}$${Math.abs(i.amt).toFixed(2)}</span>
-            </div>
-        `).join('') || "No activity yet.";
-    }
-
-    function doAuth() {
-        const u = document.getElementById('user-pick').value;
-        const p = document.getElementById('pin-box').value;
-        if (appData.pins[u] === p) {
-            document.getElementById('login-ui').classList.add('hidden');
-            document.getElementById('bank-ui').classList.remove('hidden');
-            document.getElementById('user-greeting').innerText = `Welcome, ${u}`;
-            document.getElementById(u === 'Dad' ? 'dad-tools' : 'linnea-tools').classList.remove('hidden');
-        } else { alert("Incorrect PIN"); }
-    }
-
-    async function process(action) {
-        const val = parseFloat(document.getElementById('amt-box').value);
-        const msg = document.getElementById('note-box').value;
-        const user = document.getElementById('user-pick').value;
-
-        if (!val || msg.length < 3) return alert("Enter amount and a short note.");
-
-        let diff = 0;
-        if (action === 'withdraw') {
-            if (appData.balances.checking < val) return alert("Not enough in Checking!");
-            appData.balances.checking -= val; diff = -val;
-        } else if (action === 'save') {
-            if (appData.balances.checking < val) return alert("Not enough in Checking!");
-            appData.balances.checking -= val; appData.balances.savings += val; diff = -val;
-        } else {
-            appData.balances.checking += val; diff = val;
-        }
-
-        appData.history.push({ date: new Date().toLocaleDateString(), user, note: msg, amt: diff });
-        updateUI();
-        
-        // Clear inputs
-        document.getElementById('amt-box').value = '';
-        document.getElementById('note-box').value = '';
-
+    async function sync(actionType) {
+        render();
         await fetch(API_URL, { 
             method: 'POST', 
             mode: 'no-cors', 
-            body: JSON.stringify({ ...appData, lastAction: action }) 
+            body: JSON.stringify({ ...state, lastAction: actionType }) 
         });
     }
 
-    fetchData();
-</script>
+    async function load() {
+        try {
+            const r = await fetch(API_URL);
+            const data = await r.json();
+            if (data.pins) state = data;
+            render();
+        } catch(e) { console.log("Connecting..."); }
+    }
 
+    function render() {
+        document.getElementById('checking-val').innerText = `$${state.balances.checking.toFixed(2)}`;
+        document.getElementById('savings-val').innerText = `$${state.balances.savings.toFixed(2)}`;
+        document.getElementById('int-chk-display').innerText = state.rates.checking || 0;
+        document.getElementById('int-sav-display').innerText = state.rates.savings || 0;
+        document.getElementById('set-int-chk').value = state.rates.checking || 0;
+        document.getElementById('set-int-sav').value = state.rates.savings || 0;
+        document.getElementById('auto-chk').value = state.autoDeposit.checking || 0;
+        document.getElementById('auto-sav').value = state.autoDeposit.savings || 0;
+
+        // Render Ledger
+        const list = document.getElementById('ledger-list');
+        list.innerHTML = state.history.slice(-10).reverse().map(h => `
+            <div class="ledger-row">
+                <div>
+                    <span class="ledger-date">${h.date}</span>
+                    <span class="ledger-note">${h.user}: ${h.note}</span>
+                </div>
+                <span class="${h.amt >= 0 ? 'amt-pos' : 'amt-neg'}">${h.amt >= 0 ? '+' : ''}$${Math.abs(h.amt).toFixed(2)}</span>
+            </div>
+        `).join('') || "No transactions yet.";
+    }
+
+    function attemptLogin() {
+        const u = document.getElementById('user-select').value;
+        const p = document.getElementById('pin-input').value;
+        if (state.pins[u] === p) {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('main-interface').classList.remove('hidden');
+            document.getElementById('welcome-msg').innerText = "Hello, " + u;
+            document.getElementById(u === 'Dad' ? 'dad-controls' : 'linnea-controls').classList.remove('hidden');
+        } else { alert("Incorrect PIN"); }
+    }
+
+    function recordTransaction(user, note, amt) {
+        state.history.push({
+            date: new Date().toLocaleDateString(),
+            user: user,
+            note: note,
+            amt: amt
+        });
+    }
+
+    function multiInstantAdjust() {
+        const amt = parseFloat(document.getElementById('trans-amt').value) || 0;
+        const note = document.getElementById('trans-note').value || "Dad Adjustment";
+        if (amt === 0) return alert("Enter an amount first.");
+        
+        state.balances.checking += amt;
+        recordTransaction("Dad", note, amt);
+        document.getElementById('trans-amt').value = '';
+        document.getElementById('trans-note').value = '';
+        sync("Adjustment");
+    }
+
+    function updateAutoDeposit() {
+        state.autoDeposit.checking = parseFloat(document.getElementById('auto-chk').value) || 0;
+        state.autoDeposit.savings = parseFloat(document.getElementById('auto-sav').value) || 0;
+        sync("Setting Update"); 
+        alert("Weekly allowance settings saved!");
+    }
+
+    function saveRatesOnly() {
+        state.rates.checking = parseFloat(document.getElementById('set-int-chk').value) || 0;
+        state.rates.savings = parseFloat(document.getElementById('set-int-sav').value) || 0;
+        sync("Rate Update");
+        alert("Annual rates saved.");
+    }
+
+    function applyInterestNow() {
+        const rChk = state.rates.checking || 0;
+        const rSav = state.rates.savings || 0;
+        const earnedChk = state.balances.checking * (rChk / 100 / 12);
+        const earnedSav = state.balances.savings * (rSav / 100 / 12);
+        
+        state.balances.checking += earnedChk;
+        state.balances.savings += earnedSav;
+        
+        recordTransaction("Bank", "Monthly Interest (Chk)", earnedChk);
+        recordTransaction("Bank", "Monthly Interest (Sav)", earnedSav);
+        
+        sync("Interest"); 
+        alert(`Interest Applied!`);
+    }
+
+    function transferToSavings() {
+        const amt = parseFloat(document.getElementById('trans-amt').value);
+        const note = document.getElementById('trans-note').value || "Transfer to Savings";
+        if (amt > 0 && state.balances.checking >= amt) {
+            state.balances.checking -= amt;
+            state.balances.savings += amt;
+            recordTransaction("Linnea", note, -amt);
+            document.getElementById('trans-amt').value = '';
+            document.getElementById('trans-note').value = '';
+            sync("Transfer");
+        } else { 
+            alert("Check balance or amount."); 
+        }
+    }
+
+    function withdraw() {
+        const amt = parseFloat(document.getElementById('trans-amt').value);
+        const note = document.getElementById('trans-note').value;
+        if (!note) return alert("Please enter what this withdrawal is for.");
+        
+        if (amt > 0 && state.balances.checking >= amt) {
+            state.balances.checking -= amt;
+            recordTransaction("Linnea", note, -amt);
+            document.getElementById('trans-amt').value = '';
+            document.getElementById('trans-note').value = '';
+            sync("Withdrawal"); 
+        } else { 
+            alert("Insufficient funds."); 
+        }
+    }
+
+    function changePinPrompt(user) {
+        const p = prompt(`Enter new 4-digit PIN for ${user}:`);
+        if (p && p.length === 4 && !isNaN(p)) { 
+            state.pins[user] = p; 
+            sync("PIN Change"); 
+            alert(`${user} PIN updated.`);
+        }
+    }
+
+    function adminResetPin() {
+        state.pins.Linnea = "0000"; sync("PIN Reset"); alert("Linnea reset to 0000");
+    }
+
+    load();
+</script>
 </body>
 </html>
