@@ -28,7 +28,7 @@
         .col { flex: 1; }
         label { font-size: 0.75rem; color: #666; font-weight: bold; display: block; margin-bottom: 4px; text-transform: uppercase; }
         .ledger-container { margin-top: 25px; border-top: 2px solid #eee; padding-top: 15px; }
-        .ledger-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f9f9f9; font-size: 0.8rem; }
+        .ledger-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f9f9f9; font-size: 0.85rem; }
         .amt-pos { color: #2ecc71; font-weight: bold; }
         .amt-neg { color: #e74c3c; font-weight: bold; }
     </style>
@@ -77,10 +77,10 @@
             <div class="admin-section" style="background: #fff9eb; padding: 10px; border-radius: 10px; border: 1px solid #f39c12;">
                 <h3>Instant Adjustment</h3>
                 <div class="row">
-                    <div class="col"><label>Chk $</label><input type="number" id="instant-chk" placeholder="0.00"></div>
-                    <div class="col"><label>Sav $</label><input type="number" id="instant-sav" placeholder="0.00"></div>
+                    <div class="col"><label>Chk $</label><input type="number" id="instant-chk" placeholder="0.00" inputmode="decimal"></div>
+                    <div class="col"><label>Sav $</label><input type="number" id="instant-sav" placeholder="0.00" inputmode="decimal"></div>
                 </div>
-                <input type="text" id="dad-note" placeholder="Comment">
+                <input type="text" id="dad-note" placeholder="Comment (e.g. Bonus, Chore)" style="margin-top:5px;">
                 <button class="btn-deposit" onclick="multiInstantAdjust()">Apply Adjustments</button>
             </div>
 
@@ -127,7 +127,6 @@
         history: []
     };
 
-    // 1. Initial Data Load
     async function load() {
         const status = document.getElementById('status-msg');
         try {
@@ -143,7 +142,6 @@
         }
     }
 
-    // 2. Render UI
     function render() {
         document.getElementById('checking-val').innerText = "$" + (state.balances.checking || 0).toFixed(2);
         document.getElementById('savings-val').innerText = "$" + (state.balances.savings || 0).toFixed(2);
@@ -165,23 +163,18 @@
         }
     }
 
-    // 3. Login
     function attemptLogin() {
         const u = document.getElementById('user-select').value;
         const p = document.getElementById('pin-input').value;
-        
         if (state.pins[u] === p) {
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('main-interface').classList.remove('hidden');
             document.getElementById('welcome-msg').innerText = "Hello, " + u;
             document.getElementById(u === 'Dad' ? 'dad-controls' : 'linnea-controls').classList.remove('hidden');
             render();
-        } else {
-            alert("Incorrect PIN");
-        }
+        } else { alert("Incorrect PIN"); }
     }
 
-    // 4. Sync to Google
     async function sync(action) {
         render();
         try {
@@ -193,21 +186,27 @@
         } catch(e) { console.error("Sync Error"); }
     }
 
-    // 5. Utility Functions
     function record(user, note, amt) {
         if (!state.history) state.history = [];
-        state.history.push({ date: new Date().toLocaleDateString(), user: user, note: note, amt: amt });
+        const dateStr = new Date().toLocaleDateString(undefined, {month:'numeric', day:'numeric'});
+        state.history.push({ date: dateStr, user: user, note: note, amt: amt });
     }
 
     function multiInstantAdjust() {
         const c = parseFloat(document.getElementById('instant-chk').value) || 0;
         const s = parseFloat(document.getElementById('instant-sav').value) || 0;
         const n = document.getElementById('dad-note').value || "Adjustment";
-        if (c !== 0) { state.balances.checking += c; record("Dad", n + " (Chk)", c); }
-        if (s !== 0) { state.balances.savings += s; record("Dad", n + " (Sav)", s); }
-        document.getElementById('instant-chk').value = '';
-        document.getElementById('instant-sav').value = '';
-        sync("Adjustment");
+        let performed = false;
+
+        if (c !== 0) { state.balances.checking += c; record("Dad", n + " (Chk)", c); performed = true; }
+        if (s !== 0) { state.balances.savings += s; record("Dad", n + " (Sav)", s); performed = true; }
+
+        if (performed) {
+            document.getElementById('instant-chk').value = '';
+            document.getElementById('instant-sav').value = '';
+            document.getElementById('dad-note').value = '';
+            sync("Adjustment");
+        } else { alert("Enter an amount!"); }
     }
 
     function updateAutoDeposit() {
@@ -245,7 +244,9 @@
         const n = document.getElementById('trans-note').value || "Withdrawal";
         if (a > 0 && state.balances.checking >= a) {
             state.balances.checking -= a; record("Linnea", n, -a);
-            document.getElementById('trans-amt').value = ''; sync("Withdrawal");
+            document.getElementById('trans-amt').value = '';
+            document.getElementById('trans-note').value = '';
+            sync("Withdrawal");
         } else { alert("Insufficient funds"); }
     }
 
@@ -258,7 +259,6 @@
         state.pins.Linnea = "0000"; sync("Reset"); alert("Linnea reset to 0000");
     }
 
-    // START
     load();
 </script>
 </body>
