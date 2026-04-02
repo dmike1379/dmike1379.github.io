@@ -9,28 +9,33 @@
     <style>
         :root { --primary: #4a90e2; --secondary: #2ecc71; --bg: #f8f9fa; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 20px; margin: 0; touch-action: manipulation; }
-        .container { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 450px; }
+        body { font-family: sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 10px; margin: 0; touch-action: manipulation; }
+        .container { background: white; padding: 1.5rem; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 450px; position: relative; }
         .hidden { display: none; }
         h2, h3 { color: #333; text-align: center; margin-top: 0; }
-        .balance-card { background: #f0f4f8; padding: 15px; border-radius: 10px; margin-bottom: 10px; text-align: center; }
-        .balance-amt { font-size: 1.8rem; font-weight: bold; color: var(--primary); }
-        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; font-size: 16px; outline: none; }
+        .balance-card { background: #f0f4f8; padding: 12px; border-radius: 10px; margin-bottom: 8px; text-align: center; }
+        .balance-amt { font-size: 1.6rem; font-weight: bold; color: var(--primary); }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; font-size: 16px; outline: none; background: white; }
         button { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; font-size: 16px; transition: transform 0.1s; }
         button:active { transform: scale(0.98); }
         .btn-primary { background: var(--primary); color: white; }
         .btn-secondary { background: var(--secondary); color: white; }
         .btn-deposit { background: #f39c12; color: white; }
-        .btn-interest { background: #9b59b6; color: white; }
         .btn-logout { background: #eee; color: #666; font-size: 0.8rem; width: auto; }
         .admin-section { border-top: 2px dashed #eee; margin-top: 20px; padding-top: 20px; }
-        .row { display: flex; gap: 10px; }
+        .row { display: flex; gap: 8px; }
         .col { flex: 1; }
-        label { font-size: 0.75rem; color: #666; font-weight: bold; display: block; margin-bottom: 4px; text-transform: uppercase; }
-        .ledger-container { margin-top: 25px; border-top: 2px solid #eee; padding-top: 15px; }
-        .ledger-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f9f9f9; font-size: 0.85rem; }
+        label { font-size: 0.7rem; color: #666; font-weight: bold; display: block; margin-bottom: 2px; text-transform: uppercase; }
+        
+        /* History Page & Advanced Filters */
+        #history-page { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 100; padding: 15px; overflow-y: auto; }
+        .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #f9f9f9; padding: 10px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #eee; }
+        .filter-grid select { margin-bottom: 0; font-size: 12px; padding: 8px; height: 35px; }
+        .ledger-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f2f2f2; font-size: 0.8rem; align-items: center; }
         .amt-pos { color: #2ecc71; font-weight: bold; }
         .amt-neg { color: #e74c3c; font-weight: bold; }
+        .time-label { color: #aaa; font-size: 0.65rem; }
+        .type-tag { font-size: 9px; padding: 2px 5px; border-radius: 4px; background: #eee; color: #555; text-transform: uppercase; margin-left: 5px; }
     </style>
 </head>
 <body>
@@ -48,7 +53,7 @@
     </div>
 
     <div id="main-interface" class="hidden">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <span id="welcome-msg" style="font-weight:bold"></span>
             <button class="btn-logout" onclick="location.reload()">Logout</button>
         </div>
@@ -56,21 +61,20 @@
         <div class="balance-card">
             <small>Checking Balance</small>
             <div class="balance-amt" id="checking-val">$0.00</div>
-            <small>Rate: <span id="int-chk-display">0</span>%</small>
         </div>
         <div class="balance-card">
             <small>Savings Balance</small>
             <div class="balance-amt" id="savings-val">$0.00</div>
-            <small>Rate: <span id="int-sav-display">0</span>%</small>
         </div>
+
+        <button class="btn-primary" style="background: #34495e; margin-bottom: 15px;" onclick="toggleHistory(true)">📜 View Full History</button>
 
         <div id="linnea-controls" class="hidden">
             <h3>Manage Money</h3>
-            <input type="number" id="trans-amt" placeholder="Amount $0.00" step="0.01" onblur="this.value = parseFloat(this.value).toFixed(2)">
+            <input type="number" id="trans-amt" placeholder="Amount $0.00" step="0.01" onblur="if(this.value) this.value = parseFloat(this.value).toFixed(2)">
             <input type="text" id="trans-note" placeholder="What is this for? (Required)">
             <button class="btn-secondary" onclick="transferToSavings()">Move to Savings</button>
             <button class="btn-primary" onclick="withdraw()">Withdraw Cash</button>
-            <button class="btn-logout" style="width:100%; margin-top:20px;" onclick="changePinPrompt('Linnea')">Change My PIN</button>
         </div>
 
         <div id="dad-controls" class="hidden">
@@ -90,30 +94,52 @@
                     <div class="col"><label>Chk $</label><input type="number" id="auto-chk" step="0.01" onblur="this.value = parseFloat(this.value).toFixed(2)"></div>
                     <div class="col"><label>Sav $</label><input type="number" id="auto-sav" step="0.01" onblur="this.value = parseFloat(this.value).toFixed(2)"></div>
                 </div>
-                <button class="btn-secondary" onclick="updateAutoDeposit()">Save Allowance Amounts</button>
+                <button class="btn-secondary" onclick="updateAutoDeposit()">Save Allowance</button>
             </div>
-
-            <div class="admin-section">
-                <h3>Annual Interest %</h3>
-                <div class="row">
-                    <div class="col"><label>Chk %</label><input type="number" id="set-int-chk" step="0.01"></div>
-                    <div class="col"><label>Sav %</label><input type="number" id="set-int-sav" step="0.01"></div>
-                </div>
-                <button class="btn-primary" onclick="saveRatesOnly()">Save Rates</button>
-                <button class="btn-interest" onclick="applyInterestNow()">Apply 1 Month Now</button>
-            </div>
-
-            <div class="admin-section">
-                <button class="btn-logout" style="width:100%;" onclick="changePinPrompt('Dad')">Change Dad PIN</button>
-                <button class="btn-logout" style="width:100%; margin-top:10px;" onclick="adminResetPin()">Reset Linnea PIN (0000)</button>
-            </div>
-        </div>
-
-        <div class="ledger-container">
-            <h3>Recent Activity</h3>
-            <div id="ledger-list">No activity found.</div>
         </div>
     </div>
+</div>
+
+<div id="history-page" class="hidden">
+    <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom:10px;">
+        <h3 style="margin:0;">History Vault</h3>
+        <button class="btn-logout" style="background:#ff7675; color:white; padding:5px 12px;" onclick="toggleHistory(false)">Close</button>
+    </div>
+    
+    <div class="filter-grid">
+        <div class="col"><label>Sort By</label>
+            <select id="sort-by" onchange="renderHistory()">
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="high">Highest $</option>
+                <option value="low">Lowest $</option>
+            </select>
+        </div>
+        <div class="col"><label>User</label>
+            <select id="filter-user" onchange="renderHistory()">
+                <option value="all">All Users</option>
+                <option value="Dad">Dad Only</option>
+                <option value="Linnea">Linnea Only</option>
+                <option value="Bank">Bank Only</option>
+            </select>
+        </div>
+        <div class="col"><label>Account</label>
+            <select id="filter-acct" onchange="renderHistory()">
+                <option value="all">All Accounts</option>
+                <option value="Chk">Checking</option>
+                <option value="Sav">Savings</option>
+            </select>
+        </div>
+        <div class="col"><label>Type</label>
+            <select id="filter-type" onchange="renderHistory()">
+                <option value="all">All Types</option>
+                <option value="credit">Credits (+)</option>
+                <option value="debit">Debits (-)</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="full-ledger-list"></div>
 </div>
 
 <script>
@@ -141,32 +167,63 @@
                 status.innerText = "Vault Connected";
                 render();
             }
-        } catch(e) {
-            status.innerText = "Offline Mode";
-        }
+        } catch(e) { status.innerText = "Offline Mode"; }
     }
 
     function render() {
         document.getElementById('checking-val').innerText = fmt(state.balances.checking);
         document.getElementById('savings-val').innerText = fmt(state.balances.savings);
-        document.getElementById('int-chk-display').innerText = state.rates.checking || 0;
-        document.getElementById('int-sav-display').innerText = state.rates.savings || 0;
-        document.getElementById('set-int-chk').value = state.rates.checking || 0;
-        document.getElementById('set-int-sav').value = state.rates.savings || 0;
-        
-        // Format the input values themselves on load
         document.getElementById('auto-chk').value = (state.autoDeposit.checking || 0).toFixed(2);
         document.getElementById('auto-sav').value = (state.autoDeposit.savings || 0).toFixed(2);
+    }
 
-        const list = document.getElementById('ledger-list');
-        if (state.history && state.history.length > 0) {
-            list.innerHTML = state.history.slice(-12).reverse().map(h => `
-                <div class="ledger-row">
-                    <div><small>${h.date}</small><br><strong>${h.user}</strong>: ${h.note}</div>
-                    <div class="${h.amt >= 0 ? 'amt-pos' : 'amt-neg'}">${h.amt >= 0 ? '+' : ''}${fmt(Math.abs(h.amt))}</div>
+    function toggleHistory(show) {
+        document.getElementById('history-page').classList.toggle('hidden', !show);
+        if (show) renderHistory();
+    }
+
+    function renderHistory() {
+        const list = document.getElementById('full-ledger-list');
+        const sortVal = document.getElementById('sort-by').value;
+        const userFilter = document.getElementById('filter-user').value;
+        const acctFilter = document.getElementById('filter-acct').value;
+        const typeFilter = document.getElementById('filter-type').value;
+
+        // 1. Filter
+        let logs = state.history.filter(h => {
+            const matchUser = userFilter === 'all' || h.user === userFilter;
+            const matchAcct = acctFilter === 'all' || (h.note && h.note.includes(`(${acctFilter})`)) || (h.note && h.note.includes(`To ${acctFilter}`));
+            const matchType = typeFilter === 'all' || (typeFilter === 'credit' ? h.amt >= 0 : h.amt < 0);
+            return matchUser && matchAcct && matchType;
+        });
+
+        // 2. Sort
+        if (sortVal === 'newest') logs.reverse();
+        else if (sortVal === 'high') logs.sort((a, b) => Math.abs(b.amt) - Math.abs(a.amt));
+        else if (sortVal === 'low') logs.sort((a, b) => Math.abs(a.amt) - Math.abs(b.amt));
+        // 'oldest' is the default array order
+
+        list.innerHTML = logs.map(h => `
+            <div class="ledger-row">
+                <div>
+                    <span class="time-label">${h.date}</span><span class="type-tag">${h.amt >= 0 ? 'Credit' : 'Debit'}</span><br>
+                    <strong>${h.user}</strong>: ${h.note}
                 </div>
-            `).join('');
-        }
+                <div class="${h.amt >= 0 ? 'amt-pos' : 'amt-neg'}">
+                    ${h.amt >= 0 ? '+' : ''}${fmt(Math.abs(h.amt))}
+                </div>
+            </div>
+        `).join('');
+        
+        if (logs.length === 0) list.innerHTML = "<p style='text-align:center; color:#999; margin-top:20px;'>No matching transactions found.</p>";
+    }
+
+    function record(user, note, amt) {
+        if (!state.history) state.history = [];
+        const now = new Date();
+        const dateStr = now.toLocaleDateString(undefined, {month:'numeric', day:'numeric'}) + " " + 
+                        now.toLocaleTimeString(undefined, {hour:'numeric', minute:'2-digit'});
+        state.history.push({ date: dateStr, user: user, note: note, amt: amt });
     }
 
     function attemptLogin() {
@@ -192,64 +249,32 @@
         } catch(e) { console.error("Sync Error"); }
     }
 
-    function record(user, note, amt) {
-        if (!state.history) state.history = [];
-        const dateStr = new Date().toLocaleDateString(undefined, {month:'numeric', day:'numeric'});
-        state.history.push({ date: dateStr, user: user, note: note, amt: amt });
-    }
-
     function multiInstantAdjust() {
         const c = parseFloat(document.getElementById('instant-chk').value) || 0;
         const s = parseFloat(document.getElementById('instant-sav').value) || 0;
         const n = document.getElementById('dad-note').value.trim();
+        if (c === 0 && s === 0) { alert("Enter an amount!"); return; }
+        if (!n) { alert("Comment Required!"); return; }
 
-        // STRICT ENFORCEMENT: Check for comment AND a value
-        if (c === 0 && s === 0) {
-            alert("Enter an amount to adjust!");
-            return;
-        }
-        if (!n) {
-            alert("A comment is REQUIRED for the ledger. Please explain why you are adjusting the balance.");
-            return;
-        }
-
-        let performed = false;
-        if (c !== 0) { state.balances.checking += c; record("Dad", n + " (Chk)", c); performed = true; }
-        if (s !== 0) { state.balances.savings += s; record("Dad", n + " (Sav)", s); performed = true; }
-
-        if (performed) {
-            document.getElementById('instant-chk').value = '';
-            document.getElementById('instant-sav').value = '';
-            document.getElementById('dad-note').value = '';
-            sync("Adjustment");
-        }
+        if (c !== 0) { state.balances.checking += c; record("Dad", n + " (Chk)", c); }
+        if (s !== 0) { state.balances.savings += s; record("Dad", n + " (Sav)", s); }
+        
+        document.getElementById('instant-chk').value = '';
+        document.getElementById('instant-sav').value = '';
+        document.getElementById('dad-note').value = '';
+        sync("Adjustment");
     }
 
     function updateAutoDeposit() {
         state.autoDeposit.checking = parseFloat(document.getElementById('auto-chk').value) || 0;
         state.autoDeposit.savings = parseFloat(document.getElementById('auto-sav').value) || 0;
-        sync("Settings"); alert("Allowance amounts saved!");
-    }
-
-    function saveRatesOnly() {
-        state.rates.checking = parseFloat(document.getElementById('set-int-chk').value) || 0;
-        state.rates.savings = parseFloat(document.getElementById('set-int-sav').value) || 0;
-        sync("Rates"); alert("Rates Saved!");
-    }
-
-    function applyInterestNow() {
-        const cE = state.balances.checking * (state.rates.checking / 100 / 12);
-        const sE = state.balances.savings * (state.rates.savings / 100 / 12);
-        state.balances.checking += cE; state.balances.savings += sE;
-        record("Bank", "Interest (Chk)", cE); record("Bank", "Interest (Sav)", sE);
-        sync("Interest"); alert("Interest Applied!");
+        sync("Settings"); alert("Allowance Saved!");
     }
 
     function transferToSavings() {
         const a = parseFloat(document.getElementById('trans-amt').value);
         const n = document.getElementById('trans-note').value.trim();
-        if (!n) { alert("Please explain why you are moving money."); return; }
-        
+        if (!n) { alert("Comment Required!"); return; }
         if (a > 0 && state.balances.checking >= a) {
             state.balances.checking -= a; state.balances.savings += a;
             record("Linnea", "To Sav: " + n, -a);
@@ -262,23 +287,13 @@
     function withdraw() {
         const a = parseFloat(document.getElementById('trans-amt').value);
         const n = document.getElementById('trans-note').value.trim();
-        if (!n) { alert("Please enter what this cash is for."); return; }
-
+        if (!n) { alert("Comment Required!"); return; }
         if (a > 0 && state.balances.checking >= a) {
             state.balances.checking -= a; record("Linnea", n, -a);
             document.getElementById('trans-amt').value = '';
             document.getElementById('trans-note').value = '';
             sync("Withdrawal");
         } else { alert("Insufficient funds"); }
-    }
-
-    function changePinPrompt(u) {
-        const p = prompt("New 4-digit PIN:");
-        if (p && p.length === 4) { state.pins[u] = p; sync("PIN Change"); alert("PIN Updated!"); }
-    }
-
-    function adminResetPin() {
-        state.pins.Linnea = "0000"; sync("Reset"); alert("Linnea reset to 0000");
     }
 
     load();
