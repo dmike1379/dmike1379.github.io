@@ -66,7 +66,7 @@
 
         <div id="linnea-controls" class="hidden">
             <h3>Manage Money</h3>
-            <input type="number" id="trans-amt" placeholder="Amount $0.00" inputmode="decimal">
+            <input type="number" id="trans-amt" placeholder="Amount $0.00" step="0.01" onblur="this.value = parseFloat(this.value).toFixed(2)">
             <input type="text" id="trans-note" placeholder="What is this for? (Required)">
             <button class="btn-secondary" onclick="transferToSavings()">Move to Savings</button>
             <button class="btn-primary" onclick="withdraw()">Withdraw Cash</button>
@@ -77,20 +77,20 @@
             <div class="admin-section" style="background: #fff9eb; padding: 10px; border-radius: 10px; border: 1px solid #f39c12;">
                 <h3>Instant Adjustment</h3>
                 <div class="row">
-                    <div class="col"><label>Chk $</label><input type="number" id="instant-chk" placeholder="0.00" inputmode="decimal"></div>
-                    <div class="col"><label>Sav $</label><input type="number" id="instant-sav" placeholder="0.00" inputmode="decimal"></div>
+                    <div class="col"><label>Chk $</label><input type="number" id="instant-chk" placeholder="0.00" step="0.01" onblur="if(this.value) this.value = parseFloat(this.value).toFixed(2)"></div>
+                    <div class="col"><label>Sav $</label><input type="number" id="instant-sav" placeholder="0.00" step="0.01" onblur="if(this.value) this.value = parseFloat(this.value).toFixed(2)"></div>
                 </div>
-                <input type="text" id="dad-note" placeholder="Reason (e.g. Bonus, Chore) *" style="margin-top:5px;">
+                <input type="text" id="dad-note" placeholder="Reason (Required) *" style="margin-top:5px;">
                 <button class="btn-deposit" onclick="multiInstantAdjust()">Apply Adjustments</button>
             </div>
 
             <div class="admin-section">
                 <h3>Weekly Allowance</h3>
                 <div class="row">
-                    <div class="col"><label>Chk $</label><input type="number" id="auto-chk" step="0.01"></div>
-                    <div class="col"><label>Sav $</label><input type="number" id="auto-sav" step="0.01"></div>
+                    <div class="col"><label>Chk $</label><input type="number" id="auto-chk" step="0.01" onblur="this.value = parseFloat(this.value).toFixed(2)"></div>
+                    <div class="col"><label>Sav $</label><input type="number" id="auto-sav" step="0.01" onblur="this.value = parseFloat(this.value).toFixed(2)"></div>
                 </div>
-                <button class="btn-secondary" onclick="updateAutoDeposit()">Save Amounts</button>
+                <button class="btn-secondary" onclick="updateAutoDeposit()">Save Allowance Amounts</button>
             </div>
 
             <div class="admin-section">
@@ -128,7 +128,7 @@
     };
 
     function fmt(val) {
-        return "$" + (val || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        return "$" + (parseFloat(val) || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
     }
 
     async function load() {
@@ -153,15 +153,17 @@
         document.getElementById('int-sav-display').innerText = state.rates.savings || 0;
         document.getElementById('set-int-chk').value = state.rates.checking || 0;
         document.getElementById('set-int-sav').value = state.rates.savings || 0;
-        document.getElementById('auto-chk').value = state.autoDeposit.checking || 0;
-        document.getElementById('auto-sav').value = state.autoDeposit.savings || 0;
+        
+        // Format the input values themselves on load
+        document.getElementById('auto-chk').value = (state.autoDeposit.checking || 0).toFixed(2);
+        document.getElementById('auto-sav').value = (state.autoDeposit.savings || 0).toFixed(2);
 
         const list = document.getElementById('ledger-list');
         if (state.history && state.history.length > 0) {
             list.innerHTML = state.history.slice(-12).reverse().map(h => `
                 <div class="ledger-row">
                     <div><small>${h.date}</small><br><strong>${h.user}</strong>: ${h.note}</div>
-                    <div class="${h.amt >= 0 ? 'amt-pos' : 'amt-neg'}">${h.amt >= 0 ? '+' : '-'}${fmt(Math.abs(h.amt))}</div>
+                    <div class="${h.amt >= 0 ? 'amt-pos' : 'amt-neg'}">${h.amt >= 0 ? '+' : ''}${fmt(Math.abs(h.amt))}</div>
                 </div>
             `).join('');
         }
@@ -201,9 +203,17 @@
         const s = parseFloat(document.getElementById('instant-sav').value) || 0;
         const n = document.getElementById('dad-note').value.trim();
 
-        if (!n) { alert("Please enter a comment for the ledger."); return; }
-        let performed = false;
+        // STRICT ENFORCEMENT: Check for comment AND a value
+        if (c === 0 && s === 0) {
+            alert("Enter an amount to adjust!");
+            return;
+        }
+        if (!n) {
+            alert("A comment is REQUIRED for the ledger. Please explain why you are adjusting the balance.");
+            return;
+        }
 
+        let performed = false;
         if (c !== 0) { state.balances.checking += c; record("Dad", n + " (Chk)", c); performed = true; }
         if (s !== 0) { state.balances.savings += s; record("Dad", n + " (Sav)", s); performed = true; }
 
@@ -212,13 +222,13 @@
             document.getElementById('instant-sav').value = '';
             document.getElementById('dad-note').value = '';
             sync("Adjustment");
-        } else { alert("Enter an amount!"); }
+        }
     }
 
     function updateAutoDeposit() {
         state.autoDeposit.checking = parseFloat(document.getElementById('auto-chk').value) || 0;
         state.autoDeposit.savings = parseFloat(document.getElementById('auto-sav').value) || 0;
-        sync("Settings"); alert("Saved!");
+        sync("Settings"); alert("Allowance amounts saved!");
     }
 
     function saveRatesOnly() {
