@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Family Bank</title>
-    <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="images/icon.png">
     <link rel="apple-touch-icon" href="images/icon.png">
     <meta name="theme-color" content="#4a90e2">
@@ -15,7 +14,6 @@
         .container { background: white; padding: 1.5rem; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 450px; position: relative; overflow: hidden; }
         .hidden { display: none !important; }
         
-        /* BRANDING */
         .header-banner { width: calc(100% + 3rem); margin: -1.5rem -1.5rem 15px -1.5rem; display: block; border-bottom: 2px solid #eee; }
         .logo-container { text-align: center; margin-bottom: 15px; }
         .bank-logo { width: 100px; height: auto; margin: 0 auto; display: block; }
@@ -41,26 +39,21 @@
         .col { flex: 1; }
         label { font-size: 0.7rem; color: #666; font-weight: bold; display: block; margin-bottom: 2px; text-transform: uppercase; }
         
-        /* VAULT OVERLAY */
         #history-page { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 1000; padding: 15px; overflow-y: auto; }
-        .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #f9f9f9; padding: 10px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #eee; }
-        .filter-grid select { margin-bottom: 0; font-size: 11px; padding: 6px; height: 35px; }
-        
         .ledger-row { display: grid; grid-template-columns: 55px 1fr 85px; gap: 10px; padding: 12px 0; border-bottom: 1px solid #f2f2f2; font-size: 0.75rem; align-items: center; }
         .acct-tag { font-weight: bold; text-align: center; background: #dfe6e9; border-radius: 4px; padding: 4px; font-size: 9px; color: #2d3436; }
         .amt-pos { color: #2ecc71; font-weight: bold; text-align: right; }
         .amt-neg { color: #e74c3c; font-weight: bold; text-align: right; }
-        .time-label { color: #aaa; font-size: 0.6rem; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <img src="images/banner.png" class="header-banner" alt="Banner" onerror="this.style.display='none'">
+    <img src="images/banner.png" class="header-banner" onerror="this.style.display='none'">
 
     <div id="login-screen">
         <div class="logo-container">
-            <img src="images/logo.png" class="bank-logo" alt="Logo" onerror="this.style.display='none'">
+            <img src="images/logo.png" class="bank-logo" onerror="this.style.display='none'">
             <h2>Family Bank</h2>
         </div>
         <select id="user-select"><option value="Linnea">Linnea</option><option value="Dad">Dad</option></select>
@@ -160,7 +153,7 @@
                 document.getElementById('status-msg').innerText = "System Ready"; 
                 render(); 
             }
-        } catch(e) { document.getElementById('status-msg').innerText = "Cloud Connection Error"; }
+        } catch(e) { document.getElementById('status-msg').innerText = "Cloud Error"; }
     }
 
     function render() {
@@ -179,20 +172,14 @@
         if (show) {
             const list = document.getElementById('full-ledger-list');
             list.innerHTML = state.history.slice().reverse().map(h => {
-                const acct = (h.note.includes('(Sav)') || h.note.includes('To Sav') || h.note.includes('Interest (Sav)')) ? 'SAV' : 'CHK';
-                return `
-                <div class="ledger-row">
-                    <div class="acct-tag">${acct}</div>
-                    <div><span class="time-label">${h.date}</span><br><strong>${h.user}</strong>: ${h.note}</div>
-                    <div class="${h.amt >= 0 ? 'amt-pos' : 'amt-neg'}">${h.amt >= 0 ? '+' : ''}${fmt(Math.abs(h.amt))}</div>
-                </div>`;
-            }).join('') || '<p style="text-align:center;color:#999;margin-top:20px;">No transactions found.</p>';
+                const acct = (h.note.includes('(Sav)') || h.note.includes('To Sav')) ? 'SAV' : 'CHK';
+                return `<div class="ledger-row"><div class="acct-tag">${acct}</div><div>${h.date}<br><strong>${h.user}</strong>: ${h.note}</div><div class="${h.amt >= 0 ? 'amt-pos' : 'amt-neg'}">${h.amt >= 0 ? '+' : ''}${fmt(h.amt)}</div></div>`;
+            }).join('') || '<p style="text-align:center;color:#999;margin-top:20px;">Empty.</p>';
         }
     }
 
     function record(user, note, amt) {
-        const now = new Date();
-        const dateStr = now.toLocaleDateString(undefined, {month:'numeric', day:'numeric'}) + " " + now.toLocaleTimeString(undefined, {hour:'numeric', minute:'2-digit'});
+        const dateStr = new Date().toLocaleString();
         if(!state.history) state.history = [];
         state.history.push({ date: dateStr, user: user, note: note, amt: amt });
     }
@@ -215,10 +202,10 @@
     }
 
     function hardResetHistory() {
-        if(confirm("DANGER: This will delete the app's internal memory and only show what is currently in your Google Sheet. Continue?")) {
+        if(confirm("This will permanently delete the app's hidden memory and only show what is currently in your Google Sheet. Continue?")) {
             state.history = [];
             sync("HARD_WIPE");
-            alert("History Cleared. Refreshing app.");
+            alert("History Cleared. Refreshing.");
             location.reload();
         }
     }
@@ -227,7 +214,7 @@
         const c = parseFloat(document.getElementById('instant-chk').value) || 0;
         const s = parseFloat(document.getElementById('instant-sav').value) || 0;
         const n = document.getElementById('dad-note').value.trim();
-        if ((c === 0 && s === 0) || !n) { alert("Enter amount and reason!"); return; }
+        if ((c === 0 && s === 0) || !n) { alert("Amount and reason required!"); return; }
         if (c !== 0) { state.balances.checking += c; record("Dad", n + " (Chk)", c); }
         if (s !== 0) { state.balances.savings += s; record("Dad", n + " (Sav)", s); }
         document.getElementById('instant-chk').value = ''; document.getElementById('instant-sav').value = ''; document.getElementById('dad-note').value = '';
@@ -237,13 +224,13 @@
     function updateAutoDeposit() {
         state.autoDeposit.checking = parseFloat(document.getElementById('auto-chk').value) || 0;
         state.autoDeposit.savings = parseFloat(document.getElementById('auto-sav').value) || 0;
-        sync("Allowance Update"); alert("Allowance saved.");
+        sync("Allowance Update"); alert("Saved.");
     }
 
     function saveRatesOnly() {
         state.rates.checking = parseFloat(document.getElementById('set-int-chk').value) || 0;
         state.rates.savings = parseFloat(document.getElementById('set-int-sav').value) || 0;
-        sync("Rates Update"); alert("Rates saved.");
+        sync("Rates Update"); alert("Saved.");
     }
 
     function applyInterestNow() {
@@ -251,13 +238,13 @@
         const sE = state.balances.savings * (state.rates.savings / 100 / 12);
         state.balances.checking += cE; state.balances.savings += sE;
         record("Bank", "Interest (Chk)", cE); record("Bank", "Interest (Sav)", sE);
-        sync("Interest Run"); alert("Interest added.");
+        sync("Interest Run"); alert("Interest applied.");
     }
 
     function transferToSavings() {
         const a = parseFloat(document.getElementById('trans-amt').value);
         const n = document.getElementById('trans-note').value.trim();
-        if (!n || a <= 0 || state.balances.checking < a) { alert("Invalid amount."); return; }
+        if (!n || a <= 0 || state.balances.checking < a) { alert("Invalid."); return; }
         state.balances.checking -= a; state.balances.savings += a;
         record("Linnea", "To Sav: " + n, -a);
         document.getElementById('trans-amt').value = ''; document.getElementById('trans-note').value = '';
@@ -267,7 +254,7 @@
     function withdraw() {
         const a = parseFloat(document.getElementById('trans-amt').value);
         const n = document.getElementById('trans-note').value.trim();
-        if (!n || a <= 0 || state.balances.checking < a) { alert("Invalid amount."); return; }
+        if (!n || a <= 0 || state.balances.checking < a) { alert("Invalid."); return; }
         state.balances.checking -= a; record("Linnea", n + " (Chk)", -a);
         document.getElementById('trans-amt').value = ''; document.getElementById('trans-note').value = '';
         sync("Withdrawal");
@@ -279,7 +266,7 @@
     }
 
     function adminResetPin() {
-        state.pins.Linnea = "0000"; sync("PIN Reset"); alert("Linnea reset to 0000");
+        state.pins.Linnea = "0000"; sync("PIN Reset"); alert("Reset to 0000");
     }
 
     load();
