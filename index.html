@@ -66,8 +66,8 @@
 
         <div id="linnea-controls" class="hidden">
             <h3>Manage Money</h3>
-            <input type="number" id="trans-amt" placeholder="Amount $" inputmode="decimal">
-            <input type="text" id="trans-note" placeholder="What is this for?">
+            <input type="number" id="trans-amt" placeholder="Amount $0.00" inputmode="decimal">
+            <input type="text" id="trans-note" placeholder="What is this for? (Required)">
             <button class="btn-secondary" onclick="transferToSavings()">Move to Savings</button>
             <button class="btn-primary" onclick="withdraw()">Withdraw Cash</button>
             <button class="btn-logout" style="width:100%; margin-top:20px;" onclick="changePinPrompt('Linnea')">Change My PIN</button>
@@ -80,7 +80,7 @@
                     <div class="col"><label>Chk $</label><input type="number" id="instant-chk" placeholder="0.00" inputmode="decimal"></div>
                     <div class="col"><label>Sav $</label><input type="number" id="instant-sav" placeholder="0.00" inputmode="decimal"></div>
                 </div>
-                <input type="text" id="dad-note" placeholder="Comment (e.g. Bonus, Chore)" style="margin-top:5px;">
+                <input type="text" id="dad-note" placeholder="Reason (e.g. Bonus, Chore) *" style="margin-top:5px;">
                 <button class="btn-deposit" onclick="multiInstantAdjust()">Apply Adjustments</button>
             </div>
 
@@ -127,6 +127,10 @@
         history: []
     };
 
+    function fmt(val) {
+        return "$" + (val || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+
     async function load() {
         const status = document.getElementById('status-msg');
         try {
@@ -143,8 +147,8 @@
     }
 
     function render() {
-        document.getElementById('checking-val').innerText = "$" + (state.balances.checking || 0).toFixed(2);
-        document.getElementById('savings-val').innerText = "$" + (state.balances.savings || 0).toFixed(2);
+        document.getElementById('checking-val').innerText = fmt(state.balances.checking);
+        document.getElementById('savings-val').innerText = fmt(state.balances.savings);
         document.getElementById('int-chk-display').innerText = state.rates.checking || 0;
         document.getElementById('int-sav-display').innerText = state.rates.savings || 0;
         document.getElementById('set-int-chk').value = state.rates.checking || 0;
@@ -154,10 +158,10 @@
 
         const list = document.getElementById('ledger-list');
         if (state.history && state.history.length > 0) {
-            list.innerHTML = state.history.slice(-10).reverse().map(h => `
+            list.innerHTML = state.history.slice(-12).reverse().map(h => `
                 <div class="ledger-row">
                     <div><small>${h.date}</small><br><strong>${h.user}</strong>: ${h.note}</div>
-                    <div class="${h.amt >= 0 ? 'amt-pos' : 'amt-neg'}">${h.amt >= 0 ? '+' : ''}$${Math.abs(h.amt).toFixed(2)}</div>
+                    <div class="${h.amt >= 0 ? 'amt-pos' : 'amt-neg'}">${h.amt >= 0 ? '+' : '-'}${fmt(Math.abs(h.amt))}</div>
                 </div>
             `).join('');
         }
@@ -195,7 +199,9 @@
     function multiInstantAdjust() {
         const c = parseFloat(document.getElementById('instant-chk').value) || 0;
         const s = parseFloat(document.getElementById('instant-sav').value) || 0;
-        const n = document.getElementById('dad-note').value || "Adjustment";
+        const n = document.getElementById('dad-note').value.trim();
+
+        if (!n) { alert("Please enter a comment for the ledger."); return; }
         let performed = false;
 
         if (c !== 0) { state.balances.checking += c; record("Dad", n + " (Chk)", c); performed = true; }
@@ -231,17 +237,23 @@
 
     function transferToSavings() {
         const a = parseFloat(document.getElementById('trans-amt').value);
+        const n = document.getElementById('trans-note').value.trim();
+        if (!n) { alert("Please explain why you are moving money."); return; }
+        
         if (a > 0 && state.balances.checking >= a) {
             state.balances.checking -= a; state.balances.savings += a;
-            record("Linnea", "To Savings", -a);
+            record("Linnea", "To Sav: " + n, -a);
             document.getElementById('trans-amt').value = '';
+            document.getElementById('trans-note').value = '';
             sync("Transfer");
         } else { alert("Insufficient funds"); }
     }
 
     function withdraw() {
         const a = parseFloat(document.getElementById('trans-amt').value);
-        const n = document.getElementById('trans-note').value || "Withdrawal";
+        const n = document.getElementById('trans-note').value.trim();
+        if (!n) { alert("Please enter what this cash is for."); return; }
+
         if (a > 0 && state.balances.checking >= a) {
             state.balances.checking -= a; record("Linnea", n, -a);
             document.getElementById('trans-amt').value = '';
