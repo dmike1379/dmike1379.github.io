@@ -44,6 +44,7 @@
         </select>
         <input type="password" id="pin-input" placeholder="Enter PIN" maxlength="4" inputmode="numeric">
         <button class="btn-primary" onclick="attemptLogin()">Login</button>
+        <p id="status-msg" style="text-align:center; font-size:10px; color:#999; margin-top:10px;">Connecting to Vault...</p>
     </div>
 
     <div id="main-interface" class="hidden">
@@ -110,12 +111,13 @@
 
         <div class="ledger-container">
             <h3>Recent Activity</h3>
-            <div id="ledger-list">Loading history...</div>
+            <div id="ledger-list">No activity found.</div>
         </div>
     </div>
 </div>
 
 <script>
+    // 1. ENSURE THIS URL IS EXACTLY YOUR DEPLOYED WEB APP URL
     const API_URL = "https://script.google.com/macros/s/AKfycby7ESNf6m1F33BJkcPs9BZSiVO0EPLHsSjKEbORMrGsstNEvMI_jbkBh4Dp3Kt0K5S3Nw/exec";
 
     let state = {
@@ -126,31 +128,32 @@
         history: []
     };
 
-    async function sync(actionType) {
-        render();
-        try {
-            await fetch(API_URL, { 
-                method: 'POST', 
-                mode: 'no-cors', 
-                body: JSON.stringify({ ...state, lastAction: actionType }) 
-            });
-        } catch(e) { console.error("Sync failed", e); }
-    }
+    // Initialize UI on startup
+    window.onload = function() {
+        console.log("App Started");
+        load(); 
+    };
 
     async function load() {
+        const status = document.getElementById('status-msg');
         try {
-            const r = await fetch(API_URL);
-            const data = await r.json();
+            const response = await fetch(API_URL);
+            const data = await response.json();
             if (data && data.pins) {
                 state = data;
+                status.innerText = "Vault Connected";
+                console.log("Data loaded from Google");
                 render();
             }
-        } catch(e) { console.log("Initial load connecting..."); }
+        } catch(e) {
+            status.innerText = "Offline Mode (Using Saved PINs)";
+            console.log("Could not reach Google. Using local defaults.");
+        }
     }
 
     function render() {
-        document.getElementById('checking-val').innerText = `$${(state.balances.checking || 0).toFixed(2)}`;
-        document.getElementById('savings-val').innerText = `$${(state.balances.savings || 0).toFixed(2)}`;
+        document.getElementById('checking-val').innerText = "$" + (state.balances.checking || 0).toFixed(2);
+        document.getElementById('savings-val').innerText = "$" + (state.balances.savings || 0).toFixed(2);
         document.getElementById('int-chk-display').innerText = state.rates.checking || 0;
         document.getElementById('int-sav-display').innerText = state.rates.savings || 0;
         document.getElementById('set-int-chk').value = state.rates.checking || 0;
@@ -160,26 +163,46 @@
 
         const list = document.getElementById('ledger-list');
         if (state.history && state.history.length > 0) {
-            list.innerHTML = state.history.slice(-8).reverse().map(h => `
+            list.innerHTML = state.history.slice(-10).reverse().map(h => `
                 <div class="ledger-row">
                     <div><small>${h.date}</small><br><strong>${h.user}</strong>: ${h.note}</div>
                     <div class="${h.amt >= 0 ? 'amt-pos' : 'amt-neg'}">${h.amt >= 0 ? '+' : ''}$${Math.abs(h.amt).toFixed(2)}</div>
                 </div>
             `).join('');
-        } else {
-            list.innerHTML = "No recent activity.";
         }
     }
 
     function attemptLogin() {
         const u = document.getElementById('user-select').value;
         const p = document.getElementById('pin-input').value;
+        
+        console.log("Login attempt for:", u);
+
         if (state.pins[u] === p) {
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('main-interface').classList.remove('hidden');
             document.getElementById('welcome-msg').innerText = "Hello, " + u;
-            document.getElementById(u === 'Dad' ? 'dad-controls' : 'linnea-controls').classList.remove('hidden');
-        } else { alert("Incorrect PIN"); }
+            
+            if (u === 'Dad') {
+                document.getElementById('dad-controls').classList.remove('hidden');
+            } else {
+                document.getElementById('linnea-controls').classList.remove('hidden');
+            }
+            render();
+        } else {
+            alert("Incorrect PIN. Try again.");
+        }
+    }
+
+    async function sync(actionType) {
+        render();
+        try {
+            await fetch(API_URL, { 
+                method: 'POST', 
+                mode: 'no-cors', 
+                body: JSON.stringify({ ...state, lastAction: actionType }) 
+            });
+        } catch(e) { console.error("Sync error", e); }
     }
 
     function recordTransaction(user, note, amt) {
@@ -229,7 +252,7 @@
             recordTransaction("Linnea", "To Savings", -amt);
             document.getElementById('trans-amt').value = '';
             sync("Transfer");
-        } else { alert("Insufficient funds"); }
+        } else { alert("Check balance."); }
     }
 
     function withdraw() {
@@ -241,19 +264,17 @@
             document.getElementById('trans-amt').value = '';
             document.getElementById('trans-note').value = '';
             sync("Withdrawal");
-        } else { alert("Insufficient funds"); }
+        } else { alert("Insufficient funds."); }
     }
 
     function changePinPrompt(user) {
         const p = prompt("New 4-digit PIN:");
-        if (p && p.length === 4) { state.pins[user] = p; sync("PIN Change"); }
+        if (p && p.length === 4) { state.pins[user] = p; sync("PIN Change"); alert("PIN Changed!"); }
     }
 
     function adminResetPin() {
         state.pins.Linnea = "0000"; sync("Reset"); alert("Linnea reset to 0000");
     }
-
-    load();
 </script>
 </body>
 </html>
