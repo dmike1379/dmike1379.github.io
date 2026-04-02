@@ -189,8 +189,9 @@
         const acctF = document.getElementById('acct-filter').value;
         const typeF = document.getElementById('type-filter').value;
 
+        // Force pulling strictly from the data array loaded from the Spreadsheet
         let filtered = [...state.history].filter(h => {
-            const isSav = (h.note.includes('(Sav)') || h.note.includes('To Sav') || h.note.includes('Interest (Sav)'));
+            const isSav = (h.note.toLowerCase().includes('(sav)') || h.note.toLowerCase().includes('to sav') || h.note.toLowerCase().includes('interest (sav)'));
             if (userF !== 'all' && h.user !== userF) return false;
             if (acctF === 'chk' && isSav) return false;
             if (acctF === 'sav' && !isSav) return false;
@@ -202,7 +203,7 @@
         if (sort === 'new') filtered.reverse();
 
         list.innerHTML = filtered.map(h => {
-            const isSav = (h.note.includes('(Sav)') || h.note.includes('To Sav') || h.note.includes('Interest (Sav)'));
+            const isSav = (h.note.toLowerCase().includes('(sav)') || h.note.toLowerCase().includes('to sav') || h.note.toLowerCase().includes('interest (sav)'));
             return `
             <div class="ledger-row">
                 <div class="acct-tag">${isSav ? 'SAV' : 'CHK'}</div>
@@ -270,7 +271,7 @@
     function transferToSavings() {
         const a = parseFloat(document.getElementById('trans-amt').value);
         const n = document.getElementById('trans-note').value.trim();
-        if (!n || a <= 0 || state.balances.checking < a) { alert("Invalid."); return; }
+        if (!n || a <= 0 || state.balances.checking < a) { alert("Check balance or note."); return; }
         state.balances.checking -= a; state.balances.savings += a;
         record("Linnea", "To Sav: " + n, -a);
         document.getElementById('trans-amt').value = ''; document.getElementById('trans-note').value = '';
@@ -280,7 +281,7 @@
     function withdraw() {
         const a = parseFloat(document.getElementById('trans-amt').value);
         const n = document.getElementById('trans-note').value.trim();
-        if (!n || a <= 0 || state.balances.checking < a) { alert("Invalid."); return; }
+        if (!n || a <= 0 || state.balances.checking < a) { alert("Check balance or note."); return; }
         state.balances.checking -= a; record("Linnea", n + " (Chk)", -a);
         document.getElementById('trans-amt').value = ''; document.getElementById('trans-note').value = '';
         sync("Withdrawal");
