@@ -171,7 +171,13 @@
         try {
             const response = await fetch(API_URL);
             const data = await response.json();
-            if (data && data.pins) { state = data; document.getElementById('status-msg').innerText = "System Ready"; render(); }
+            if (data && data.pins) { 
+                state = data; 
+                // Ensure history is at least an empty array if missing
+                if (!state.history) state.history = [];
+                document.getElementById('status-msg').innerText = "System Ready"; 
+                render(); 
+            }
         } catch(e) { document.getElementById('status-msg').innerText = "Cloud Connection Error"; }
     }
 
@@ -198,11 +204,11 @@
         const acctFilter = document.getElementById('filter-acct').value;
         const typeFilter = document.getElementById('filter-type').value;
 
+        // CRITICAL FIX: Only look at what is in the current state.history array
         let logs = (state.history || []).filter(h => {
             const matchUser = userFilter === 'all' || h.user === userFilter;
-            // Robust check for account type in the note
             const isSav = h.note.includes('(Sav)') || h.note.includes('To Sav') || h.note.includes('Interest (Sav)');
-            const isChk = h.note.includes('(Chk)') || h.note.includes('To Chk') || h.note.includes('Interest (Chk)') || (!isSav); // Default to Chk if not Sav
+            const isChk = h.note.includes('(Chk)') || h.note.includes('To Chk') || h.note.includes('Interest (Chk)') || (!isSav);
 
             const matchAcct = acctFilter === 'all' || (acctFilter === 'Sav' && isSav) || (acctFilter === 'Chk' && isChk);
             const matchType = typeFilter === 'all' || (typeFilter === 'credit' ? h.amt >= 0 : h.amt < 0);
@@ -212,7 +218,7 @@
         if (sortVal === 'newest') logs = [...logs].reverse();
         else if (sortVal === 'high') logs.sort((a, b) => Math.abs(b.amt) - Math.abs(a.amt));
 
-        list.innerHTML = logs.map(h => {
+        list.innerHTML = logs.length === 0 ? '<p style="text-align:center;color:#999;margin-top:20px;">No transactions found in ledger.</p>' : logs.map(h => {
             const acct = (h.note.includes('(Sav)') || h.note.includes('To Sav') || h.note.includes('Interest (Sav)')) ? 'SAV' : 'CHK';
             return `
             <div class="ledger-row">
