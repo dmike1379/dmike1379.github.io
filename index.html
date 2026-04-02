@@ -22,21 +22,22 @@
         .btn-secondary { background: var(--secondary); color: white; }
         .btn-history { background: #34495e; color: white; margin-bottom: 15px; }
         .btn-deposit { background: #f39c12; color: white; }
+        .btn-interest { background: #9b59b6; color: white; }
         .btn-logout { background: #eee; color: #666; font-size: 0.8rem; width: auto; }
         .admin-section { border-top: 2px dashed #eee; margin-top: 20px; padding-top: 20px; }
         .row { display: flex; gap: 8px; }
         .col { flex: 1; }
         label { font-size: 0.7rem; color: #666; font-weight: bold; display: block; margin-bottom: 2px; text-transform: uppercase; }
         
-        /* History Page */
+        /* History Page Table */
         #history-page { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 100; padding: 15px; overflow-y: auto; }
         .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #f9f9f9; padding: 10px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #eee; }
         .filter-grid select { margin-bottom: 0; font-size: 12px; padding: 8px; height: 35px; }
-        .ledger-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f2f2f2; font-size: 0.8rem; align-items: center; }
-        .amt-pos { color: #2ecc71; font-weight: bold; }
-        .amt-neg { color: #e74c3c; font-weight: bold; }
+        .ledger-row { display: grid; grid-template-columns: 60px 1fr 80px; gap: 10px; padding: 12px 0; border-bottom: 1px solid #f2f2f2; font-size: 0.75rem; align-items: center; }
+        .acct-tag { font-weight: bold; text-align: center; background: #e9ecef; border-radius: 4px; padding: 4px; font-size: 10px; }
+        .amt-pos { color: #2ecc71; font-weight: bold; text-align: right; }
+        .amt-neg { color: #e74c3c; font-weight: bold; text-align: right; }
         .time-label { color: #aaa; font-size: 0.65rem; }
-        .type-tag { font-size: 9px; padding: 2px 5px; border-radius: 4px; background: #eee; color: #555; text-transform: uppercase; margin-left: 5px; }
     </style>
 </head>
 <body>
@@ -62,10 +63,12 @@
         <div class="balance-card">
             <small>Checking Balance</small>
             <div class="balance-amt" id="checking-val">$0.00</div>
+            <small>Rate: <span id="int-chk-display">0</span>%</small>
         </div>
         <div class="balance-card">
             <small>Savings Balance</small>
             <div class="balance-amt" id="savings-val">$0.00</div>
+            <small>Rate: <span id="int-sav-display">0</span>%</small>
         </div>
 
         <button class="btn-history" id="vault-btn" onclick="toggleHistory(true)">📜 View Full History</button>
@@ -76,6 +79,7 @@
             <input type="text" id="trans-note" placeholder="What is this for? (Required)">
             <button class="btn-secondary" onclick="transferToSavings()">Move to Savings</button>
             <button class="btn-primary" onclick="withdraw()">Withdraw Cash</button>
+            <button class="btn-logout" style="width:100%; margin-top:20px;" onclick="changePinPrompt('Linnea')">Change My PIN</button>
         </div>
 
         <div id="dad-controls" class="hidden">
@@ -97,6 +101,21 @@
                 </div>
                 <button class="btn-secondary" onclick="updateAutoDeposit()">Save Allowance</button>
             </div>
+
+            <div class="admin-section">
+                <h3>Annual Interest %</h3>
+                <div class="row">
+                    <div class="col"><label>Chk %</label><input type="number" id="set-int-chk" step="0.01"></div>
+                    <div class="col"><label>Sav %</label><input type="number" id="set-int-sav" step="0.01"></div>
+                </div>
+                <button class="btn-primary" onclick="saveRatesOnly()">Save Rates</button>
+                <button class="btn-interest" onclick="applyInterestNow()">Apply 1 Month Now</button>
+            </div>
+
+            <div class="admin-section">
+                <button class="btn-logout" style="width:100%;" onclick="changePinPrompt('Dad')">Change Dad PIN</button>
+                <button class="btn-logout" style="width:100%; margin-top:10px;" onclick="adminResetPin()">Reset Linnea PIN (0000)</button>
+            </div>
         </div>
     </div>
 </div>
@@ -108,35 +127,17 @@
     </div>
     
     <div class="filter-grid">
-        <div class="col"><label>Sort By</label>
-            <select id="sort-by" onchange="renderHistory()">
-                <option value="newest">Newest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="high">Highest $</option>
-                <option value="low">Lowest $</option>
-            </select>
+        <div class="col"><label>Sort</label>
+            <select id="sort-by" onchange="renderHistory()"><option value="newest">Newest</option><option value="high">Highest $</option></select>
         </div>
         <div class="col"><label>User</label>
-            <select id="filter-user" onchange="renderHistory()">
-                <option value="all">All Users</option>
-                <option value="Dad">Dad Only</option>
-                <option value="Linnea">Linnea Only</option>
-                <option value="Bank">Bank Only</option>
-            </select>
+            <select id="filter-user" onchange="renderHistory()"><option value="all">All</option><option value="Dad">Dad</option><option value="Linnea">Linnea</option></select>
         </div>
         <div class="col"><label>Account</label>
-            <select id="filter-acct" onchange="renderHistory()">
-                <option value="all">All Accounts</option>
-                <option value="Chk">Checking</option>
-                <option value="Sav">Savings</option>
-            </select>
+            <select id="filter-acct" onchange="renderHistory()"><option value="all">All</option><option value="Chk">Checking</option><option value="Sav">Savings</option></select>
         </div>
         <div class="col"><label>Type</label>
-            <select id="filter-type" onchange="renderHistory()">
-                <option value="all">All Types</option>
-                <option value="credit">Credits (+)</option>
-                <option value="debit">Debits (-)</option>
-            </select>
+            <select id="filter-type" onchange="renderHistory()"><option value="all">Both</option><option value="credit">Credit</option><option value="debit">Debit</option></select>
         </div>
     </div>
 
@@ -145,47 +146,32 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycby7ESNf6m1F33BJkcPs9BZSiVO0EPLHsSjKEbORMrGsstNEvMI_jbkBh4Dp3Kt0K5S3Nw/exec";
+    let state = { pins: { Dad: "1234", Linnea: "0000" }, balances: { checking: 0, savings: 0 }, rates: { checking: 0, savings: 0 }, autoDeposit: { checking: 0, savings: 0 }, history: [] };
 
-    let state = {
-        pins: { Dad: "1234", Linnea: "0000" },
-        balances: { checking: 0, savings: 0 },
-        rates: { checking: 0, savings: 0 },
-        autoDeposit: { checking: 0, savings: 0 },
-        history: []
-    };
-
-    function fmt(val) {
-        return "$" + (parseFloat(val) || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-    }
+    function fmt(val) { return "$" + (parseFloat(val) || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
 
     async function load() {
-        const status = document.getElementById('status-msg');
         try {
             const response = await fetch(API_URL);
             const data = await response.json();
-            if (data && data.pins) {
-                state = data;
-                status.innerText = "Vault Connected";
-                render();
-            }
-        } catch(e) { status.innerText = "Offline Mode"; }
+            if (data && data.pins) { state = data; document.getElementById('status-msg').innerText = "Connected"; render(); }
+        } catch(e) { document.getElementById('status-msg').innerText = "Offline Mode"; }
     }
 
     function render() {
         document.getElementById('checking-val').innerText = fmt(state.balances.checking);
         document.getElementById('savings-val').innerText = fmt(state.balances.savings);
+        document.getElementById('int-chk-display').innerText = state.rates.checking || 0;
+        document.getElementById('int-sav-display').innerText = state.rates.savings || 0;
+        document.getElementById('set-int-chk').value = state.rates.checking || 0;
+        document.getElementById('set-int-sav').value = state.rates.savings || 0;
         document.getElementById('auto-chk').value = (state.autoDeposit.checking || 0).toFixed(2);
         document.getElementById('auto-sav').value = (state.autoDeposit.savings || 0).toFixed(2);
     }
 
     function toggleHistory(show) {
-        const page = document.getElementById('history-page');
-        if (show) {
-            page.classList.remove('hidden');
-            renderHistory();
-        } else {
-            page.classList.add('hidden');
-        }
+        document.getElementById('history-page').classList.toggle('hidden', !show);
+        if (show) renderHistory();
     }
 
     function renderHistory() {
@@ -204,28 +190,21 @@
 
         if (sortVal === 'newest') logs = [...logs].reverse();
         else if (sortVal === 'high') logs.sort((a, b) => Math.abs(b.amt) - Math.abs(a.amt));
-        else if (sortVal === 'low') logs.sort((a, b) => Math.abs(a.amt) - Math.abs(b.amt));
 
-        list.innerHTML = logs.map(h => `
+        list.innerHTML = logs.map(h => {
+            const acct = h.note.includes('(Sav)') || h.note.includes('To Sav') ? 'SAV' : 'CHK';
+            return `
             <div class="ledger-row">
-                <div>
-                    <span class="time-label">${h.date}</span><span class="type-tag">${h.amt >= 0 ? 'Credit' : 'Debit'}</span><br>
-                    <strong>${h.user}</strong>: ${h.note}
-                </div>
-                <div class="${h.amt >= 0 ? 'amt-pos' : 'amt-neg'}">
-                    ${h.amt >= 0 ? '+' : ''}${fmt(Math.abs(h.amt))}
-                </div>
-            </div>
-        `).join('');
-        
-        if (logs.length === 0) list.innerHTML = "<p style='text-align:center; color:#999; margin-top:20px;'>No matching transactions found.</p>";
+                <div class="acct-tag">${acct}</div>
+                <div><span class="time-label">${h.date}</span><br><strong>${h.user}</strong>: ${h.note}</div>
+                <div class="${h.amt >= 0 ? 'amt-pos' : 'amt-neg'}">${h.amt >= 0 ? '+' : ''}${fmt(Math.abs(h.amt))}</div>
+            </div>`;
+        }).join('');
     }
 
     function record(user, note, amt) {
-        if (!state.history) state.history = [];
         const now = new Date();
-        const dateStr = now.toLocaleDateString(undefined, {month:'numeric', day:'numeric'}) + " " + 
-                        now.toLocaleTimeString(undefined, {hour:'numeric', minute:'2-digit'});
+        const dateStr = now.toLocaleDateString(undefined, {month:'numeric', day:'numeric'}) + " " + now.toLocaleTimeString(undefined, {hour:'numeric', minute:'2-digit'});
         state.history.push({ date: dateStr, user: user, note: note, amt: amt });
     }
 
@@ -236,44 +215,24 @@
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('main-interface').classList.remove('hidden');
             document.getElementById('welcome-msg').innerText = "Hello, " + u;
-            
-            // Explicitly show the common elements
-            document.getElementById('vault-btn').classList.remove('hidden');
-            
-            // Show user-specific controls
-            if (u === 'Dad') {
-                document.getElementById('dad-controls').classList.remove('hidden');
-                document.getElementById('linnea-controls').classList.add('hidden');
-            } else {
-                document.getElementById('linnea-controls').classList.remove('hidden');
-                document.getElementById('dad-controls').classList.add('hidden');
-            }
+            document.getElementById(u === 'Dad' ? 'dad-controls' : 'linnea-controls').classList.remove('hidden');
             render();
         } else { alert("Incorrect PIN"); }
     }
 
     async function sync(action) {
         render();
-        try {
-            await fetch(API_URL, { 
-                method: 'POST', 
-                mode: 'no-cors', 
-                body: JSON.stringify({ ...state, lastAction: action }) 
-            });
-        } catch(e) { console.error("Sync Error"); }
+        try { await fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ ...state, lastAction: action }) }); } catch(e) {}
     }
 
     function multiInstantAdjust() {
         const c = parseFloat(document.getElementById('instant-chk').value) || 0;
         const s = parseFloat(document.getElementById('instant-sav').value) || 0;
         const n = document.getElementById('dad-note').value.trim();
-        if (c === 0 && s === 0) { alert("Enter an amount!"); return; }
-        if (!n) { alert("Comment Required!"); return; }
+        if (c === 0 && s === 0 || !n) { alert("Amount and Comment Required!"); return; }
         if (c !== 0) { state.balances.checking += c; record("Dad", n + " (Chk)", c); }
         if (s !== 0) { state.balances.savings += s; record("Dad", n + " (Sav)", s); }
-        document.getElementById('instant-chk').value = '';
-        document.getElementById('instant-sav').value = '';
-        document.getElementById('dad-note').value = '';
+        document.getElementById('instant-chk').value = ''; document.getElementById('instant-sav').value = ''; document.getElementById('dad-note').value = '';
         sync("Adjustment");
     }
 
@@ -283,29 +242,46 @@
         sync("Settings"); alert("Allowance Saved!");
     }
 
+    function saveRatesOnly() {
+        state.rates.checking = parseFloat(document.getElementById('set-int-chk').value) || 0;
+        state.rates.savings = parseFloat(document.getElementById('set-int-sav').value) || 0;
+        sync("Rates"); alert("Rates Saved!");
+    }
+
+    function applyInterestNow() {
+        const cE = state.balances.checking * (state.rates.checking / 100 / 12);
+        const sE = state.balances.savings * (state.rates.savings / 100 / 12);
+        state.balances.checking += cE; state.balances.savings += sE;
+        record("Bank", "Interest (Chk)", cE); record("Bank", "Interest (Sav)", sE);
+        sync("Interest"); alert("Interest Applied!");
+    }
+
     function transferToSavings() {
         const a = parseFloat(document.getElementById('trans-amt').value);
         const n = document.getElementById('trans-note').value.trim();
-        if (!n) { alert("Comment Required!"); return; }
-        if (a > 0 && state.balances.checking >= a) {
-            state.balances.checking -= a; state.balances.savings += a;
-            record("Linnea", "To Sav: " + n, -a);
-            document.getElementById('trans-amt').value = '';
-            document.getElementById('trans-note').value = '';
-            sync("Transfer");
-        } else { alert("Insufficient funds"); }
+        if (!n || a <= 0 || state.balances.checking < a) { alert("Check amount, comment, and funds!"); return; }
+        state.balances.checking -= a; state.balances.savings += a;
+        record("Linnea", "To Sav: " + n, -a);
+        document.getElementById('trans-amt').value = ''; document.getElementById('trans-note').value = '';
+        sync("Transfer");
     }
 
     function withdraw() {
         const a = parseFloat(document.getElementById('trans-amt').value);
         const n = document.getElementById('trans-note').value.trim();
-        if (!n) { alert("Comment Required!"); return; }
-        if (a > 0 && state.balances.checking >= a) {
-            state.balances.checking -= a; record("Linnea", n, -a);
-            document.getElementById('trans-amt').value = '';
-            document.getElementById('trans-note').value = '';
-            sync("Withdrawal");
-        } else { alert("Insufficient funds"); }
+        if (!n || a <= 0 || state.balances.checking < a) { alert("Check amount, comment, and funds!"); return; }
+        state.balances.checking -= a; record("Linnea", n, -a);
+        document.getElementById('trans-amt').value = ''; document.getElementById('trans-note').value = '';
+        sync("Withdrawal");
+    }
+
+    function changePinPrompt(u) {
+        const p = prompt("New 4-digit PIN:");
+        if (p && p.length === 4) { state.pins[u] = p; sync("PIN Change"); alert("PIN Updated!"); }
+    }
+
+    function adminResetPin() {
+        state.pins.Linnea = "0000"; sync("Reset"); alert("Linnea reset to 0000");
     }
 
     load();
