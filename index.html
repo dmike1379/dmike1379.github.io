@@ -15,15 +15,15 @@
         .container { background: white; padding: 1.5rem; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 450px; position: relative; overflow: hidden; }
         .hidden { display: none !important; }
         
-        /* Branding Assets */
-        .header-banner { width: calc(100% + 3rem); margin: -1.5rem -1.5rem 15px -1.5rem; display: block; }
+        /* BRANDING */
+        .header-banner { width: calc(100% + 3rem); margin: -1.5rem -1.5rem 15px -1.5rem; display: block; border-bottom: 2px solid #eee; }
         .logo-container { text-align: center; margin-bottom: 15px; }
         .bank-logo { width: 100px; height: auto; margin: 0 auto; display: block; }
         
         h2, h3 { color: #333; text-align: center; margin-top: 0; }
-        .balance-card { background: #f0f4f8; padding: 12px; border-radius: 10px; margin-bottom: 8px; text-align: center; }
+        .balance-card { background: #f0f4f8; padding: 12px; border-radius: 10px; margin-bottom: 8px; text-align: center; border: 1px solid #e1e8ed; }
         .balance-amt { font-size: 1.6rem; font-weight: bold; color: var(--primary); }
-        .rate-badge { font-size: 0.7rem; color: #7f8c8d; font-weight: bold; }
+        .rate-badge { font-size: 0.7rem; color: #7f8c8d; font-weight: bold; margin-top: 4px; }
         
         input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; font-size: 16px; outline: none; background: white; }
         button { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; font-size: 16px; transition: transform 0.1s; }
@@ -40,25 +40,27 @@
         .col { flex: 1; }
         label { font-size: 0.7rem; color: #666; font-weight: bold; display: block; margin-bottom: 2px; text-transform: uppercase; }
         
-        /* History Vault */
-        #history-page { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 100; padding: 15px; overflow-y: auto; }
+        /* VAULT OVERLAY */
+        #history-page { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 1000; padding: 15px; overflow-y: auto; }
         .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #f9f9f9; padding: 10px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #eee; }
-        .filter-grid select { margin-bottom: 0; font-size: 12px; padding: 8px; height: 35px; }
+        .filter-grid select { margin-bottom: 0; font-size: 11px; padding: 6px; height: 35px; }
+        
+        /* 3-COLUMN LEDGER */
         .ledger-row { display: grid; grid-template-columns: 55px 1fr 85px; gap: 10px; padding: 12px 0; border-bottom: 1px solid #f2f2f2; font-size: 0.75rem; align-items: center; }
-        .acct-tag { font-weight: bold; text-align: center; background: #dfe6e9; border-radius: 4px; padding: 4px; font-size: 9px; }
+        .acct-tag { font-weight: bold; text-align: center; background: #dfe6e9; border-radius: 4px; padding: 4px; font-size: 9px; color: #2d3436; }
         .amt-pos { color: #2ecc71; font-weight: bold; text-align: right; }
         .amt-neg { color: #e74c3c; font-weight: bold; text-align: right; }
-        .time-label { color: #aaa; font-size: 0.65rem; }
+        .time-label { color: #aaa; font-size: 0.6rem; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <img src="images/banner.png" class="header-banner" alt="Banner" onerror="this.style.display='none'">
+    <img src="images/banner.png" class="header-banner" alt="Family Bank Banner" onerror="this.style.display='none'">
 
     <div id="login-screen">
         <div class="logo-container">
-            <img src="images/logo.png" class="bank-logo" alt="Family Bank Logo" onerror="this.style.display='none'">
+            <img src="images/logo.png" class="bank-logo" alt="Bank Logo" onerror="this.style.display='none'">
             <h2>Family Bank</h2>
         </div>
         <select id="user-select">
@@ -67,7 +69,7 @@
         </select>
         <input type="password" id="pin-input" placeholder="Enter PIN" maxlength="4" inputmode="numeric">
         <button class="btn-primary" onclick="attemptLogin()">Login</button>
-        <p id="status-msg" style="text-align:center; font-size:10px; color:#999; margin-top:10px;">Connecting...</p>
+        <p id="status-msg" style="text-align:center; font-size:10px; color:#999; margin-top:10px;">Initializing...</p>
     </div>
 
     <div id="main-interface" class="hidden">
@@ -79,12 +81,12 @@
         <div class="balance-card">
             <small>Checking Balance</small>
             <div class="balance-amt" id="checking-val">$0.00</div>
-            <div class="rate-badge">Annual Rate: <span id="int-chk-display">0</span>%</div>
+            <div class="rate-badge">Rate: <span id="int-chk-display">0</span>%</div>
         </div>
         <div class="balance-card">
             <small>Savings Balance</small>
             <div class="balance-amt" id="savings-val">$0.00</div>
-            <div class="rate-badge">Annual Rate: <span id="int-sav-display">0</span>%</div>
+            <div class="rate-badge">Rate: <span id="int-sav-display">0</span>%</div>
         </div>
 
         <button class="btn-history" onclick="toggleHistory(true)">📜 View Full History Vault</button>
@@ -137,7 +139,7 @@
 </div>
 
 <div id="history-page" class="hidden">
-    <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom:10px;">
+    <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom:10px; border-bottom: 2px solid #eee; padding-bottom:10px;">
         <h3 style="margin:0;">Transaction Vault</h3>
         <button class="btn-logout" style="background:#ff7675; color:white; padding:5px 12px;" onclick="toggleHistory(false)">Close</button>
     </div>
@@ -147,13 +149,13 @@
             <select id="sort-by" onchange="renderHistory()"><option value="newest">Newest</option><option value="high">Highest $</option></select>
         </div>
         <div class="col"><label>User</label>
-            <select id="filter-user" onchange="renderHistory()"><option value="all">All Users</option><option value="Dad">Dad</option><option value="Linnea">Linnea</option></select>
+            <select id="filter-user" onchange="renderHistory()"><option value="all">Everyone</option><option value="Dad">Dad</option><option value="Linnea">Linnea</option></select>
         </div>
         <div class="col"><label>Account</label>
-            <select id="filter-acct" onchange="renderHistory()"><option value="all">Both</option><option value="Chk">Checking</option><option value="Sav">Savings</option></select>
+            <select id="filter-acct" onchange="renderHistory()"><option value="all">All Accts</option><option value="Chk">Checking</option><option value="Sav">Savings</option></select>
         </div>
         <div class="col"><label>Type</label>
-            <select id="filter-type" onchange="renderHistory()"><option value="all">All</option><option value="credit">Credit</option><option value="debit">Debit</option></select>
+            <select id="filter-type" onchange="renderHistory()"><option value="all">All Types</option><option value="credit">Income</option><option value="debit">Spent</option></select>
         </div>
     </div>
 
@@ -170,8 +172,8 @@
         try {
             const response = await fetch(API_URL);
             const data = await response.json();
-            if (data && data.pins) { state = data; document.getElementById('status-msg').innerText = "Connected"; render(); }
-        } catch(e) { document.getElementById('status-msg').innerText = "Offline Mode"; }
+            if (data && data.pins) { state = data; document.getElementById('status-msg').innerText = "System Ready"; render(); }
+        } catch(e) { document.getElementById('status-msg').innerText = "Cloud Connection Error"; }
     }
 
     function render() {
@@ -197,7 +199,7 @@
         const acctFilter = document.getElementById('filter-acct').value;
         const typeFilter = document.getElementById('filter-type').value;
 
-        let logs = state.history.filter(h => {
+        let logs = (state.history || []).filter(h => {
             const matchUser = userFilter === 'all' || h.user === userFilter;
             const matchAcct = acctFilter === 'all' || (h.note && h.note.includes(`(${acctFilter})`)) || (h.note && h.note.includes(`To ${acctFilter}`));
             const matchType = typeFilter === 'all' || (typeFilter === 'credit' ? h.amt >= 0 : h.amt < 0);
@@ -221,6 +223,7 @@
     function record(user, note, amt) {
         const now = new Date();
         const dateStr = now.toLocaleDateString(undefined, {month:'numeric', day:'numeric'}) + " " + now.toLocaleTimeString(undefined, {hour:'numeric', minute:'2-digit'});
+        if(!state.history) state.history = [];
         state.history.push({ date: dateStr, user: user, note: note, amt: amt });
     }
 
@@ -245,7 +248,7 @@
         const c = parseFloat(document.getElementById('instant-chk').value) || 0;
         const s = parseFloat(document.getElementById('instant-sav').value) || 0;
         const n = document.getElementById('dad-note').value.trim();
-        if ((c === 0 && s === 0) || !n) { alert("Amount and Comment Required!"); return; }
+        if ((c === 0 && s === 0) || !n) { alert("Enter amount and a reason!"); return; }
         if (c !== 0) { state.balances.checking += c; record("Dad", n + " (Chk)", c); }
         if (s !== 0) { state.balances.savings += s; record("Dad", n + " (Sav)", s); }
         document.getElementById('instant-chk').value = ''; document.getElementById('instant-sav').value = ''; document.getElementById('dad-note').value = '';
@@ -255,13 +258,13 @@
     function updateAutoDeposit() {
         state.autoDeposit.checking = parseFloat(document.getElementById('auto-chk').value) || 0;
         state.autoDeposit.savings = parseFloat(document.getElementById('auto-sav').value) || 0;
-        sync("Settings"); alert("Allowance Saved!");
+        sync("Allowance Update"); alert("Allowance rates updated.");
     }
 
     function saveRatesOnly() {
         state.rates.checking = parseFloat(document.getElementById('set-int-chk').value) || 0;
         state.rates.savings = parseFloat(document.getElementById('set-int-sav').value) || 0;
-        sync("Rates"); alert("Rates Saved!");
+        sync("Rates Update"); alert("Interest rates saved.");
     }
 
     function applyInterestNow() {
@@ -269,13 +272,13 @@
         const sE = state.balances.savings * (state.rates.savings / 100 / 12);
         state.balances.checking += cE; state.balances.savings += sE;
         record("Bank", "Interest (Chk)", cE); record("Bank", "Interest (Sav)", sE);
-        sync("Interest"); alert("Interest Applied!");
+        sync("Interest Run"); alert("One month of interest added.");
     }
 
     function transferToSavings() {
         const a = parseFloat(document.getElementById('trans-amt').value);
         const n = document.getElementById('trans-note').value.trim();
-        if (!n || a <= 0 || state.balances.checking < a) { alert("Check amount, comment, and funds!"); return; }
+        if (!n || a <= 0 || state.balances.checking < a) { alert("Check your balance and provide a note!"); return; }
         state.balances.checking -= a; state.balances.savings += a;
         record("Linnea", "To Sav: " + n, -a);
         document.getElementById('trans-amt').value = ''; document.getElementById('trans-note').value = '';
@@ -285,19 +288,19 @@
     function withdraw() {
         const a = parseFloat(document.getElementById('trans-amt').value);
         const n = document.getElementById('trans-note').value.trim();
-        if (!n || a <= 0 || state.balances.checking < a) { alert("Check amount, comment, and funds!"); return; }
+        if (!n || a <= 0 || state.balances.checking < a) { alert("Check your balance and provide a note!"); return; }
         state.balances.checking -= a; record("Linnea", n, -a);
         document.getElementById('trans-amt').value = ''; document.getElementById('trans-note').value = '';
         sync("Withdrawal");
     }
 
     function changePinPrompt(u) {
-        const p = prompt("New 4-digit PIN:");
-        if (p && p.length === 4) { state.pins[u] = p; sync("PIN Change"); alert("PIN Updated!"); }
+        const p = prompt("Enter a new 4-digit PIN:");
+        if (p && p.length === 4) { state.pins[u] = p; sync("PIN Update"); alert("PIN successfully changed."); }
     }
 
     function adminResetPin() {
-        state.pins.Linnea = "0000"; sync("Reset"); alert("Linnea reset to 0000");
+        state.pins.Linnea = "0000"; sync("PIN Reset"); alert("Linnea's PIN reset to 0000");
     }
 
     load();
