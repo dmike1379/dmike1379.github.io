@@ -735,7 +735,7 @@
         <!-- Pending approvals section — injected by renderParentChores() -->
         <div id="parent-chore-approvals"></div>
 
-        <h3>➕ Create New Chore</h3>
+        <h3 id="chore-form-title">➕ Create New Chore</h3>
 
         <label class="field-label">Chore Name</label>
         <input type="text" id="chore-name" placeholder="e.g. Vacuum living room">
@@ -802,7 +802,15 @@
         </div>
 
         <div class="field-msg" id="chore-form-msg"></div>
-        <button class="btn btn-secondary" onclick="createChore()">✅ Add Chore</button>
+        <div class="row" style="gap:8px;">
+          <button class="btn btn-secondary" id="chore-submit-btn" onclick="createChore()" style="flex:1;">
+            ✅ Add Chore
+          </button>
+          <button class="btn btn-ghost btn-sm hidden" id="chore-cancel-edit-btn"
+                  onclick="cancelChoreEdit()" style="flex-shrink:0; padding:13px 16px;">
+            Cancel
+          </button>
+        </div>
 
         <div class="section-block">
           <h3>All Chores</h3>
@@ -1151,6 +1159,7 @@ let state = {
 
 let currentUser = null;   // e.g. "Linnea"
 let currentRole = null;   // "child" | "parent"
+let editingChoreId = null; // set when editing an existing chore, null when creating
 
 // Transactions queued to send on the next sync POST
 let pendingTransactions = [];
@@ -1901,7 +1910,8 @@ function scheduleLabel(sched, monthlyDay) {
   return labels[sched] || ("Monthly, day " + monthlyDay);
 }
 
-/** Create a new chore from the parent form and add it to state */
+/** Create a new chore OR save edits to an existing one.
+ *  Behaviour depends on whether editingChoreId is set. */
 function createChore() {
   const msgEl = document.getElementById("chore-form-msg");
   msgEl.className = "field-msg";
@@ -1925,21 +1935,42 @@ function createChore() {
     msgEl.className = "field-msg error"; msgEl.textContent = "Enter a valid reward amount."; return;
   }
 
-  const chore = {
-    id:           "chore_" + Date.now(),
-    name, desc, amount, schedule, monthlyDay, splitChk, childChooses, paused, endDate,
-    status:       "available",
-    completedBy:  null,
-    completedAt:  null,
-    denialNote:   null,
-    createdAt:    fmtDate(new Date())
-  };
+  if (editingChoreId) {
+    // ── EDIT MODE: update the existing chore in place ──────────
+    const existing = state.chores.find(c => c.id === editingChoreId);
+    if (existing) {
+      // Update all editable fields — preserve status, completedBy, etc.
+      existing.name         = name;
+      existing.desc         = desc;
+      existing.amount       = amount;
+      existing.schedule     = schedule;
+      existing.monthlyDay   = monthlyDay;
+      existing.splitChk     = splitChk;
+      existing.childChooses = childChooses;
+      existing.paused       = paused;
+      existing.endDate      = endDate;
+    }
+    editingChoreId = null;
+    setChoreFormMode("create");
+    syncToCloud("Chore Edited");
+    showToast("Chore updated! ✏️", "success");
+  } else {
+    // ── CREATE MODE: add a new chore ───────────────────────────
+    const chore = {
+      id:           "chore_" + Date.now(),
+      name, desc, amount, schedule, monthlyDay, splitChk, childChooses, paused, endDate,
+      status:       "available",
+      completedBy:  null,
+      completedAt:  null,
+      denialNote:   null,
+      createdAt:    fmtDate(new Date())
+    };
+    state.chores.push(chore);
+    syncToCloud("Chore Created");
+    showToast("\"" + name + "\" added!", "success");
+  }
 
-  state.chores.push(chore);
-  syncToCloud("Chore Created");
-  showToast("\"" + name + "\" added!", "success");
-
-  // Reset the form
+  // Reset the form back to create mode
   ["chore-name","chore-desc","chore-amount","chore-end-date"].forEach(id => {
     document.getElementById(id).value = "";
   });
@@ -1949,6 +1980,7 @@ function createChore() {
   document.getElementById("chore-paused").checked = false;
   document.getElementById("chore-monthly-wrap").classList.add("hidden");
   updateSplitLabel();
+  setChoreFormMode("create");
 
   renderParentChores();
   renderChildChores();
@@ -2179,7 +2211,8 @@ function renderParentChores() {
         ${c.endDate ? "<br>⏰ Ends: " + c.endDate : ""}
         ${c.desc ? "<br>📝 " + c.desc : ""}
       </div>
-      <div class="row" style="gap:8px; margin-top:4px;">
+      <div class="row" style="gap:8px; margin-top:4px; flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm" onclick="editChore('${c.id}')">✏️ Edit</button>
         <button class="btn btn-ghost btn-sm" onclick="togglePauseChore('${c.id}')">
           ${c.paused ? "▶️ Resume" : "⏸️ Pause"}
         </button>
@@ -2269,6 +2302,84 @@ function denyChore(choreId) {
     }
   });
 }
+
+/**
+ * Pre-fill the chore form with an existing chore's values for editing.
+ * Scrolls the form into view and switches the button to "Save Changes".
+ */
+function editChore(choreId) {
+  const chore = state.chores.find(c => c.id === choreId);
+  if (!chore) return;
+
+  editingChoreId = choreId;
+
+  // Populate all form fields with existing values
+  document.getElementById("chore-name").value         = chore.name         || "";
+  document.getElementById("chore-desc").value         = chore.desc         || "";
+  document.getElementById("chore-amount").value       = chore.amount       || "";
+  document.getElementById("chore-schedule").value     = chore.schedule     || "once";
+  document.getElementById("chore-split").value        = chore.splitChk !== undefined ? chore.splitChk : 100;
+  document.getElementById("chore-child-chooses").checked = !!chore.childChooses;
+  document.getElementById("chore-paused").checked        = !!chore.paused;
+  document.getElementById("chore-end-date").value     = chore.endDate      || "";
+
+  // Show/hide the monthly day picker
+  toggleMonthlyDay();
+  if (chore.schedule === "monthly" && chore.monthlyDay) {
+    document.getElementById("chore-monthly-day").value = chore.monthlyDay;
+  }
+
+  // Update the split labels to match loaded values
+  updateSplitLabel();
+
+  // Switch form into edit mode UI
+  setChoreFormMode("edit", chore.name);
+
+  // Switch to chores tab and scroll form into view
+  switchTab("parent", "chores");
+  const formTitle = document.getElementById("chore-form-title");
+  if (formTitle) formTitle.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  showToast("Editing "" + chore.name + "" — make changes and tap Save.", "info", 4000);
+}
+
+/** Cancel editing and reset form back to create mode */
+function cancelChoreEdit() {
+  editingChoreId = null;
+  setChoreFormMode("create");
+  // Clear the form
+  ["chore-name","chore-desc","chore-amount","chore-end-date"].forEach(id => {
+    document.getElementById(id).value = "";
+  });
+  document.getElementById("chore-schedule").value = "once";
+  document.getElementById("chore-split").value = 100;
+  document.getElementById("chore-child-chooses").checked = false;
+  document.getElementById("chore-paused").checked = false;
+  document.getElementById("chore-monthly-wrap").classList.add("hidden");
+  updateSplitLabel();
+}
+
+/**
+ * Switch the chore form UI between create and edit modes.
+ * @param {"create"|"edit"} mode
+ * @param {string} choreName — used in edit mode title
+ */
+function setChoreFormMode(mode, choreName) {
+  const title     = document.getElementById("chore-form-title");
+  const submitBtn = document.getElementById("chore-submit-btn");
+  const cancelBtn = document.getElementById("chore-cancel-edit-btn");
+
+  if (mode === "edit") {
+    if (title)     title.textContent     = "✏️ Editing: " + (choreName || "Chore");
+    if (submitBtn) submitBtn.textContent = "💾 Save Changes";
+    if (cancelBtn) cancelBtn.classList.remove("hidden");
+  } else {
+    if (title)     title.textContent     = "➕ Create New Chore";
+    if (submitBtn) submitBtn.textContent = "✅ Add Chore";
+    if (cancelBtn) cancelBtn.classList.add("hidden");
+  }
+}
+
 
 /** Toggle a chore's paused state */
 function togglePauseChore(choreId) {
