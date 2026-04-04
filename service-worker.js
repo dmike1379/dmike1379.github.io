@@ -9,7 +9,7 @@
  * loading screen appears instantly even on slow connections.
  */
 
-const CACHE_NAME = 'family-bank-v2';
+const CACHE_NAME = 'family-bank-v3';
 
 const SHELL_FILES = [
   '/dfb.github.io/',
