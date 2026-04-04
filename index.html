@@ -982,7 +982,7 @@
  * ▼ REQUIRED: Update this URL every time you redeploy the Apps Script.
  *   Go to Apps Script → Deploy → Manage Deployments → copy Web App URL.
  */
-const API_URL = "https://script.google.com/macros/s/AKfycbwDsSqUhchiRHNOKYrlxK9cMN4FhvIUZm5NygY3wIFSPFFNmOHtxsuosIsiVNoL8GHk/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyRhQhQImqox0AGUKdgQCKyg_dC2kkfIFUAxq3izc1x5zzuvOIYfly4eFSzfr9VX99JpA/exec";
 
 /**
  * Default branding and settings.
@@ -1164,8 +1164,9 @@ function openInputModal(opts) {
 
   document.getElementById("modal-btns").querySelector(".btn-ghost").style.display = "";
 
-  modalCallback = () => {
-    const val = document.getElementById("modal-dynamic-input")?.value || "";
+  // For input modals, fireModalConfirm() passes the captured value as the argument
+  modalCallback = (capturedVal) => {
+    const val = capturedVal !== null && capturedVal !== undefined ? capturedVal : "";
     if (opts.onConfirm) opts.onConfirm(val);
   };
 
@@ -1181,8 +1182,12 @@ function closeModal() {
 
 /** Called when the Confirm button is clicked */
 function fireModalConfirm() {
+  // Read input value BEFORE closeModal() nulls the callback
+  const inputEl = document.getElementById("modal-dynamic-input");
+  const inputVal = inputEl ? inputEl.value : null;
+  const cb = modalCallback;
   closeModal();
-  if (typeof modalCallback === "function") modalCallback();
+  if (typeof cb === "function") cb(inputVal);
 }
 
 /** Close modal if user taps outside the modal box */
