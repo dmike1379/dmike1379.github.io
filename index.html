@@ -366,7 +366,7 @@
         <div class="row">
           <div class="col"><label class="field-label">Reward $</label><input type="number" id="chore-amount" step="0.01" min="0.01" placeholder="5.00"></div>
           <div class="col"><label class="field-label">Schedule</label>
-            <select id="chore-schedule" onchange="toggleMonthlyDay()">
+            <select id="chore-schedule" onchange="onScheduleChange()">
               <option value="once">One-time</option>
               <option value="daily">Daily</option>
               <option value="weekly">Weekly</option>
@@ -375,6 +375,25 @@
             </select>
           </div>
         </div>
+        <!-- One-time: due date picker -->
+        <div id="chore-once-wrap" class="hidden">
+          <label class="field-label">Due Date</label>
+          <input type="date" id="chore-once-date">
+        </div>
+        <!-- Weekly / Bi-weekly: day of week picker -->
+        <div id="chore-weekday-wrap" class="hidden">
+          <label class="field-label" id="chore-weekday-label">Due Day of Week</label>
+          <select id="chore-weekday">
+            <option value="0">Sunday</option>
+            <option value="1">Monday</option>
+            <option value="2">Tuesday</option>
+            <option value="3">Wednesday</option>
+            <option value="4">Thursday</option>
+            <option value="5">Friday</option>
+            <option value="6">Saturday</option>
+          </select>
+        </div>
+        <!-- Monthly: day of month picker -->
         <div id="chore-monthly-wrap" class="hidden">
           <label class="field-label">Day of Month</label>
           <select id="chore-monthly-day"></select>
@@ -391,7 +410,7 @@
           <label for="chore-child-chooses" style="font-size:.8rem;color:var(--muted);font-weight:500;margin:0;cursor:pointer;">Let child choose their own split</label>
         </div>
         <div class="row">
-          <div class="col"><label class="field-label">End Date (optional)</label><input type="date" id="chore-end-date"></div>
+          <div class="col" id="chore-enddate-col"><label class="field-label">End Date (optional)</label><input type="date" id="chore-end-date"></div>
           <div class="col" style="display:flex;align-items:flex-end;padding-bottom:10px;">
             <div style="display:flex;align-items:center;gap:8px;">
               <input type="checkbox" id="chore-paused">
@@ -1011,19 +1030,60 @@ function setChoreFilter(f){
 }
 
 function isDueToday(chore){
-  if(chore.schedule==="daily"||chore.schedule==="once") return true;
-  if(chore.schedule==="weekly"){const created=new Date(chore.createdAt||Date.now());return new Date().getDay()===created.getDay();}
-  if(chore.schedule==="biweekly"){const created=new Date(chore.createdAt||Date.now());const diff=Math.floor((Date.now()-created.getTime())/(24*60*60*1000));return diff%14===0;}
-  if(chore.schedule==="monthly"){return new Date().getDate()===parseInt(chore.monthlyDay||1);}
+  const now=new Date();
+  if(chore.schedule==="daily") return true;
+  if(chore.schedule==="once"){
+    if(!chore.onceDate) return true; // no due date = always show
+    return chore.onceDate===todayStr();
+  }
+  if(chore.schedule==="weekly"){
+    const target=chore.weekday!==undefined?parseInt(chore.weekday):new Date(chore.createdAt||Date.now()).getDay();
+    return now.getDay()===target;
+  }
+  if(chore.schedule==="biweekly"){
+    const target=chore.weekday!==undefined?parseInt(chore.weekday):new Date(chore.createdAt||Date.now()).getDay();
+    if(now.getDay()!==target) return false;
+    const created=new Date(chore.createdAt||Date.now());
+    const weeksDiff=Math.floor((Date.now()-created.getTime())/(7*24*60*60*1000));
+    return weeksDiff%2===0;
+  }
+  if(chore.schedule==="monthly"){
+    const target=resolveMonthlyDay(chore.monthlyDay||"1",now.getFullYear(),now.getMonth());
+    return now.getDate()===target;
+  }
   return false;
 }
 
 function isDueThisWeek(chore){
   if(isDueToday(chore)) return true;
-  if(chore.schedule==="daily"||chore.schedule==="once") return true;
-  if(chore.schedule==="weekly"){const created=new Date(chore.createdAt||Date.now());const diff=(created.getDay()-new Date().getDay()+7)%7;return diff<=6;}
-  if(chore.schedule==="biweekly"){const created=new Date(chore.createdAt||Date.now());const days=Math.floor((Date.now()-created.getTime())/(24*60*60*1000));return (14-(days%14))<=7;}
-  if(chore.schedule==="monthly"){const day=parseInt(chore.monthlyDay||1);const today=new Date().getDate();const dim=new Date(new Date().getFullYear(),new Date().getMonth()+1,0).getDate();return ((day-today+dim)%dim)<=6;}
+  if(chore.schedule==="daily") return true;
+  if(chore.schedule==="once"){
+    if(!chore.onceDate) return true;
+    const due=new Date(chore.onceDate+"T00:00:00");
+    const diff=Math.floor((due.getTime()-new Date().setHours(0,0,0,0))/(24*60*60*1000));
+    return diff>=0&&diff<=6;
+  }
+  if(chore.schedule==="weekly"){
+    const target=chore.weekday!==undefined?parseInt(chore.weekday):new Date(chore.createdAt||Date.now()).getDay();
+    const today=new Date().getDay();
+    return ((target-today+7)%7)<=6;
+  }
+  if(chore.schedule==="biweekly"){
+    const target=chore.weekday!==undefined?parseInt(chore.weekday):new Date(chore.createdAt||Date.now()).getDay();
+    const today=new Date().getDay();
+    if(((target-today+7)%7)>6) return false;
+    // Also check if it falls in this 2-week window
+    const created=new Date(chore.createdAt||Date.now());
+    const days=Math.floor((Date.now()-created.getTime())/(24*60*60*1000));
+    return (14-(days%14))<=7;
+  }
+  if(chore.schedule==="monthly"){
+    const now=new Date();
+    const target=resolveMonthlyDay(chore.monthlyDay||"1",now.getFullYear(),now.getMonth());
+    const today=now.getDate();
+    const dim=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+    return ((target-today+dim)%dim)<=6;
+  }
   return false;
 }
 
@@ -1084,7 +1144,7 @@ function renderChoreTable(){
     if(choreFilter==="week")  return isDueThisWeek(c);
     return true;
   });
-  const schedLabel=s=>({once:"One-time",daily:"Daily",weekly:"Weekly",biweekly:"Bi-weekly",monthly:"Monthly"}[s]||s);
+  // scheduleLabel() handles all schedule display
   function dueBadge(c){
     if(isDueToday(c)) return `<span style="font-size:.6rem;font-weight:700;background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:10px;margin-left:5px;">Today</span>`;
     if(isDueThisWeek(c)) return `<span style="font-size:.6rem;font-weight:700;background:#dbeafe;color:#1d4ed8;padding:2px 6px;border-radius:10px;margin-left:5px;">This Week</span>`;
@@ -1107,7 +1167,7 @@ function renderChoreTable(){
               ${c.desc?`<div class="chore-desc-small">${c.desc}</div>`:""}
               ${c.childChooses?`<div class="chore-desc-small">💰 You choose the split</div>`:`<div class="chore-desc-small">💰 ${c.splitChk}% Checking / ${100-c.splitChk}% Savings</div>`}
             </td>
-            <td class="chore-schedule-cell">${schedLabel(c.schedule)}</td>
+            <td class="chore-schedule-cell">${scheduleLabel(c)}</td>
             <td class="chore-amount-cell" id="chore-amt-${c.id}">${fmt(c.amount)}</td>
           </tr>`).join("")}
       </tbody>
@@ -1179,10 +1239,68 @@ function dismissChoreNotif(choreId){
 // ================================================================
 // CHORES — PARENT VIEW
 // ================================================================
-function populateMonthlyDays(){const sel=document.getElementById("chore-monthly-day");if(!sel||sel.options.length>0)return;const sfx={1:"st",2:"nd",3:"rd"};for(let d=1;d<=28;d++){const o=document.createElement("option");o.value=d;o.textContent=d+(sfx[d]||"th")+" of the month";sel.appendChild(o);}}
-function toggleMonthlyDay(){document.getElementById("chore-monthly-wrap").classList.toggle("hidden",document.getElementById("chore-schedule").value!=="monthly");}
+function populateMonthlyDays(){
+  const sel=document.getElementById("chore-monthly-day");
+  if(!sel||sel.options.length>0)return;
+  const sfx={1:"st",2:"nd",3:"rd"};
+  for(let d=1;d<=28;d++){const o=document.createElement("option");o.value=String(d);o.textContent=d+(sfx[d]||"th")+" of the month";sel.appendChild(o);}
+  // End-of-month special values
+  [["last","Last day of month"],["last-1","2nd to last day"],["last-2","3rd to last day"]].forEach(([v,t])=>{
+    const o=document.createElement("option");o.value=v;o.textContent=t;sel.appendChild(o);
+  });
+}
+
+function onScheduleChange(){
+  const s=document.getElementById("chore-schedule").value;
+  // Show/hide each sub-field
+  document.getElementById("chore-once-wrap").classList.toggle("hidden",s!=="once");
+  document.getElementById("chore-weekday-wrap").classList.toggle("hidden",s!=="weekly"&&s!=="biweekly");
+  document.getElementById("chore-monthly-wrap").classList.toggle("hidden",s!=="monthly");
+  // Update weekday label
+  const wl=document.getElementById("chore-weekday-label");
+  if(wl) wl.textContent=s==="biweekly"?"Due Day (every other week)":"Due Day of Week";
+  // Hide end-date col for one-time (due date replaces it)
+  const ec=document.getElementById("chore-enddate-col");
+  if(ec) ec.classList.toggle("hidden",s==="once");
+}
+
 function updateSplitLabel(){const p=parseInt(document.getElementById("chore-split").value);document.getElementById("split-chk-label").textContent=p;document.getElementById("split-sav-label").textContent=100-p;}
-function scheduleLabel(s,d){return{once:"One-time",daily:"Daily",weekly:"Weekly",biweekly:"Bi-weekly"}[s]||("Monthly, day "+d);}
+
+// Human-readable schedule label for display in chore lists
+function scheduleLabel(chore){
+  const s=chore.schedule;
+  const days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const fullDays=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  if(s==="once"){
+    return chore.onceDate?"Due "+chore.onceDate:"One-time";
+  }
+  if(s==="daily") return "Daily";
+  if(s==="weekly"){
+    return "Weekly"+(chore.weekday!==undefined?" ("+fullDays[chore.weekday]+"s)":"");
+  }
+  if(s==="biweekly"){
+    return "Bi-weekly"+(chore.weekday!==undefined?" ("+fullDays[chore.weekday]+"s)":"");
+  }
+  if(s==="monthly"){
+    const d=chore.monthlyDay;
+    if(d==="last") return "Monthly (last day)";
+    if(d==="last-1") return "Monthly (2nd to last)";
+    if(d==="last-2") return "Monthly (3rd to last)";
+    const sfx={1:"st",2:"nd",3:"rd"};
+    const n=parseInt(d);
+    return "Monthly ("+n+(sfx[n]||"th")+")";
+  }
+  return s;
+}
+
+// Resolve "last", "last-1", "last-2" to actual date numbers for a given month
+function resolveMonthlyDay(monthlyDay, year, month){
+  const dim=new Date(year,month+1,0).getDate(); // days in month
+  if(monthlyDay==="last")   return dim;
+  if(monthlyDay==="last-1") return dim-1;
+  if(monthlyDay==="last-2") return dim-2;
+  return parseInt(monthlyDay)||1;
+}
 
 function createChore(){
   const msgEl=document.getElementById("chore-form-msg");msgEl.className="field-msg";
@@ -1194,33 +1312,48 @@ function createChore(){
   const childChooses=document.getElementById("chore-child-chooses").checked;
   const paused=document.getElementById("chore-paused").checked;
   const endDate=document.getElementById("chore-end-date").value||null;
-  const monthlyDay=schedule==="monthly"?parseInt(document.getElementById("chore-monthly-day").value):null;
+  const monthlyDay=schedule==="monthly"?document.getElementById("chore-monthly-day").value:null;
+  const weekday=(schedule==="weekly"||schedule==="biweekly")?parseInt(document.getElementById("chore-weekday").value):null;
+  const onceDate=schedule==="once"?document.getElementById("chore-once-date").value||null:null;
   if(!name){msgEl.className="field-msg error";msgEl.textContent="Chore name is required.";return;}
   if(!amount||amount<=0){msgEl.className="field-msg error";msgEl.textContent="Enter a valid reward amount.";return;}
   const data=getChildData(activeChild);
   if(editingChoreId){
     const ex=data.chores.find(c=>c.id===editingChoreId);
-    if(ex)Object.assign(ex,{name,desc,amount,schedule,monthlyDay,splitChk,childChooses,paused,endDate});
+    if(ex)Object.assign(ex,{name,desc,amount,schedule,monthlyDay,weekday,onceDate,splitChk,childChooses,paused,endDate});
     editingChoreId=null;setChoreFormMode("create");syncToCloud("Chore Edited");showToast("Chore updated! ✏️","success");
   }else{
-    data.chores.push({id:"chore_"+Date.now(),name,desc,amount,schedule,monthlyDay,splitChk,childChooses,paused,endDate,status:"available",completedBy:null,completedAt:null,denialNote:null,createdAt:fmtDate(new Date())});
+    data.chores.push({id:"chore_"+Date.now(),name,desc,amount,schedule,monthlyDay,weekday,onceDate,splitChk,childChooses,paused,endDate,status:"available",completedBy:null,completedAt:null,denialNote:null,createdAt:fmtDate(new Date())});
     syncToCloud("Chore Created");showToast('"'+name+'" added! 📋',"success");
   }
-  ["chore-name","chore-desc","chore-amount","chore-end-date"].forEach(id=>document.getElementById(id).value="");
+  ["chore-name","chore-desc","chore-amount","chore-end-date","chore-once-date"].forEach(id=>document.getElementById(id).value="");
   document.getElementById("chore-schedule").value="once";
   document.getElementById("chore-split").value=100;
   document.getElementById("chore-child-chooses").checked=false;
   document.getElementById("chore-paused").checked=false;
   document.getElementById("chore-monthly-wrap").classList.add("hidden");
-  updateSplitLabel();setChoreFormMode("create");
+  document.getElementById("chore-weekday-wrap").classList.add("hidden");
+  document.getElementById("chore-once-wrap").classList.remove("hidden");
+  document.getElementById("chore-enddate-col").classList.add("hidden");
+  updateSplitLabel();setChoreFormMode("create");onScheduleChange();
   renderParentChores();renderChildChores();updateChoreBadges();
 }
 
 function editChore(choreId){
   const data=getChildData(activeChild);const chore=data.chores.find(c=>c.id===choreId);if(!chore)return;
   editingChoreId=choreId;
-  document.getElementById("chore-name").value=chore.name||"";document.getElementById("chore-desc").value=chore.desc||"";document.getElementById("chore-amount").value=chore.amount||"";document.getElementById("chore-schedule").value=chore.schedule||"once";document.getElementById("chore-split").value=chore.splitChk!==undefined?chore.splitChk:100;document.getElementById("chore-child-chooses").checked=!!chore.childChooses;document.getElementById("chore-paused").checked=!!chore.paused;document.getElementById("chore-end-date").value=chore.endDate||"";
-  toggleMonthlyDay();if(chore.schedule==="monthly"&&chore.monthlyDay)document.getElementById("chore-monthly-day").value=chore.monthlyDay;
+  document.getElementById("chore-name").value=chore.name||"";
+  document.getElementById("chore-desc").value=chore.desc||"";
+  document.getElementById("chore-amount").value=chore.amount||"";
+  document.getElementById("chore-schedule").value=chore.schedule||"once";
+  document.getElementById("chore-split").value=chore.splitChk!==undefined?chore.splitChk:100;
+  document.getElementById("chore-child-chooses").checked=!!chore.childChooses;
+  document.getElementById("chore-paused").checked=!!chore.paused;
+  document.getElementById("chore-end-date").value=chore.endDate||"";
+  document.getElementById("chore-once-date").value=chore.onceDate||"";
+  onScheduleChange();
+  if(chore.schedule==="monthly"&&chore.monthlyDay)document.getElementById("chore-monthly-day").value=chore.monthlyDay;
+  if((chore.schedule==="weekly"||chore.schedule==="biweekly")&&chore.weekday!==undefined)document.getElementById("chore-weekday").value=String(chore.weekday);
   updateSplitLabel();setChoreFormMode("edit",chore.name);switchTab("parent","chores");
   document.getElementById("chore-form-title").scrollIntoView({behavior:"smooth",block:"start"});
   showToast('Editing "'+chore.name+'" — make changes and tap Save.',"info",4000);
@@ -1228,8 +1361,16 @@ function editChore(choreId){
 
 function cancelChoreEdit(){
   editingChoreId=null;setChoreFormMode("create");
-  ["chore-name","chore-desc","chore-amount","chore-end-date"].forEach(id=>document.getElementById(id).value="");
-  document.getElementById("chore-schedule").value="once";document.getElementById("chore-split").value=100;document.getElementById("chore-child-chooses").checked=false;document.getElementById("chore-paused").checked=false;document.getElementById("chore-monthly-wrap").classList.add("hidden");updateSplitLabel();
+  ["chore-name","chore-desc","chore-amount","chore-end-date","chore-once-date"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("chore-schedule").value="once";
+  document.getElementById("chore-split").value=100;
+  document.getElementById("chore-child-chooses").checked=false;
+  document.getElementById("chore-paused").checked=false;
+  document.getElementById("chore-monthly-wrap").classList.add("hidden");
+  document.getElementById("chore-weekday-wrap").classList.add("hidden");
+  document.getElementById("chore-once-wrap").classList.remove("hidden");
+  document.getElementById("chore-enddate-col").classList.add("hidden");
+  onScheduleChange();updateSplitLabel();
 }
 function setChoreFormMode(mode,name){
   const t=document.getElementById("chore-form-title"),sb=document.getElementById("chore-submit-btn"),cb=document.getElementById("chore-cancel-edit-btn");
@@ -1261,7 +1402,7 @@ function renderParentChores(){
     const badge=c.paused?'<span class="status-badge badge-paused">Paused</span>':c.status==="pending"?'<span class="status-badge badge-pending">Awaiting Approval</span>':'<span class="status-badge badge-available">Active</span>';
     return `<div class="chore-card">
       <div class="chore-card-header"><span class="chore-card-name">${c.name}</span><span class="chore-card-amount">${fmt(c.amount)}</span></div>
-      <div class="chore-card-meta">${badge} 📅 ${scheduleLabel(c.schedule,c.monthlyDay)}<br>💰 ${c.splitChk}% Chk / ${100-c.splitChk}% Sav${c.childChooses?" (child chooses)":""}${c.endDate?"<br>⏰ Ends: "+c.endDate:""}${c.desc?"<br>📝 "+c.desc:""}</div>
+      <div class="chore-card-meta">${badge} 📅 ${scheduleLabel(c)}<br>💰 ${c.splitChk}% Chk / ${100-c.splitChk}% Sav${c.childChooses?" (child chooses)":""}${c.endDate?"<br>⏰ Ends: "+c.endDate:""}${c.desc?"<br>📝 "+c.desc:""}</div>
       <div class="row" style="gap:8px;margin-top:4px;flex-wrap:wrap;">
         <button class="btn btn-outline btn-sm" onclick="editChore('${c.id}')">✏️ Edit</button>
         <button class="btn btn-ghost btn-sm" onclick="togglePauseChore('${c.id}')">${c.paused?"▶️ Resume":"⏸️ Pause"}</button>
