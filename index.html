@@ -630,7 +630,7 @@
 // Paste your Web App URL here every time you redeploy Code.gs.
 // Get it from: Apps Script → Deploy → Manage Deployments → copy URL
 // ------------------------------------------------------------------
-const API_URL = "https://script.google.com/macros/s/AKfycbx723QDKgrw4gglQa9kEy4hvpInBj4aIdOWFQXkGjPRFZo_4u0o8g_XaG2vjALU5AgXlg/exec"; // ← PASTE NEW URL HERE
+const API_URL = "https://script.google.com/macros/s/AKfycbyzOSE_S465qOeFlwU7twkXjy-3ZU4xoatoycBDlMvbTefOGd3s_9FXCJDHKGOe7qgYAQ/exec"; // ← PASTE NEW URL HERE
 
 // ------------------------------------------------------------------
 // STEP 2 — BANK IDENTITY
@@ -1457,9 +1457,17 @@ function approveChore(choreId){
       data.balances.checking+=ck;data.balances.savings+=sv;
       if(ck>0)recordTransaction("Bank","Chore: "+chore.name+" (Chk)",ck);
       if(sv>0)recordTransaction("Bank","Chore: "+chore.name+" (Sav)",sv);
-      if(chore.schedule==="once")data.chores=data.chores.filter(c=>c.id!==choreId);
-      else Object.assign(chore,{status:"available",completedBy:null,completedAt:null,denialNote:null});
-      syncToCloud("Chore Approved");showToast("Approved! "+fmt(chore.amount)+" deposited. 🎉","success");
+      const calId=chore.calendarEventId||null;
+      if(chore.schedule==="once"){
+        data.chores=data.chores.filter(c=>c.id!==choreId);
+        if(calId) state._approvedCalEventId=calId;
+      } else {
+        Object.assign(chore,{status:"available",completedBy:null,completedAt:null,denialNote:null});
+        // Recurring chore stays — keep the calendar event
+      }
+      syncToCloud("Chore Approved");
+      delete state._approvedCalEventId;
+      showToast("Approved! "+fmt(chore.amount)+" deposited. 🎉","success");
       renderParentChores();renderChildChores();updateChoreBadges();
     }});
 }
@@ -1482,7 +1490,15 @@ function togglePauseChore(choreId){
 function deleteChore(choreId){
   const data=getChildData(activeChild);const chore=data.chores.find(c=>c.id===choreId);if(!chore)return;
   openModal({icon:"🗑️",title:'Delete "'+chore.name+'"?',body:"This cannot be undone.",confirmText:"Delete",confirmClass:"btn-danger",
-    onConfirm:()=>{data.chores=data.chores.filter(c=>c.id!==choreId);syncToCloud("Chore Deleted");showToast("Chore deleted.","info");renderParentChores();renderChildChores();updateChoreBadges();}});
+    onConfirm:()=>{
+      const calId=chore.calendarEventId||null;
+      data.chores=data.chores.filter(c=>c.id!==choreId);
+      if(calId) state._deletedCalEventIds=[calId];
+      syncToCloud("Chore Deleted");
+      delete state._deletedCalEventIds;
+      showToast("Chore deleted.","info");
+      renderParentChores();renderChildChores();updateChoreBadges();
+    }});
 }
 
 // ================================================================
