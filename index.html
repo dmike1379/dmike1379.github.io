@@ -13,39 +13,32 @@
   <link rel="icon" type="image/png" href="images/icon.png">
   <meta name="theme-color" content="#2563eb">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --primary:#2563eb; --primary-dark:#1d4ed8;
-      --secondary:#10b981; --secondary-dark:#059669;
-      --danger:#ef4444; --warning:#f59e0b; --purple:#8b5cf6;
-      --bg:#f1f5f9; --surface:#ffffff; --border:#e2e8f0;
-      --text:#1e293b; --muted:#64748b;
-      --radius:14px; --shadow:0 4px 32px rgba(0,0,0,0.09);
-      --font:'DM Sans',sans-serif; --font-mono:'DM Mono',monospace;
-    }
+    :root{--primary:#2563eb;--primary-dark:#1d4ed8;--secondary:#10b981;--secondary-dark:#059669;--danger:#ef4444;--warning:#f59e0b;--purple:#8b5cf6;--bg:#f1f5f9;--surface:#ffffff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--radius:14px;--shadow:0 4px 32px rgba(0,0,0,0.09);--font:'DM Sans',sans-serif;--mono:'DM Mono',monospace}
     *,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    body{font-family:var(--font);background:var(--bg);margin:0;padding:10px 8px 60px;min-height:100vh;display:flex;flex-direction:column;align-items:center;touch-action:manipulation;color:var(--text);-webkit-font-smoothing:antialiased}
+    body{font-family:var(--font);background:var(--bg);margin:0;padding:10px 8px 80px;min-height:100vh;display:flex;flex-direction:column;align-items:center;touch-action:manipulation;color:var(--text);-webkit-font-smoothing:antialiased}
     .app-card{width:100%;max-width:460px;background:var(--surface);border-radius:20px;box-shadow:var(--shadow);overflow:hidden}
     .banner-img{width:100%;display:block;max-height:130px;object-fit:cover;border-bottom:1px solid var(--border)}
     .screen{padding:22px 20px}
     .hidden{display:none!important}
-    h2{font-size:1.35rem;font-weight:700;margin:0 0 4px;text-align:center;color:var(--text)}
+    h2{font-size:1.35rem;font-weight:800;margin:0 0 4px;text-align:center;color:var(--text)}
     h3{font-size:0.95rem;font-weight:700;margin:0 0 14px;color:var(--text)}
     .page-subtitle{font-size:0.78rem;color:var(--muted);text-align:center;margin:0 0 22px}
-    .field-label{display:block;font-size:0.67rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
     .logo-wrap{text-align:center;padding:6px 0 14px}
     .logo-img{width:78px;height:78px;object-fit:contain;display:block;margin:0 auto 10px;border-radius:16px}
+    .field-label{display:block;font-size:.67rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+    /* Balance cards */
     .balance-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
     .balance-card{border-radius:var(--radius);padding:16px 12px;color:white;text-align:center;position:relative;overflow:hidden}
     .balance-card::before{content:'';position:absolute;top:-40%;left:-20%;width:60%;height:140%;background:rgba(255,255,255,.12);transform:rotate(-20deg);pointer-events:none}
     .balance-card.checking{background:linear-gradient(135deg,var(--primary) 0%,var(--primary-dark) 100%)}
     .balance-card.savings{background:linear-gradient(135deg,var(--secondary) 0%,var(--secondary-dark) 100%)}
-    .bc-label{font-size:.62rem;font-weight:600;opacity:.85;letter-spacing:.06em;text-transform:uppercase}
-    .bc-amount{font-size:1.45rem;font-weight:700;font-family:var(--font-mono);margin:5px 0 3px;letter-spacing:-.02em}
-    .bc-rate{font-size:.58rem;opacity:.78;font-weight:500}
-    .section-block{margin-top:18px;padding-top:18px;border-top:1px solid var(--border)}
-    .field-label{display:block;font-size:.67rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+    .bc-label{font-size:.62rem;font-weight:700;opacity:.85;letter-spacing:.06em;text-transform:uppercase}
+    .bc-amount{font-size:1.45rem;font-weight:800;font-family:var(--mono);margin:5px 0 2px;letter-spacing:-.02em}
+    .bc-rate{font-size:.58rem;opacity:.78;font-weight:600}
+    .bc-earned{font-size:.65rem;font-weight:700;opacity:.9;margin-top:4px;background:rgba(255,255,255,.2);border-radius:20px;padding:2px 8px;display:inline-block}
+    /* Inputs */
     input,select,textarea{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;font-family:var(--font);color:var(--text);background:var(--surface);outline:none;transition:border-color .15s,box-shadow .15s;margin-bottom:10px;appearance:none;-webkit-appearance:none}
     input:focus,select:focus,textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
     input.input-error{border-color:var(--danger)!important;box-shadow:0 0 0 3px rgba(239,68,68,.1)!important}
@@ -59,7 +52,8 @@
     .field-msg.info{display:block;color:var(--primary)}
     .row{display:flex;gap:10px}
     .col{flex:1;min-width:0}
-    .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:13px 16px;border:none;border-radius:10px;font-family:var(--font);font-size:.88rem;font-weight:600;cursor:pointer;transition:transform .1s,filter .15s;margin-top:6px;letter-spacing:.01em}
+    /* Buttons */
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:13px 16px;border:none;border-radius:10px;font-family:var(--font);font-size:.88rem;font-weight:700;cursor:pointer;transition:transform .1s,filter .15s;margin-top:6px;letter-spacing:.01em}
     .btn:active{transform:scale(.975);filter:brightness(.95)}
     .btn:disabled{opacity:.5;cursor:not-allowed}
     .btn-primary{background:var(--primary);color:#fff}
@@ -73,42 +67,68 @@
     .btn-full-ghost{background:none;border:none;color:var(--muted);font-size:.8rem;font-family:var(--font);cursor:pointer;width:100%;margin-top:8px;padding:10px;border-radius:8px;font-weight:600}
     .btn-full-ghost:active{background:var(--bg)}
     .top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
-    .welcome-text{font-weight:700;font-size:1rem}
+    .welcome-text{font-weight:800;font-size:1rem}
     .btn-logout{background:var(--bg);border:none;color:var(--muted);font-size:.75rem;font-family:var(--font);font-weight:600;cursor:pointer;padding:7px 12px;border-radius:8px}
+    .section-block{margin-top:18px;padding-top:18px;border-top:1px solid var(--border)}
+    /* Tabs */
     .tab-bar{display:flex;background:var(--bg);border-radius:10px;padding:4px;gap:3px;margin:14px 0 18px}
-    .tab-btn{flex:1;padding:9px 4px;border:none;border-radius:7px;font-family:var(--font);font-size:.72rem;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);transition:all .15s;white-space:nowrap}
+    .tab-btn{flex:1;padding:9px 4px;border:none;border-radius:7px;font-family:var(--font);font-size:.72rem;font-weight:700;cursor:pointer;background:transparent;color:var(--muted);transition:all .15s;white-space:nowrap}
     .tab-btn.active{background:var(--surface);color:var(--primary);box-shadow:0 2px 8px rgba(0,0,0,.08)}
     .tab-panel{display:none}
     .tab-panel.active{display:block}
     .notif-badge{background:var(--danger);color:white;font-size:.58rem;font-weight:700;padding:2px 5px;border-radius:10px;margin-left:3px;display:inline-block}
-    .chore-card{border:1.5px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px}
-    .chore-card.state-pending{border-color:var(--warning);background:#fffbeb}
-    .chore-card.state-approved{border-color:var(--secondary);background:#f0fdf4}
-    .chore-card.state-denied{border-color:var(--danger);background:#fef2f2;opacity:.75}
-    .chore-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
-    .chore-name{font-weight:700;font-size:.9rem}
-    .chore-amount{font-family:var(--font-mono);font-weight:600;font-size:.9rem;color:var(--secondary)}
-    .chore-meta{font-size:.7rem;color:var(--muted);margin-bottom:10px;line-height:1.6}
+    /* Chore checklist */
+    .chore-table{width:100%;border-collapse:collapse;margin-bottom:10px}
+    .chore-table th{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:8px 10px;border-bottom:2px solid var(--border);text-align:left;background:var(--bg)}
+    .chore-table th:last-child{text-align:right}
+    .chore-table td{padding:12px 10px;border-bottom:1px solid var(--border);font-size:.82rem;vertical-align:middle}
+    .chore-row{transition:background .25s}
+    .chore-row.done{background:linear-gradient(135deg,#f0fdf4,#dcfce7)}
+    .chore-row.done td{color:#15803d}
+    .chore-check-cell{width:36px}
+    .chore-checkbox-wrap{width:24px;height:24px;border:2px solid var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;flex-shrink:0;background:white}
+    .chore-checkbox-wrap.checked{background:var(--secondary);border-color:var(--secondary)}
+    .chore-checkbox-wrap.checked::after{content:'✓';color:white;font-size:.85rem;font-weight:800}
+    .chore-checkbox-wrap.pending{background:var(--warning);border-color:var(--warning)}
+    .chore-checkbox-wrap.pending::after{content:'⏳';font-size:.75rem}
+    .chore-name-cell{font-weight:600}
+    .chore-name-cell .chore-desc-small{font-size:.7rem;color:var(--muted);margin-top:2px;font-weight:400}
+    .chore-schedule-cell{font-size:.72rem;color:var(--muted);white-space:nowrap}
+    .chore-amount-cell{font-family:var(--mono);font-weight:700;color:var(--secondary);text-align:right;white-space:nowrap}
+    .chore-amount-cell.done-amt{color:#15803d}
+    .earned-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);background:var(--secondary);color:white;border-radius:20px;padding:24px 32px;text-align:center;z-index:600;transition:transform .3s cubic-bezier(.175,.885,.32,1.275);box-shadow:0 20px 60px rgba(0,0,0,.25)}
+    .earned-popup.show{transform:translate(-50%,-50%) scale(1)}
+    .earned-popup-amount{font-size:2.5rem;font-weight:900;font-family:var(--mono);letter-spacing:-1px}
+    .earned-popup-label{font-size:.9rem;font-weight:600;opacity:.9;margin-top:4px}
+    /* Status badges */
     .status-badge{display:inline-block;font-size:.63rem;font-weight:700;padding:3px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.04em}
     .badge-available{background:#dbeafe;color:#1d4ed8}
     .badge-pending{background:#fef3c7;color:#92400e}
     .badge-approved{background:#d1fae5;color:#065f46}
     .badge-denied{background:#fee2e2;color:#991b1b}
     .badge-paused{background:var(--bg);color:var(--muted)}
+    /* Chore cards (parent management view) */
+    .chore-card{border:1.5px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px}
+    .chore-card.state-pending{border-color:var(--warning);background:#fffbeb}
+    .chore-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+    .chore-card-name{font-weight:700;font-size:.9rem}
+    .chore-card-amount{font-family:var(--mono);font-weight:700;font-size:.9rem;color:var(--secondary)}
+    .chore-card-meta{font-size:.7rem;color:var(--muted);margin-bottom:10px;line-height:1.6}
     .approval-banner{background:linear-gradient(135deg,#fffbeb,#fef3c7);border:1.5px solid var(--warning);border-radius:var(--radius);padding:14px;margin-bottom:16px}
-    .approval-banner h3{color:#92400e}
+    .approval-banner h3{color:#92400e;margin-bottom:10px}
+    /* Split slider */
     .split-display{display:flex;justify-content:space-between;font-size:.85rem;font-weight:600;margin-bottom:8px}
     .split-display .chk-pct{color:var(--primary)}
     .split-display .sav-pct{color:var(--secondary)}
+    /* History drawer */
     .history-drawer{position:fixed;inset:0;background:var(--surface);z-index:300;overflow-y:auto;padding:16px;transform:translateY(100%);transition:transform .32s cubic-bezier(.32,.72,0,1)}
     .history-drawer.open{transform:translateY(0)}
     .drawer-header{display:flex;justify-content:space-between;align-items:center;padding-bottom:14px;border-bottom:1px solid var(--border);margin-bottom:14px}
     .filter-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--bg);padding:10px;border-radius:10px;margin-bottom:14px}
     .filter-grid select{margin-bottom:0;font-size:11px;padding:7px 28px 7px 8px}
-    .filter-grid .field-label{font-size:.6rem;margin-bottom:3px}
     .summary-bar{display:flex;gap:8px;margin-bottom:14px}
     .summary-chip{flex:1;background:var(--bg);border-radius:10px;padding:10px;text-align:center;font-size:.63rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
-    .chip-val{display:block;font-size:.92rem;font-family:var(--font-mono);font-weight:700;margin-top:3px}
+    .chip-val{display:block;font-size:.92rem;font-family:var(--mono);font-weight:700;margin-top:3px}
     .chip-val.pos{color:var(--secondary)}
     .chip-val.neg{color:var(--danger)}
     .ledger-row{display:grid;grid-template-columns:40px 1fr 90px;gap:10px;padding:11px 0;border-bottom:1px solid var(--border);align-items:center}
@@ -118,33 +138,40 @@
     .ledger-date{font-size:.6rem;color:var(--muted);display:block;margin-bottom:1px}
     .ledger-who{font-weight:600;font-size:.78rem}
     .ledger-note{font-size:.72rem;color:var(--muted)}
-    .ledger-amt{font-family:var(--font-mono);font-weight:700;font-size:.85rem;text-align:right}
+    .ledger-amt{font-family:var(--mono);font-weight:700;font-size:.85rem;text-align:right}
     .ledger-amt.pos{color:var(--secondary)}
     .ledger-amt.neg{color:var(--danger)}
+    /* Modal */
     .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:500;display:flex;align-items:flex-end;justify-content:center;padding:0 8px 8px;opacity:0;pointer-events:none;transition:opacity .2s;backdrop-filter:blur(2px)}
     .modal-overlay.open{opacity:1;pointer-events:all}
     .modal-box{background:var(--surface);border-radius:20px;padding:24px 20px 20px;width:100%;max-width:440px;transform:translateY(20px);transition:transform .25s cubic-bezier(.32,.72,0,1);max-height:80vh;overflow-y:auto}
     .modal-overlay.open .modal-box{transform:translateY(0)}
     .modal-icon{font-size:2rem;text-align:center;margin-bottom:10px;display:block}
-    .modal-title{font-size:1.05rem;font-weight:700;text-align:center;margin:0 0 6px}
+    .modal-title{font-size:1.05rem;font-weight:800;text-align:center;margin:0 0 6px}
     .modal-body{font-size:.85rem;color:var(--muted);text-align:center;margin:0 0 16px;line-height:1.55}
     .modal-detail{background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:.82rem;line-height:1.8}
     .detail-row{display:flex;justify-content:space-between}
     .detail-label{color:var(--muted)}
-    .detail-val{font-weight:600;font-family:var(--font-mono)}
+    .detail-val{font-weight:600;font-family:var(--mono)}
     .modal-btns{display:flex;gap:10px}
     .modal-btns .btn{flex:1;margin-top:0}
-    .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-80px);background:var(--text);color:white;padding:12px 20px;border-radius:30px;font-size:.82rem;font-weight:600;z-index:999;transition:transform .3s cubic-bezier(.32,.72,0,1);white-space:nowrap;max-width:90vw;text-align:center}
+    /* Toast */
+    .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-80px);background:var(--text);color:white;padding:12px 20px;border-radius:30px;font-size:.82rem;font-weight:700;z-index:999;transition:transform .3s cubic-bezier(.32,.72,0,1);white-space:nowrap;max-width:90vw;text-align:center}
     .toast.show{transform:translateX(-50%) translateY(0)}
     .toast.success{background:var(--secondary)}
     .toast.error{background:var(--danger)}
     .toast.info{background:var(--primary)}
+    /* Status pill */
     .status-pill{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;color:var(--muted);font-weight:500;padding:6px 12px;background:var(--bg);border-radius:20px}
     .status-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0}
     .status-dot.ready{background:var(--secondary)}
     .status-dot.error{background:var(--danger)}
     .status-dot.loading{background:var(--warning);animation:pulse 1s infinite}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    /* Chore waiting banner */
+    .chore-banner{background:linear-gradient(135deg,#fef3c7,#fde68a);border:1.5px solid var(--warning);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer}
+    .chore-banner:active{filter:brightness(.97)}
+    /* Admin */
     .admin-link-wrap{text-align:center;margin-top:16px}
     .admin-link{font-size:.72rem;color:var(--primary);text-decoration:underline;cursor:pointer;background:none;border:none;font-family:var(--font)}
     .admin-drawer{position:fixed;inset:0;background:var(--surface);z-index:400;overflow-y:auto;padding:16px;transform:translateY(100%);transition:transform .32s cubic-bezier(.32,.72,0,1)}
@@ -154,26 +181,35 @@
     .role-parent{background:#dbeafe;color:#1d4ed8}
     .role-child{background:#d1fae5;color:#065f46}
     .info-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px;font-size:.78rem;color:#1e40af;line-height:1.55;margin-bottom:12px}
-    .warning-box{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;font-size:.78rem;color:#92400e;line-height:1.55;margin-bottom:12px}
     .empty-state{text-align:center;color:var(--muted);font-size:.82rem;padding:28px 0}
     .empty-icon{font-size:2rem;display:block;margin-bottom:8px}
-    /* Child picker screen */
+    /* Child picker */
     .child-btn{display:block;width:100%;padding:18px;border:1.5px solid var(--border);border-radius:var(--radius);font-family:var(--font);font-size:1.1rem;font-weight:700;cursor:pointer;background:var(--surface);color:var(--text);margin-bottom:12px;text-align:left;transition:all .15s;position:relative}
     .child-btn:active{border-color:var(--primary);background:#eff6ff}
-    .child-btn .child-btn-arrow{position:absolute;right:16px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:1.2rem}
-    .child-btn .child-btn-balance{font-size:.75rem;color:var(--muted);font-weight:500;margin-top:3px}
-    /* Switch child bar */
+    .child-btn-arrow{position:absolute;right:16px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:1.2rem}
+    .child-btn-balance{font-size:.75rem;color:var(--muted);font-weight:500;margin-top:3px}
     .child-switch-bar{display:flex;align-items:center;justify-content:space-between;background:var(--bg);border-radius:10px;padding:10px 14px;margin-bottom:14px}
     .child-switch-name{font-weight:700;font-size:.9rem;color:var(--text)}
     .child-switch-btn{background:none;border:none;color:var(--primary);font-size:.78rem;font-family:var(--font);font-weight:600;cursor:pointer;padding:4px 8px}
+    /* PWA install */
+    #install-banner{position:fixed;bottom:0;left:0;right:0;background:var(--text);color:white;padding:14px 16px;display:flex;align-items:center;gap:12px;z-index:999;font-family:var(--font);font-size:.82rem;box-shadow:0 -4px 20px rgba(0,0,0,.2)}
   </style>
 </head>
 <body>
 <div class="toast" id="toast"></div>
+
+<!-- EARNED POPUP -->
+<div class="earned-popup" id="earned-popup">
+  <div style="font-size:2rem;margin-bottom:8px;">🎉</div>
+  <div class="earned-popup-amount" id="earned-popup-amount">+$5.00</div>
+  <div class="earned-popup-label" id="earned-popup-label">Submitted for approval!</div>
+  <div style="font-size:.75rem;opacity:.8;margin-top:6px;">Your parent will confirm it.</div>
+</div>
+
 <div class="app-card">
   <img src="images/banner.png" class="banner-img" id="banner-img" onerror="this.style.display='none'" alt="">
 
-  <!-- LOGIN SCREEN -->
+  <!-- LOGIN -->
   <div class="screen" id="login-screen">
     <div class="logo-wrap">
       <img src="images/logo.png" class="logo-img" id="logo-img" onerror="this.style.display='none'" alt="">
@@ -182,8 +218,7 @@
     </div>
     <label class="field-label">Your Name</label>
     <div style="position:relative;">
-      <input type="text" id="username-input" placeholder="e.g. Linnea or Dad"
-             autocomplete="off" autocapitalize="words" spellcheck="false" style="padding-right:70px;">
+      <input type="text" id="username-input" placeholder="e.g. Linnea or Dad" autocomplete="off" autocapitalize="words" spellcheck="false" style="padding-right:70px;">
       <button id="not-you-btn" onclick="clearRememberedUser()" class="hidden" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--primary);font-size:.72rem;font-family:var(--font);font-weight:600;cursor:pointer;padding:4px 0;width:auto;margin:0;">Not you?</button>
     </div>
     <label class="field-label">PIN</label>
@@ -200,12 +235,10 @@
         <span id="status-text">Connecting to bank...</span>
       </span>
     </div>
-    <div class="admin-link-wrap">
-      <button class="admin-link" onclick="openAdmin()">Admin Login</button>
-    </div>
+    <div class="admin-link-wrap"><button class="admin-link" onclick="openAdmin()">Admin Login</button></div>
   </div>
 
-  <!-- CHILD PICKER (parent with multiple children) -->
+  <!-- CHILD PICKER -->
   <div class="screen hidden" id="child-picker-screen">
     <div class="top-bar">
       <span class="welcome-text" id="picker-welcome">Hi Dad! 👋</span>
@@ -217,40 +250,42 @@
 
   <!-- MAIN SCREEN -->
   <div class="screen hidden" id="main-screen">
-
     <div class="top-bar">
       <span class="welcome-text" id="welcome-msg">Hello!</span>
       <button class="btn-logout" onclick="logout()">Logout</button>
     </div>
 
-    <!-- Child switch bar (parent only — shown when managing a specific child) -->
+    <!-- Parent child-switch bar -->
     <div class="child-switch-bar hidden" id="child-switch-bar">
       <div>
-        <div class="child-switch-name" id="child-switch-name">Linnea</div>
+        <div class="child-switch-name" id="child-switch-name">Linnea's Account</div>
         <div style="font-size:.65rem;color:var(--muted);">Managing this account</div>
       </div>
-      <button class="child-switch-btn" onclick="showChildPicker()">Switch Child ↓</button>
+      <button class="child-switch-btn" onclick="showChildPicker()">Switch ↓</button>
     </div>
 
+    <!-- Balance cards -->
     <div class="balance-grid">
       <div class="balance-card checking">
         <div class="bc-label">Checking</div>
         <div class="bc-amount" id="checking-val">$0.00</div>
         <div class="bc-rate">APY: <span id="rate-chk-display">0</span>%</div>
+        <div class="bc-earned hidden" id="earned-chk-display">+$0.00 this month</div>
       </div>
       <div class="balance-card savings">
         <div class="bc-label">Savings</div>
         <div class="bc-amount" id="savings-val">$0.00</div>
         <div class="bc-rate">APY: <span id="rate-sav-display">0</span>%</div>
+        <div class="bc-earned hidden" id="earned-sav-display">+$0.00 this month</div>
       </div>
     </div>
 
     <!-- Chore waiting banner (child only) -->
-    <div id="chore-waiting-banner" class="hidden" style="background:linear-gradient(135deg,#fef3c7,#fde68a);border:1.5px solid var(--warning);border-radius:var(--radius);padding:14px 16px;margin-bottom:4px;display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="switchTab('child','chores');document.getElementById('chore-waiting-banner').classList.add('hidden');">
+    <div id="chore-waiting-banner" class="chore-banner hidden" onclick="switchTab('child','chores');this.classList.add('hidden');">
       <span style="font-size:1.6rem;">📋</span>
       <div style="flex:1;">
-        <div style="font-weight:700;font-size:.9rem;color:#92400e;" id="chore-banner-title">You have chores waiting!</div>
-        <div style="font-size:.75rem;color:#a16207;margin-top:2px;">Tap here to see your chores and earn money 💰</div>
+        <div style="font-weight:800;font-size:.9rem;color:#92400e;" id="chore-banner-title">You have chores waiting!</div>
+        <div style="font-size:.75rem;color:#a16207;margin-top:2px;">Tap to see your chores and earn money 💰</div>
       </div>
       <span style="color:#92400e;font-size:1rem;">›</span>
     </div>
@@ -261,8 +296,10 @@
     <div id="child-panel" class="hidden">
       <div class="tab-bar">
         <button class="tab-btn active" onclick="switchTab('child','money')">💵 Money</button>
-        <button class="tab-btn" onclick="switchTab('child','chores')">✅ My Chores <span class="notif-badge hidden" id="child-chore-badge">0</span></button>
+        <button class="tab-btn" onclick="switchTab('child','chores')">✅ Chores <span class="notif-badge hidden" id="child-chore-badge">0</span></button>
       </div>
+
+      <!-- Money tab -->
       <div class="tab-panel active" id="child-tab-money">
         <h3>Manage My Money</h3>
         <label class="field-label">Amount</label>
@@ -277,10 +314,12 @@
           <button class="btn-full-ghost" onclick="changePinPrompt('child')">🔑 Change My PIN</button>
         </div>
       </div>
+
+      <!-- Chores tab — Mark's checklist design -->
       <div class="tab-panel" id="child-tab-chores">
         <div id="child-chore-notifications"></div>
         <h3>My Chores</h3>
-        <div id="child-chore-list"><div class="empty-state"><span class="empty-icon">🎉</span>No chores right now!</div></div>
+        <div id="child-chore-list"></div>
       </div>
     </div>
 
@@ -292,10 +331,10 @@
         <button class="tab-btn" onclick="switchTab('parent','settings')">⚙️ Settings</button>
       </div>
 
-      <!-- Adjust Tab -->
+      <!-- Adjust tab -->
       <div class="tab-panel active" id="parent-tab-adjust">
         <h3>Instant Adjustment</h3>
-        <div class="info-box">Positive adds money, negative (e.g. −10) removes it. At least one account required.</div>
+        <div class="info-box">Positive adds money, negative (e.g. −10) removes it.</div>
         <div class="row">
           <div class="col"><label class="field-label">Checking $</label><input type="number" id="adj-chk" step="0.01" placeholder="0.00"></div>
           <div class="col"><label class="field-label">Savings $</label><input type="number" id="adj-sav" step="0.01" placeholder="0.00"></div>
@@ -316,7 +355,7 @@
         </div>
       </div>
 
-      <!-- Chores Tab -->
+      <!-- Chores tab -->
       <div class="tab-panel" id="parent-tab-chores">
         <div id="parent-chore-approvals"></div>
         <h3 id="chore-form-title">➕ Create New Chore</h3>
@@ -346,9 +385,7 @@
           <span class="sav-pct">🏦 Savings: <strong><span id="split-sav-label">0</span>%</strong></span>
         </div>
         <input type="range" id="chore-split" min="0" max="100" value="100" oninput="updateSplitLabel()">
-        <div style="display:flex;justify-content:space-between;font-size:.65rem;color:var(--muted);margin-top:2px;margin-bottom:8px;">
-          <span>← All Savings</span><span>50 / 50</span><span>All Checking →</span>
-        </div>
+        <div style="display:flex;justify-content:space-between;font-size:.65rem;color:var(--muted);margin-top:2px;margin-bottom:8px;"><span>← All Savings</span><span>50/50</span><span>All Checking →</span></div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
           <input type="checkbox" id="chore-child-chooses">
           <label for="chore-child-chooses" style="font-size:.8rem;color:var(--muted);font-weight:500;margin:0;cursor:pointer;">Let child choose their own split</label>
@@ -369,11 +406,11 @@
         </div>
         <div class="section-block">
           <h3>All Chores</h3>
-          <div id="parent-chore-list"><div class="empty-state"><span class="empty-icon">📋</span>No chores yet.</div></div>
+          <div id="parent-chore-list"></div>
         </div>
       </div>
 
-      <!-- Settings Tab -->
+      <!-- Settings tab -->
       <div class="tab-panel" id="parent-tab-settings">
         <h3>Weekly Allowance</h3>
         <div class="info-box">Deposited automatically every Monday.</div>
@@ -412,7 +449,7 @@
     <div><span class="field-label">Account</span><select id="f-acct" onchange="renderHistory()"><option value="all">All Accounts</option><option value="chk">Checking</option><option value="sav">Savings</option></select></div>
     <div><span class="field-label">Type</span><select id="f-type" onchange="renderHistory()"><option value="all">All Types</option><option value="pos">Deposits</option><option value="neg">Withdrawals</option></select></div>
   </div>
-  <div id="ledger-list"><div class="empty-state"><span class="empty-icon">🏦</span>No transactions yet.</div></div>
+  <div id="ledger-list"></div>
 </div>
 
 <!-- ADMIN DRAWER -->
@@ -447,7 +484,6 @@
       <div class="info-box">Host images anywhere and paste the direct URL, or replace files in your images/ folder.</div>
       <label class="field-label">Banner URL</label><input type="url" id="admin-img-banner" placeholder="https://...banner.png">
       <label class="field-label">Logo URL</label><input type="url" id="admin-img-logo" placeholder="https://...logo.png">
-      <label class="field-label">Icon URL</label><input type="url" id="admin-img-icon" placeholder="https://...icon.png">
     </div>
     <div class="section-block">
       <h3>🌐 Timezone</h3>
@@ -464,10 +500,8 @@
     </div>
     <div class="section-block">
       <h3>📧 Email Addresses</h3>
-      <div class="info-box">Each user gets their own email address. Used for monthly statements, chore alerts, allowance deposits, and Sunday reminders.</div>
-      <div id="admin-email-fields">
-        <!-- Populated dynamically by renderAdminEmails() -->
-      </div>
+      <div class="info-box">Each user gets their own email for personalized notifications.</div>
+      <div id="admin-email-fields"></div>
     </div>
     <div class="section-block">
       <h3>👥 User Management</h3>
@@ -476,12 +510,11 @@
         <h3 style="margin-bottom:12px;">Add New User</h3>
         <label class="field-label">Display Name</label><input type="text" id="new-user-name" placeholder="e.g. Emma">
         <label class="field-label">Role</label>
-        <select id="new-user-role">
-          <option value="child">Child</option>
-          <option value="parent">Parent</option>
-        </select>
+        <select id="new-user-role"><option value="child">Child</option><option value="parent">Parent</option></select>
         <label class="field-label">Initial PIN (4 digits)</label>
         <input type="password" id="new-user-pin" maxlength="4" inputmode="numeric" placeholder="0000">
+        <label class="field-label">Email Address</label>
+        <input type="email" id="new-user-email" placeholder="their@email.com">
         <div class="field-msg" id="new-user-msg"></div>
         <button class="btn btn-secondary" onclick="addUser()">➕ Add User</button>
       </div>
@@ -511,7 +544,7 @@
 </div>
 
 <!-- PWA INSTALL BANNER -->
-<div id="install-banner" class="hidden" style="position:fixed;bottom:0;left:0;right:0;background:var(--text);color:white;padding:14px 16px;display:flex;align-items:center;gap:12px;z-index:999;font-family:var(--font);font-size:.82rem;box-shadow:0 -4px 20px rgba(0,0,0,.2);">
+<div id="install-banner" class="hidden">
   <span style="font-size:1.4rem;">🏦</span>
   <span id="install-banner-text" style="flex:1;line-height:1.4;">Add Family Bank to your home screen!</span>
   <button id="install-btn" onclick="triggerInstall()" style="background:var(--primary);color:white;border:none;border-radius:8px;padding:8px 14px;font-size:.78rem;font-family:var(--font);font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">Install</button>
@@ -527,71 +560,76 @@
 // HOW TO DEPLOY:
 //   1. Edit the ★ CONFIGURATION block below to match your family
 //   2. Upload this file to your GitHub Pages repo root
-//   3. That's it! All other settings live in the in-app Admin panel.
+//   3. Done! All other settings live in the in-app Admin panel.
 //
 // HOW TO REDEPLOY after a Code.gs update:
-//   1. Get the new Web App URL from Google Apps Script (Deploy → Manage)
-//   2. Paste it into API_URL below — that is the only line that changes
+//   1. Get the new Web App URL from Google Apps Script
+//      (Deploy → Manage Deployments → copy URL)
+//   2. Paste it into API_URL below — that is the ONLY line that changes
 //   3. Re-upload this file to GitHub
 //
 // ╔═══════════════════════════════════════════════════════════════════════╗
 // ║                      ★ CONFIGURATION ★                               ║
-// ║     Edit this block. Nothing else in this file needs to change        ║
-// ║     for a basic family setup.                                         ║
+// ║   Edit this block. Nothing else needs to change for a basic setup.   ║
 // ╚═══════════════════════════════════════════════════════════════════════╝
 
 // ------------------------------------------------------------------
-// STEP 1 — GOOGLE APPS SCRIPT URL
+// STEP 1 — GOOGLE APPS SCRIPT URL  ← THE ONLY LINE THAT CHANGES ON REDEPLOY
 // Paste your Web App URL here every time you redeploy Code.gs.
 // Get it from: Apps Script → Deploy → Manage Deployments → copy URL
 // ------------------------------------------------------------------
-const API_URL = "https://script.google.com/macros/s/AKfycbw6I2elobALbYGE7pbLOWSBIK4whwEfQ9vYevLFDwSbftwcwpua2ymDLE5UfPw_6N9bOg/exec"; // ← PASTE URL HERE
+const API_URL = "https://script.google.com/macros/s/AKfycbyeqgwV38oGWh7PMGN5yzBWim4m2uea5KAAu4-Maeu-tJwKb8LWot3cgqyuyxeVY200DQ/exec"; // ← PASTE NEW URL HERE
 
 // ------------------------------------------------------------------
 // STEP 2 — BANK IDENTITY
-// Shown on the login screen and throughout the app.
-// These are startup defaults — you can also change them in Admin panel.
+// Shown on the login screen, emails, and throughout the app.
+// Can also be changed later in the in-app Admin panel.
 // ------------------------------------------------------------------
-const CFG_BANK_NAME    = "Family Bank";              // ← Your bank name
-const CFG_BANK_TAGLINE = "Your money, your future."; // ← Shown under name
+const CFG_BANK_NAME    = "Family Bank";               // ← Your bank name
+const CFG_BANK_TAGLINE = "Your money, your future.";  // ← Shown under name on login
 
 // ------------------------------------------------------------------
 // STEP 3 — BRAND COLORS
-// Primary = buttons, checking card, links.
-// Secondary = savings card, deposit amounts, success states.
-// Use any hex color code. Change anytime in the Admin panel too.
+// Primary   = buttons, checking balance card, links, header gradients
+// Secondary = savings card, deposit amounts, chore earnings, success
+// Use any standard hex color code (e.g. "#ff6600" for orange)
+// These can also be changed anytime in the Admin panel.
 // ------------------------------------------------------------------
-const CFG_COLOR_PRIMARY   = "#2563eb"; // ← Blue  (checking / buttons)
-const CFG_COLOR_SECONDARY = "#10b981"; // ← Green (savings / deposits)
+const CFG_COLOR_PRIMARY   = "#2563eb";  // ← Blue  (checking / buttons)
+const CFG_COLOR_SECONDARY = "#10b981";  // ← Green (savings / deposits)
 
 // ------------------------------------------------------------------
-// STEP 4 — TIMEZONE (for display only — server timezone set in Code.gs)
-// Choices: "GMT-8" "GMT-7" "GMT-6" "GMT-5" "GMT-4" "GMT+0" "GMT+1" "GMT+2"
+// STEP 4 — TIMEZONE  (used for displaying dates in the app)
+// Options: "GMT-8" "GMT-7" "GMT-6" "GMT-5" "GMT-4" "GMT+0" "GMT+1" "GMT+2"
+// Match this to the timezone you set in Code.gs
 // ------------------------------------------------------------------
-const CFG_TIMEZONE = "GMT-5"; // ← Eastern. Change to your timezone.
+const CFG_TIMEZONE = "GMT-5";  // ← Eastern US. Change to match your location.
 
 // ------------------------------------------------------------------
 // STEP 5 — ADMIN PANEL PIN
-// The Admin panel is hidden — accessed via a small link at the bottom
-// of the login screen. Change this after your first login.
+// The Admin panel is hidden — tap the small "Admin Login" link at the
+// bottom of the login screen. Used for bank configuration.
+// Change this from the default right away!
 // ------------------------------------------------------------------
-const CFG_ADMIN_PIN = "9999"; // ← Change this! Used to access Admin panel.
+const CFG_ADMIN_PIN = "9999";  // ← Change this! Default is 9999.
 
 // ------------------------------------------------------------------
-// STEP 6 — IMAGES (optional)
-// By default the app looks for images/banner.png, images/logo.png,
-// images/icon.png in your GitHub repo. If missing they are hidden.
-// You can also paste full URLs to hosted images here instead.
+// STEP 6 — IMAGES  (all optional — app works fine without them)
+// By default the app looks for these files in your GitHub repo's
+// images/ folder. You can also paste a full https:// URL instead.
+//   images/banner.png  — wide banner at the top of the app (~460x130px)
+//   images/logo.png    — square logo on the login screen (~160x160px)
+//   images/icon.png    — app icon for home screen install (~512x512px)
 // ------------------------------------------------------------------
-const CFG_IMG_BANNER = "images/banner.png"; // ← Top banner image
-const CFG_IMG_LOGO   = "images/logo.png";   // ← Logo on login screen
-const CFG_IMG_ICON   = "images/icon.png";   // ← App icon (home screen)
+const CFG_IMG_BANNER = "images/banner.png";  // ← Top banner image path or URL
+const CFG_IMG_LOGO   = "images/logo.png";    // ← Login screen logo path or URL
+const CFG_IMG_ICON   = "images/icon.png";    // ← Home screen icon path or URL
 
 // ╔═══════════════════════════════════════════════════════════════════════╗
 // ║           END OF CONFIGURATION — DO NOT EDIT BELOW THIS LINE         ║
 // ╚═══════════════════════════════════════════════════════════════════════╝
 
-// Internal defaults object — built from config constants above
+// Internal defaults built from config constants — do not edit
 const DEFAULT_CONFIG = {
   bankName:       CFG_BANK_NAME,
   tagline:        CFG_BANK_TAGLINE,
@@ -606,604 +644,488 @@ const DEFAULT_CONFIG = {
 };
 
 // ================================================================
-// STATE — internal runtime state (do not edit)
+// RUNTIME STATE — internal, do not edit
 // state.children["Linnea"] = { balances, rates, autoDeposit, chores }
-// state.history is per-child, loaded from Ledger on each fetch
+// state.history  = { "Linnea": [...ledger rows] }  — loaded on fetch
 // ================================================================
 let state = {
-  config: {...DEFAULT_CONFIG},
+  config:   {...DEFAULT_CONFIG},
   pins: {}, roles: {}, users: [],
-  children: {},  // { "Linnea": { balances, rates, autoDeposit, chores } }
-  history: {}    // { "Linnea": [...rows] } — populated from Ledger on load
+  children: {},
+  history:  {}
 };
-
-let currentUser   = null;  // logged-in user name
-let currentRole   = null;  // "child" | "parent"
-let activeChild   = null;  // which child the parent is currently managing
-let pendingTransactions = [];
-let editingChoreId = null;
-let modalCallback  = null;
+let currentUser          = null;   // logged-in username
+let currentRole          = null;   // "child" | "parent"
+let activeChild          = null;   // child being managed (parent view)
+let pendingTransactions  = [];
+let editingChoreId       = null;
+let modalCallback        = null;
 
 // ================================================================
 // UTILS
 // ================================================================
-function fmt(val) {
-  return "$" + (parseFloat(val)||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
-}
-function todayStr() { return new Date().toISOString().split("T")[0]; }
-function fmtDate(d) {
-  return d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})
-    + " " + d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
-}
-function shadeColor(hex, pct) {
-  const n=parseInt(hex.replace("#",""),16);
-  const r=Math.max(0,Math.min(255,(n>>16)+Math.round(2.55*pct)));
-  const g=Math.max(0,Math.min(255,((n>>8)&0xff)+Math.round(2.55*pct)));
-  const b=Math.max(0,Math.min(255,(n&0xff)+Math.round(2.55*pct)));
-  return "#"+[r,g,b].map(x=>x.toString(16).padStart(2,"0")).join("");
-}
-function showFieldError(iId,mId,msg) {
-  const i=document.getElementById(iId),m=document.getElementById(mId);
-  if(i)i.classList.add("input-error");
-  if(m){m.className="field-msg error";m.textContent=msg;}
-}
-function clearFieldError(iId,mId) {
-  const i=document.getElementById(iId),m=document.getElementById(mId);
-  if(i)i.classList.remove("input-error");
-  if(m){m.className="field-msg";m.textContent="";}
-}
+function fmt(v){return "$"+(parseFloat(v)||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});}
+function todayStr(){return new Date().toISOString().split("T")[0];}
+function fmtDate(d){return d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})+" "+d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});}
+function shadeColor(hex,pct){try{const n=parseInt((hex||"#2563eb").replace("#",""),16);const r=Math.max(0,Math.min(255,(n>>16)+Math.round(2.55*pct)));const g=Math.max(0,Math.min(255,((n>>8)&0xff)+Math.round(2.55*pct)));const b=Math.max(0,Math.min(255,(n&0xff)+Math.round(2.55*pct)));return "#"+[r,g,b].map(x=>x.toString(16).padStart(2,"0")).join("");}catch(e){return "#1d4ed8";}}
+function showFieldError(iId,mId,msg){const i=document.getElementById(iId),m=document.getElementById(mId);if(i)i.classList.add("input-error");if(m){m.className="field-msg error";m.textContent=msg;}}
+function clearFieldError(iId,mId){const i=document.getElementById(iId),m=document.getElementById(mId);if(i)i.classList.remove("input-error");if(m){m.className="field-msg";m.textContent="";}}
+function getChildData(name){if(!state.children[name])state.children[name]={balances:{checking:0,savings:0},rates:{checking:0,savings:0},autoDeposit:{checking:0,savings:0},chores:[]};return state.children[name];}
+function getChildNames(){return(state.users||[]).filter(u=>(state.roles||{})[u]==="child");}
+function getParentNames(){return(state.users||[]).filter(u=>(state.roles||{})[u]==="parent");}
 
 // ================================================================
-// CHILD DATA HELPERS
-// Returns the active child's data object, creating it if missing
+// MIGRATION — v1 flat structure → per-child
 // ================================================================
-function getChildData(childName) {
-  if (!state.children[childName]) {
-    state.children[childName] = {
-      balances:    { checking:0, savings:0 },
-      rates:       { checking:0, savings:0 },
-      autoDeposit: { checking:0, savings:0 },
-      chores:      []
-    };
-  }
-  return state.children[childName];
-}
-
-function getChildNames() {
-  return state.users.filter(u => state.roles[u] === "child");
-}
-
-// ================================================================
-// MIGRATION — move v1 top-level data into Linnea's child object
-// ================================================================
-function migrateIfNeeded() {
-  if (state.balances && !state.children["Linnea"]) {
-    console.log("[Family Bank] Migrating v1 data to multi-child structure...");
-    const childName = state.users.find(u => state.roles[u] === "child") || "Linnea";
-    state.children[childName] = {
-      balances:    { ...state.balances },
-      rates:       { ...state.rates },
-      autoDeposit: { ...state.autoDeposit },
-      chores:      state.chores || []
-    };
-    // Clean up top-level keys that are now per-child
-    delete state.balances;
-    delete state.rates;
-    delete state.autoDeposit;
-    delete state.chores;
-    console.log("[Family Bank] Migration complete for " + childName);
+function migrateIfNeeded(){
+  if(state.balances&&!state.children["Linnea"]){
+    const cn=getChildNames()[0]||"Linnea";
+    state.children[cn]={balances:{...state.balances},rates:{...state.rates},autoDeposit:{...state.autoDeposit},chores:state.chores||[]};
+    delete state.balances;delete state.rates;delete state.autoDeposit;delete state.chores;
   }
 }
 
 // ================================================================
 // MODAL
 // ================================================================
-function openModal(opts) {
-  document.getElementById("modal-icon").textContent  = opts.icon  || "⚠️";
-  document.getElementById("modal-title").textContent = opts.title || "Are you sure?";
-  document.getElementById("modal-body").textContent  = opts.body  || "";
-  const detailEl = document.getElementById("modal-detail");
-  if (opts.detail && Object.keys(opts.detail).length > 0) {
-    detailEl.innerHTML = Object.entries(opts.detail).map(([l,v])=>`
-      <div class="detail-row"><span class="detail-label">${l}</span><span class="detail-val">${v}</span></div>`).join("");
-    detailEl.classList.remove("hidden");
-  } else { detailEl.innerHTML=""; detailEl.classList.add("hidden"); }
-  const cb = document.getElementById("modal-confirm-btn");
-  cb.textContent = opts.confirmText  || "Confirm";
-  cb.className   = "btn "+(opts.confirmClass||"btn-primary");
-  const cancelBtn = document.getElementById("modal-btns").querySelector(".btn-ghost");
-  cancelBtn.textContent   = opts.cancelText||"Cancel";
-  cancelBtn.style.display = opts.hideCancel?"none":"";
-  modalCallback = opts.onConfirm||null;
+function openModal(opts){
+  document.getElementById("modal-icon").textContent=opts.icon||"⚠️";
+  document.getElementById("modal-title").textContent=opts.title||"Are you sure?";
+  document.getElementById("modal-body").textContent=opts.body||"";
+  const de=document.getElementById("modal-detail");
+  if(opts.detail&&Object.keys(opts.detail).length){
+    de.innerHTML=Object.entries(opts.detail).map(([l,v])=>`<div class="detail-row"><span class="detail-label">${l}</span><span class="detail-val">${v}</span></div>`).join("");
+    de.classList.remove("hidden");
+  }else{de.innerHTML="";de.classList.add("hidden");}
+  const cb=document.getElementById("modal-confirm-btn");
+  cb.textContent=opts.confirmText||"Confirm";
+  cb.className="btn "+(opts.confirmClass||"btn-primary");
+  document.getElementById("modal-btns").querySelector(".btn-ghost").style.display=opts.hideCancel?"none":"";
+  modalCallback=opts.onConfirm||null;
   document.getElementById("modal-overlay").classList.add("open");
 }
-function openInputModal(opts) {
-  const detailEl = document.getElementById("modal-detail");
-  detailEl.innerHTML = `<input type="${opts.inputType||"text"}" id="modal-dynamic-input" ${opts.inputAttrs||""} style="width:100%;margin-bottom:0;">`;
-  detailEl.classList.remove("hidden");
-  document.getElementById("modal-icon").textContent  = opts.icon  || "✏️";
-  document.getElementById("modal-title").textContent = opts.title || "";
-  document.getElementById("modal-body").textContent  = opts.body  || "";
-  const cb = document.getElementById("modal-confirm-btn");
-  cb.textContent = opts.confirmText || "OK";
-  cb.className   = "btn "+(opts.confirmClass||"btn-primary");
+function openInputModal(opts){
+  const de=document.getElementById("modal-detail");
+  de.innerHTML=`<input type="${opts.inputType||"text"}" id="modal-dynamic-input" ${opts.inputAttrs||""} style="width:100%;margin-bottom:0;">`;
+  de.classList.remove("hidden");
+  document.getElementById("modal-icon").textContent=opts.icon||"✏️";
+  document.getElementById("modal-title").textContent=opts.title||"";
+  document.getElementById("modal-body").textContent=opts.body||"";
+  const cb=document.getElementById("modal-confirm-btn");
+  cb.textContent=opts.confirmText||"OK";
+  cb.className="btn "+(opts.confirmClass||"btn-primary");
   document.getElementById("modal-btns").querySelector(".btn-ghost").style.display="";
-  modalCallback = (v) => { if(opts.onConfirm) opts.onConfirm(v); };
+  modalCallback=v=>{if(opts.onConfirm)opts.onConfirm(v);};
   document.getElementById("modal-overlay").classList.add("open");
   setTimeout(()=>document.getElementById("modal-dynamic-input")?.focus(),200);
 }
-function closeModal() { document.getElementById("modal-overlay").classList.remove("open"); modalCallback=null; }
-function fireModalConfirm() {
-  const inputEl = document.getElementById("modal-dynamic-input");
-  const inputVal = inputEl ? inputEl.value : null;
-  const cb = modalCallback;
-  closeModal();
-  if (typeof cb === "function") cb(inputVal);
-}
-function handleOverlayClick(e) { if(e.target===document.getElementById("modal-overlay"))closeModal(); }
+function closeModal(){document.getElementById("modal-overlay").classList.remove("open");modalCallback=null;}
+function fireModalConfirm(){const v=document.getElementById("modal-dynamic-input")?.value??null;const cb=modalCallback;closeModal();if(typeof cb==="function")cb(v);}
+function handleOverlayClick(e){if(e.target===document.getElementById("modal-overlay"))closeModal();}
 
 // ================================================================
 // TOAST
 // ================================================================
-let toastTimer = null;
-function showToast(msg, type="", dur=3200) {
-  const t = document.getElementById("toast");
-  t.textContent = msg; t.className = "toast "+type+" show";
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=>t.classList.remove("show"), dur);
+let toastTimer=null;
+function showToast(msg,type="",dur=3200){const t=document.getElementById("toast");t.textContent=msg;t.className="toast "+type+" show";clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("show"),dur);}
+
+// ================================================================
+// EARNED POPUP — shows when child marks chore complete
+// ================================================================
+function showEarnedPopup(amount,choreName){
+  const p=document.getElementById("earned-popup");
+  document.getElementById("earned-popup-amount").textContent="+"+fmt(amount);
+  document.getElementById("earned-popup-label").textContent='"'+choreName+'" submitted!';
+  p.classList.add("show");
+  setTimeout(()=>p.classList.remove("show"),3000);
 }
 
 // ================================================================
-// LOAD & SYNC
+// CLOUD LOAD & SYNC
 // ================================================================
-async function loadFromCloud() {
+async function loadFromCloud(){
   setStatus("loading","Connecting to bank...");
-  try {
-    const res  = await fetch(API_URL+"?t="+Date.now());
-    const data = await res.json();
-    if (data && (data.children || data.balances)) {
-      state = {
-        ...state, ...data,
-        config:   {...DEFAULT_CONFIG,...(data.config||{})},
-        children: data.children || {},
-        history:  data.history  || {}
-      };
-      if (!state.users || !state.users.length) {
-        state.users = Object.keys(state.pins || {Linnea:"1234",Dad:"0000"});
-      }
-      if (!state.roles || !Object.keys(state.roles).length) {
-        state.roles = {};
-        state.users.forEach(u => { state.roles[u] = u==="Dad"?"parent":"child"; });
-      }
+  try{
+    const res=await fetch(API_URL+"?t="+Date.now());
+    const data=await res.json();
+    if(data&&(data.children||data.balances||data.pins)){
+      state={...state,...data,config:{...DEFAULT_CONFIG,...(data.config||{})},children:data.children||{},history:data.history||{}};
+      if(!state.users||!state.users.length)state.users=Object.keys(state.pins||{});
+      if(!state.roles||!Object.keys(state.roles).length){state.roles={};state.users.forEach(u=>{state.roles[u]=u==="Dad"?"parent":"child";});}
+      if(!state.config.emails)state.config.emails={};
       migrateIfNeeded();
-      pendingTransactions = [];
+      pendingTransactions=[];
       applyBranding();
-      populateHistoryUserFilter();
       restoreRememberedUser();
       setStatus("ready","Connected ✓");
-    } else {
-      setStatus("error","Unexpected data — check API URL");
-    }
-  } catch(err) {
-    setStatus("error","Could not connect");
-    console.error("[Family Bank]",err);
-  }
+    }else{setStatus("error","Unexpected data — check API URL");}
+  }catch(err){setStatus("error","Could not connect");console.error("[FamilyBank]",err);}
 }
 
-async function syncToCloud(action) {
+async function syncToCloud(action){
   renderBalances();
-  const payload = {...state, tempTransactions:pendingTransactions, lastAction:action, activeChild:activeChild};
+  const payload={...state,tempTransactions:pendingTransactions,lastAction:action,activeChild:activeChild};
   delete payload.history;
-  pendingTransactions = [];
-  try {
+  pendingTransactions=[];
+  try{
     await fetch(API_URL,{method:"POST",mode:"no-cors",body:JSON.stringify(payload)});
     setTimeout(loadFromCloud,1800);
-  } catch(err) {
-    console.error("[Family Bank] Sync error:",err);
-    showToast("Sync error — change may not have saved!","error",5000);
-  }
+  }catch(err){showToast("Sync error — change may not have saved!","error",5000);}
 }
 
-function recordTransaction(user, note, amt) {
-  const child = activeChild || user;
-  const entry = {date:fmtDate(new Date()),user,note,amt,child};
+function recordTransaction(user,note,amt){
+  const child=activeChild||user;
+  const entry={date:fmtDate(new Date()),user,note,amt,child};
   pendingTransactions.push(entry);
-  if (!state.history[child]) state.history[child] = [];
+  if(!state.history[child])state.history[child]=[];
   state.history[child].push(entry);
 }
 
 // ================================================================
 // RENDER
 // ================================================================
-function applyBranding() {
-  const cfg = state.config;
-  document.getElementById("bank-name-display").textContent    = cfg.bankName||"Family Bank";
-  document.getElementById("bank-tagline-display").textContent = cfg.tagline||"";
-  document.title = cfg.bankName||"Family Bank";
-  document.documentElement.style.setProperty("--primary",      cfg.colorPrimary||"#2563eb");
-  document.documentElement.style.setProperty("--primary-dark", shadeColor(cfg.colorPrimary||"#2563eb",-20));
-  document.documentElement.style.setProperty("--secondary",    cfg.colorSecondary||"#10b981");
-  document.documentElement.style.setProperty("--secondary-dark",shadeColor(cfg.colorSecondary||"#10b981",-20));
+function applyBranding(){
+  const cfg=state.config;
+  document.getElementById("bank-name-display").textContent=cfg.bankName||CFG_BANK_NAME;
+  document.getElementById("bank-tagline-display").textContent=cfg.tagline||CFG_BANK_TAGLINE;
+  document.title=cfg.bankName||CFG_BANK_NAME;
+  document.documentElement.style.setProperty("--primary",cfg.colorPrimary||CFG_COLOR_PRIMARY);
+  document.documentElement.style.setProperty("--primary-dark",shadeColor(cfg.colorPrimary||CFG_COLOR_PRIMARY,-20));
+  document.documentElement.style.setProperty("--secondary",cfg.colorSecondary||CFG_COLOR_SECONDARY);
+  document.documentElement.style.setProperty("--secondary-dark",shadeColor(cfg.colorSecondary||CFG_COLOR_SECONDARY,-20));
   const bi=document.getElementById("banner-img"),li=document.getElementById("logo-img");
   if(cfg.imgBanner&&bi){bi.src=cfg.imgBanner;bi.style.display="";}
   if(cfg.imgLogo&&li){li.src=cfg.imgLogo;li.style.display="";}
 }
-function previewColor(which,val) {
-  if(which==="primary"){
-    document.documentElement.style.setProperty("--primary",val);
-    document.documentElement.style.setProperty("--primary-dark",shadeColor(val,-20));
-  } else {
-    document.documentElement.style.setProperty("--secondary",val);
-    document.documentElement.style.setProperty("--secondary-dark",shadeColor(val,-20));
-  }
+function previewColor(which,val){
+  if(which==="primary"){document.documentElement.style.setProperty("--primary",val);document.documentElement.style.setProperty("--primary-dark",shadeColor(val,-20));}
+  else{document.documentElement.style.setProperty("--secondary",val);document.documentElement.style.setProperty("--secondary-dark",shadeColor(val,-20));}
 }
-function renderBalances() {
-  const child = activeChild || currentUser;
-  const data  = child ? getChildData(child) : {balances:{checking:0,savings:0},rates:{checking:0,savings:0}};
-  document.getElementById("checking-val").textContent      = fmt(data.balances.checking);
-  document.getElementById("savings-val").textContent       = fmt(data.balances.savings);
-  document.getElementById("rate-chk-display").textContent  = data.rates.checking||0;
-  document.getElementById("rate-sav-display").textContent  = data.rates.savings||0;
+function setStatus(type,text){document.getElementById("status-dot").className="status-dot "+type;document.getElementById("status-text").textContent=text;}
+
+function renderBalances(){
+  const child=activeChild||currentUser;
+  const data=child?getChildData(child):{balances:{checking:0,savings:0},rates:{checking:0,savings:0}};
+  document.getElementById("checking-val").textContent=fmt(data.balances.checking);
+  document.getElementById("savings-val").textContent=fmt(data.balances.savings);
+  document.getElementById("rate-chk-display").textContent=data.rates.checking||0;
+  document.getElementById("rate-sav-display").textContent=data.rates.savings||0;
+  // Interest earned this month estimate
+  const ec=(data.balances.checking*(data.rates.checking/100/12));
+  const es=(data.balances.savings*(data.rates.savings/100/12));
+  const echkEl=document.getElementById("earned-chk-display");
+  const esavEl=document.getElementById("earned-sav-display");
+  if(ec>0&&echkEl){echkEl.textContent="+"+fmt(ec)+" /mo";echkEl.classList.remove("hidden");}else if(echkEl)echkEl.classList.add("hidden");
+  if(es>0&&esavEl){esavEl.textContent="+"+fmt(es)+" /mo";esavEl.classList.remove("hidden");}else if(esavEl)esavEl.classList.add("hidden");
 }
-function setStatus(type,text) {
-  document.getElementById("status-dot").className  = "status-dot "+type;
-  document.getElementById("status-text").textContent = text;
-}
-function populateHistoryUserFilter() {
-  // History is per-child so no user filter needed — filtered automatically
-}
-function updateChoreBadges() {
-  const child = activeChild || currentUser;
-  if (!child) return;
-  const chores = getChildData(child).chores || [];
-  const available = chores.filter(c=>!c.paused&&c.status!=="pending"&&(!c.endDate||c.endDate>=todayStr())).length;
-  const pending   = chores.filter(c=>c.status==="pending").length;
-  const cb = document.getElementById("child-chore-badge");
-  const pb = document.getElementById("parent-chore-badge");
+
+function updateChoreBadges(){
+  const child=activeChild||currentUser;
+  if(!child)return;
+  const chores=getChildData(child).chores||[];
+  const available=chores.filter(c=>!c.paused&&c.status==="available"&&(!c.endDate||c.endDate>=todayStr())).length;
+  const pending=chores.filter(c=>c.status==="pending").length;
+  const cb=document.getElementById("child-chore-badge");
+  const pb=document.getElementById("parent-chore-badge");
   if(cb){cb.textContent=available;cb.classList.toggle("hidden",available===0);}
   if(pb){pb.textContent=pending;pb.classList.toggle("hidden",pending===0);}
 }
-function switchTab(panel,tab) {
-  const panelEl = document.getElementById(panel+"-panel");
-  if(!panelEl) return;
+
+function switchTab(panel,tab){
+  const panelEl=document.getElementById(panel+"-panel");
+  if(!panelEl)return;
   panelEl.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
   panelEl.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
   document.getElementById(panel+"-tab-"+tab)?.classList.add("active");
-  panelEl.querySelectorAll(".tab-btn").forEach(b=>{
-    if(b.getAttribute("onclick")?.includes("'"+tab+"'")) b.classList.add("active");
-  });
-}
-
-// ================================================================
-// CHILD PICKER (parent with multiple children)
-// ================================================================
-function showChildPicker() {
-  const children = getChildNames();
-  if (children.length === 1) {
-    // Only one child — go straight to management
-    selectChild(children[0]);
-    return;
-  }
-  // Multiple children — show picker
-  document.getElementById("main-screen").classList.add("hidden");
-  document.getElementById("child-picker-screen").classList.remove("hidden");
-  document.getElementById("picker-welcome").textContent = "Hi, "+currentUser+"! 👋";
-
-  const list = document.getElementById("child-picker-list");
-  list.innerHTML = children.map(name => {
-    const data = getChildData(name);
-    const total = (data.balances.checking||0) + (data.balances.savings||0);
-    return `
-    <button class="child-btn" onclick="selectChild('${name}')">
-      <div style="font-size:1.3rem;margin-bottom:4px;">👤 ${name}</div>
-      <div class="child-btn-balance">Total balance: ${fmt(total)}</div>
-      <span class="child-btn-arrow">›</span>
-    </button>`;
-  }).join("");
-}
-
-function selectChild(childName) {
-  activeChild = childName;
-  document.getElementById("child-picker-screen").classList.add("hidden");
-  document.getElementById("main-screen").classList.remove("hidden");
-
-  // Show switch bar only if multiple children
-  const switchBar = document.getElementById("child-switch-bar");
-  if (getChildNames().length > 1) {
-    switchBar.classList.remove("hidden");
-    document.getElementById("child-switch-name").textContent = childName+"'s Account";
-  } else {
-    switchBar.classList.add("hidden");
-  }
-
-  document.getElementById("welcome-msg").textContent = "Managing "+childName+" 👋";
-  document.getElementById("parent-panel").classList.remove("hidden");
-  document.getElementById("child-panel").classList.add("hidden");
-
-  renderBalances();
-  renderParentSettings();
-  renderParentChores();
-  updateChoreBadges();
+  panelEl.querySelectorAll(".tab-btn").forEach(b=>{if(b.getAttribute("onclick")?.includes("'"+tab+"'"))b.classList.add("active");});
 }
 
 // ================================================================
 // LOGIN
 // ================================================================
-function attemptLogin() {
+function attemptLogin(){
   clearFieldError("pin-input","pin-error");
-  const userRaw = document.getElementById("username-input").value.trim();
-  const pin     = document.getElementById("pin-input").value;
-  const user    = state.users.find(u=>u.toLowerCase()===userRaw.toLowerCase());
-
-  if (!user || !state.pins[user]) {
-    showFieldError("pin-input","pin-error","Name not recognised — check spelling.");
-    return;
-  }
-  if (state.pins[user] !== pin) {
-    showFieldError("pin-input","pin-error","Incorrect PIN. Please try again.");
-    document.getElementById("pin-input").value="";
-    return;
-  }
-
-  if (document.getElementById("remember-me").checked) {
-    try { localStorage.setItem("fb_remembered_user",user); } catch(e){}
-  }
-
-  currentUser = user;
-  currentRole = state.roles[user]||"child";
-
+  const userRaw=document.getElementById("username-input").value.trim();
+  const pin=document.getElementById("pin-input").value;
+  const user=state.users.find(u=>u.toLowerCase()===userRaw.toLowerCase());
+  if(!user){showFieldError("pin-input","pin-error","Name not recognised — check spelling.");return;}
+  if(state.pins[user]!==pin){showFieldError("pin-input","pin-error","Incorrect PIN. Try again.");document.getElementById("pin-input").value="";return;}
+  if(document.getElementById("remember-me").checked)try{localStorage.setItem("fb_remembered_user",user);}catch(e){}
+  currentUser=user;
+  currentRole=state.roles[user]||"child";
   document.getElementById("login-screen").classList.add("hidden");
-
-  if (currentRole === "parent") {
-    const children = getChildNames();
-    if (children.length === 1) {
-      // One child — skip picker, go straight to management
-      document.getElementById("main-screen").classList.remove("hidden");
-      selectChild(children[0]);
-    } else if (children.length > 1) {
-      // Multiple children — show picker
-      document.getElementById("child-picker-screen").classList.remove("hidden");
-      showChildPicker();
-    } else {
-      // No children yet
-      document.getElementById("main-screen").classList.remove("hidden");
-      document.getElementById("welcome-msg").textContent = "Hi, "+user+"! 👋";
-      document.getElementById("parent-panel").classList.remove("hidden");
-    }
-  } else {
-    // Child login — see only their own data
-    activeChild = user;
+  if(currentRole==="parent"){
+    const children=getChildNames();
+    if(children.length===1){document.getElementById("main-screen").classList.remove("hidden");selectChild(children[0]);}
+    else if(children.length>1){document.getElementById("child-picker-screen").classList.remove("hidden");showChildPicker();}
+    else{document.getElementById("main-screen").classList.remove("hidden");document.getElementById("welcome-msg").textContent="Hi, "+user+"! 👋";document.getElementById("parent-panel").classList.remove("hidden");}
+  }else{
+    activeChild=user;
     document.getElementById("main-screen").classList.remove("hidden");
-    document.getElementById("welcome-msg").textContent = "Hi, "+user+"! 👋";
+    document.getElementById("welcome-msg").textContent="Hi, "+user+"! 👋";
     document.getElementById("child-panel").classList.remove("hidden");
-    renderBalances();
-    renderChildChores();
-    showChoreWaitingBanner();
-    updateChoreBadges();
+    renderBalances();renderChildChores();showChoreWaitingBanner();updateChoreBadges();
   }
 }
+function logout(){location.reload();}
 
-function logout() { location.reload(); }
-
-function changePinPrompt(who) {
-  const targetUser = who==="parent" ? currentUser
-    : activeChild || state.users.find(u=>state.roles[u]==="child") || currentUser;
-  openInputModal({
-    icon:"🔑", title:"New PIN for "+targetUser, body:"Enter a new 4-digit PIN.",
-    inputType:"password",
-    inputAttrs:'maxlength="4" inputmode="numeric" placeholder="••••" autocomplete="new-password"',
-    confirmText:"Save PIN",
-    onConfirm:(val) => {
-      if(!val||val.length!==4||!/^\d{4}$/.test(val)){showToast("PIN must be exactly 4 digits.","error");return;}
-      state.pins[targetUser]=val;
-      syncToCloud("PIN Update");
-      showToast("PIN updated for "+targetUser+".","success");
-    }
-  });
+function changePinPrompt(who){
+  const target=who==="parent"?currentUser:activeChild||getChildNames()[0]||currentUser;
+  openInputModal({icon:"🔑",title:"New PIN for "+target,body:"Enter a new 4-digit PIN.",inputType:"password",inputAttrs:'maxlength="4" inputmode="numeric" placeholder="••••" autocomplete="new-password"',confirmText:"Save PIN",
+    onConfirm:v=>{if(!v||v.length!==4||!/^\d{4}$/.test(v)){showToast("PIN must be exactly 4 digits.","error");return;}state.pins[target]=v;syncToCloud("PIN Update");showToast("PIN updated for "+target+".","success");}});
 }
-
-function confirmResetChildPin() {
-  const childUser = activeChild || state.users.find(u=>state.roles[u]==="child")||"Child";
-  openModal({
-    icon:"🔄", title:"Reset "+childUser+"'s PIN?",
-    body:"Their PIN will be reset to 0000.",
-    confirmText:"Reset PIN", confirmClass:"btn-danger",
-    onConfirm:()=>{ state.pins[childUser]="0000"; syncToCloud("PIN Reset"); showToast(childUser+"'s PIN reset to 0000.","success"); }
-  });
+function confirmResetChildPin(){
+  const cn=activeChild||getChildNames()[0]||"Child";
+  openModal({icon:"🔄",title:"Reset "+cn+"'s PIN?",body:"PIN will be reset to 0000.",confirmText:"Reset PIN",confirmClass:"btn-danger",
+    onConfirm:()=>{state.pins[cn]="0000";syncToCloud("PIN Reset");showToast(cn+"'s PIN reset to 0000.","success");}});
 }
 
 // ================================================================
 // REMEMBER ME
 // ================================================================
-function restoreRememberedUser() {
-  try {
-    const saved = localStorage.getItem("fb_remembered_user");
-    if (!saved) return;
-    const valid = state.users.find(u=>u.toLowerCase()===saved.toLowerCase());
-    if (!valid) { localStorage.removeItem("fb_remembered_user"); return; }
-    const ni=document.getElementById("username-input");
-    const rc=document.getElementById("remember-me");
-    const nb=document.getElementById("not-you-btn");
-    if(ni) ni.value=valid;
-    if(rc) rc.checked=true;
-    if(nb) nb.classList.remove("hidden");
+function restoreRememberedUser(){
+  try{
+    const saved=localStorage.getItem("fb_remembered_user");
+    if(!saved)return;
+    const valid=state.users.find(u=>u.toLowerCase()===saved.toLowerCase());
+    if(!valid){localStorage.removeItem("fb_remembered_user");return;}
+    const ni=document.getElementById("username-input"),rc=document.getElementById("remember-me"),nb=document.getElementById("not-you-btn");
+    if(ni)ni.value=valid;if(rc)rc.checked=true;if(nb)nb.classList.remove("hidden");
     setTimeout(()=>document.getElementById("pin-input")?.focus(),400);
-  } catch(e){}
+  }catch(e){}
 }
-function onRememberMeChange() {
-  if(!document.getElementById("remember-me").checked){
-    try{localStorage.removeItem("fb_remembered_user");}catch(e){}
-    document.getElementById("not-you-btn").classList.add("hidden");
-  }
+function onRememberMeChange(){if(!document.getElementById("remember-me").checked){try{localStorage.removeItem("fb_remembered_user");}catch(e){}document.getElementById("not-you-btn").classList.add("hidden");}}
+function clearRememberedUser(){try{localStorage.removeItem("fb_remembered_user");}catch(e){}const ni=document.getElementById("username-input"),rc=document.getElementById("remember-me"),nb=document.getElementById("not-you-btn");if(ni){ni.value="";ni.focus();}if(rc)rc.checked=false;if(nb)nb.classList.add("hidden");}
+
+// ================================================================
+// CHILD PICKER
+// ================================================================
+function showChildPicker(){
+  const children=getChildNames();
+  if(children.length===1){selectChild(children[0]);return;}
+  document.getElementById("main-screen").classList.add("hidden");
+  document.getElementById("child-picker-screen").classList.remove("hidden");
+  document.getElementById("picker-welcome").textContent="Hi, "+currentUser+"! 👋";
+  document.getElementById("child-picker-list").innerHTML=children.map(name=>{
+    const data=getChildData(name);
+    const total=(data.balances.checking||0)+(data.balances.savings||0);
+    return `<button class="child-btn" onclick="selectChild('${name}')"><div style="font-size:1.1rem;">👤 ${name}</div><div class="child-btn-balance">Total: ${fmt(total)}</div><span class="child-btn-arrow">›</span></button>`;
+  }).join("");
 }
-function clearRememberedUser() {
-  try{localStorage.removeItem("fb_remembered_user");}catch(e){}
-  const ni=document.getElementById("username-input");
-  const rc=document.getElementById("remember-me");
-  const nb=document.getElementById("not-you-btn");
-  if(ni){ni.value="";ni.focus();}
-  if(rc) rc.checked=false;
-  if(nb) nb.classList.add("hidden");
+function selectChild(childName){
+  activeChild=childName;
+  document.getElementById("child-picker-screen").classList.add("hidden");
+  document.getElementById("main-screen").classList.remove("hidden");
+  const sb=document.getElementById("child-switch-bar");
+  if(getChildNames().length>1){sb.classList.remove("hidden");document.getElementById("child-switch-name").textContent=childName+"'s Account";}
+  else sb.classList.add("hidden");
+  document.getElementById("welcome-msg").textContent="Managing "+childName+" 👋";
+  document.getElementById("parent-panel").classList.remove("hidden");
+  document.getElementById("child-panel").classList.add("hidden");
+  renderBalances();renderParentSettings();renderParentChores();updateChoreBadges();
 }
 
 // ================================================================
 // CHILD ACTIONS
 // ================================================================
-function validateChildForm() {
+function validateChildForm(){
   let ok=true;
-  clearFieldError("child-amt","child-amt-msg");
-  clearFieldError("child-note","child-note-msg");
+  clearFieldError("child-amt","child-amt-msg");clearFieldError("child-note","child-note-msg");
   const amt=parseFloat(document.getElementById("child-amt").value);
   const note=document.getElementById("child-note").value.trim();
   if(!amt||amt<=0){showFieldError("child-amt","child-amt-msg","Please enter a valid amount.");ok=false;}
   if(!note){showFieldError("child-note","child-note-msg","Please describe what this is for.");ok=false;}
   return ok;
 }
-
-function confirmTransfer() {
-  if(!validateChildForm()) return;
+function confirmTransfer(){
+  if(!validateChildForm())return;
   const amt=parseFloat(document.getElementById("child-amt").value);
   const note=document.getElementById("child-note").value.trim();
   const data=getChildData(activeChild||currentUser);
   if(amt>data.balances.checking){showFieldError("child-amt","child-amt-msg","Not enough in checking! Balance: "+fmt(data.balances.checking));return;}
-  openModal({
-    icon:"🏦", title:"Move to Savings?",
-    body:"Moves money from checking to savings.",
-    detail:{"Amount":fmt(amt),"For":note,"Checking After":fmt(data.balances.checking-amt),"Savings After":fmt(data.balances.savings+amt)},
-    confirmText:"Move It", confirmClass:"btn-secondary",
-    onConfirm:()=>{
-      data.balances.checking-=amt; data.balances.savings+=amt;
-      recordTransaction(currentUser,"To Savings: "+note+" (Sav)",-amt);
-      document.getElementById("child-amt").value="";
-      document.getElementById("child-note").value="";
-      syncToCloud("Transfer");
-      showToast(fmt(amt)+" moved to savings! 💚","success");
-    }
-  });
+  openModal({icon:"🏦",title:"Move to Savings?",body:"Moves money from checking to savings.",detail:{"Amount":fmt(amt),"For":note,"Checking After":fmt(data.balances.checking-amt),"Savings After":fmt(data.balances.savings+amt)},confirmText:"Move It",confirmClass:"btn-secondary",
+    onConfirm:()=>{data.balances.checking-=amt;data.balances.savings+=amt;recordTransaction(currentUser,"To Savings: "+note+" (Sav)",-amt);document.getElementById("child-amt").value="";document.getElementById("child-note").value="";syncToCloud("Transfer");showToast(fmt(amt)+" moved to savings! 💚","success");}});
 }
-
-function confirmWithdraw() {
-  if(!validateChildForm()) return;
+function confirmWithdraw(){
+  if(!validateChildForm())return;
   const amt=parseFloat(document.getElementById("child-amt").value);
   const note=document.getElementById("child-note").value.trim();
   const data=getChildData(activeChild||currentUser);
   if(amt>data.balances.checking){showFieldError("child-amt","child-amt-msg","Only "+fmt(data.balances.checking)+" in checking.");return;}
-  openModal({
-    icon:"💸", title:"Withdraw "+fmt(amt)+"?",
-    body:"Remember to take the same amount from the real Chase account!",
-    detail:{"Amount":fmt(amt),"For":note,"Checking After":fmt(data.balances.checking-amt)},
-    confirmText:"Withdraw", confirmClass:"btn-danger",
-    onConfirm:()=>{
-      data.balances.checking-=amt;
-      recordTransaction(currentUser,note+" (Chk)",-amt);
-      document.getElementById("child-amt").value="";
-      document.getElementById("child-note").value="";
-      syncToCloud("Withdrawal");
-      showToast("Withdrew "+fmt(amt)+" from checking.","success");
-    }
-  });
+  openModal({icon:"💸",title:"Withdraw "+fmt(amt)+"?",body:"Remember to take the same amount from the real Chase account!",detail:{"Amount":fmt(amt),"For":note,"Checking After":fmt(data.balances.checking-amt)},confirmText:"Withdraw",confirmClass:"btn-danger",
+    onConfirm:()=>{data.balances.checking-=amt;recordTransaction(currentUser,note+" (Chk)",-amt);document.getElementById("child-amt").value="";document.getElementById("child-note").value="";syncToCloud("Withdrawal");showToast("Withdrew "+fmt(amt)+" from checking.","success");}});
 }
 
 // ================================================================
 // PARENT ACTIONS
 // ================================================================
-function renderParentSettings() {
-  const data = getChildData(activeChild);
-  document.getElementById("rate-chk").value  = data.rates.checking||0;
-  document.getElementById("rate-sav").value  = data.rates.savings||0;
-  document.getElementById("allow-chk").value = (data.autoDeposit.checking||0).toFixed(2);
-  document.getElementById("allow-sav").value = (data.autoDeposit.savings||0).toFixed(2);
+function renderParentSettings(){
+  const data=getChildData(activeChild);
+  document.getElementById("rate-chk").value=data.rates.checking||0;
+  document.getElementById("rate-sav").value=data.rates.savings||0;
+  document.getElementById("allow-chk").value=(data.autoDeposit.checking||0).toFixed(2);
+  document.getElementById("allow-sav").value=(data.autoDeposit.savings||0).toFixed(2);
 }
-
-function confirmAdjust() {
+function confirmAdjust(){
   const chk=parseFloat(document.getElementById("adj-chk").value)||0;
   const sav=parseFloat(document.getElementById("adj-sav").value)||0;
   const note=document.getElementById("adj-note").value.trim();
-  const msgEl=document.getElementById("adj-msg");
-  msgEl.className="field-msg";
+  const msgEl=document.getElementById("adj-msg");msgEl.className="field-msg";
   if(chk===0&&sav===0){msgEl.className="field-msg error";msgEl.textContent="Enter an amount for at least one account.";return;}
   if(!note){msgEl.className="field-msg error";msgEl.textContent="A reason is required.";return;}
   const data=getChildData(activeChild);
   const detail={"Reason":note};
   if(chk!==0){detail["Checking Change"]=(chk>0?"+":"")+fmt(chk);detail["Checking After"]=fmt(data.balances.checking+chk);}
   if(sav!==0){detail["Savings Change"]=(sav>0?"+":"")+fmt(sav);detail["Savings After"]=fmt(data.balances.savings+sav);}
-  openModal({
-    icon:"⚡", title:"Apply Adjustment?", body:"Review before confirming.",
-    detail:detail, confirmText:"Apply", confirmClass:"btn-warning",
-    onConfirm:()=>{
-      if(chk!==0){data.balances.checking+=chk;recordTransaction("Dad",note+" (Chk)",chk);}
-      if(sav!==0){data.balances.savings+=sav;recordTransaction("Dad",note+" (Sav)",sav);}
-      document.getElementById("adj-chk").value="";
-      document.getElementById("adj-sav").value="";
-      document.getElementById("adj-note").value="";
-      syncToCloud("Adjustment");
-      showToast("Adjustment applied! ⚡","success");
-    }
-  });
+  openModal({icon:"⚡",title:"Apply Adjustment?",body:"Review before confirming.",detail,confirmText:"Apply",confirmClass:"btn-warning",
+    onConfirm:()=>{if(chk!==0){data.balances.checking+=chk;recordTransaction("Dad",note+" (Chk)",chk);}if(sav!==0){data.balances.savings+=sav;recordTransaction("Dad",note+" (Sav)",sav);}document.getElementById("adj-chk").value="";document.getElementById("adj-sav").value="";document.getElementById("adj-note").value="";syncToCloud("Adjustment");showToast("Adjustment applied! ⚡","success");}});
 }
-
-function confirmInterest() {
+function confirmInterest(){
   const data=getChildData(activeChild);
   const ec=data.balances.checking*(data.rates.checking/100/12);
   const es=data.balances.savings*(data.rates.savings/100/12);
-  if(ec===0&&es===0){showToast("Both rates are 0%. Set rates in Settings first.","info");return;}
-  openModal({
-    icon:"📈", title:"Apply 1 Month of Interest?",
-    body:"Adds interest to both accounts based on current APY rates.",
-    detail:{"Checking APY":data.rates.checking+"%","Checking Earned":"+"+fmt(ec),"Savings APY":data.rates.savings+"%","Savings Earned":"+"+fmt(es),"Total":"+"+fmt(ec+es)},
-    confirmText:"Apply Interest", confirmClass:"btn-purple",
-    onConfirm:()=>{
-      data.balances.checking+=ec; data.balances.savings+=es;
-      if(ec>0) recordTransaction("Bank","Interest (Chk)",ec);
-      if(es>0) recordTransaction("Bank","Interest (Sav)",es);
-      syncToCloud("Interest Run");
-      showToast("Interest applied! 📈","success");
-    }
-  });
+  if(ec===0&&es===0){showToast("Both rates are 0% — set rates in Settings first.","info");return;}
+  openModal({icon:"📈",title:"Apply 1 Month of Interest?",body:"Adds interest based on current APY rates.",detail:{"Checking APY":data.rates.checking+"%","Checking Earned":"+"+fmt(ec),"Savings APY":data.rates.savings+"%","Savings Earned":"+"+fmt(es),"Total":"+"+fmt(ec+es)},confirmText:"Apply Interest",confirmClass:"btn-purple",
+    onConfirm:()=>{data.balances.checking+=ec;data.balances.savings+=es;if(ec>0)recordTransaction("Bank","Interest (Chk)",ec);if(es>0)recordTransaction("Bank","Interest (Sav)",es);syncToCloud("Interest Run");showToast("Interest applied! 📈","success");}});
+}
+function saveAllowance(){const data=getChildData(activeChild);data.autoDeposit.checking=parseFloat(document.getElementById("allow-chk").value)||0;data.autoDeposit.savings=parseFloat(document.getElementById("allow-sav").value)||0;syncToCloud("Allowance Update");showToast("Allowance saved.","success");}
+function saveRates(){const data=getChildData(activeChild);data.rates.checking=parseFloat(document.getElementById("rate-chk").value)||0;data.rates.savings=parseFloat(document.getElementById("rate-sav").value)||0;renderBalances();syncToCloud("Rates Update");showToast("Interest rates saved.","success");}
+
+// ================================================================
+// CHORES — CHILD VIEW (Mark's checklist design)
+// ================================================================
+function renderChildChores(){
+  const listEl=document.getElementById("child-chore-list");
+  const notifEl=document.getElementById("child-chore-notifications");
+  if(!listEl)return;
+  const data=getChildData(activeChild||currentUser);
+  const chores=data.chores||[];
+
+  // Notification cards for approved/denied chores
+  const decisions=chores.filter(c=>(c.status==="approved"||c.status==="denied")&&c.completedBy===currentUser);
+  if(notifEl){
+    notifEl.innerHTML=decisions.map(c=>`
+      <div class="chore-card ${c.status==="approved"?"state-pending":""}" style="${c.status==="approved"?"border-color:var(--secondary);background:#f0fdf4;":"border-color:var(--danger);background:#fef2f2;"}">
+        <div class="chore-card-header">
+          <span class="chore-card-name">${c.status==="approved"?"✅":"❌"} ${c.name}</span>
+          <span class="chore-card-amount">${fmt(c.amount)}</span>
+        </div>
+        <div class="chore-card-meta">${c.status==="approved"?"Great work! "+fmt(c.amount)+" added to your account! 🎉":"Not approved this time."+(c.denialNote?" Reason: "+c.denialNote:"")+" Talk to your parent if you have questions."}</div>
+        <button class="btn btn-ghost btn-sm" onclick="dismissChoreNotif('${c.id}')">Got it ✓</button>
+      </div>`).join("")||"";
+  }
+
+  // Available chores as checklist table
+  const available=chores.filter(c=>!c.paused&&c.status==="available"&&(!c.endDate||c.endDate>=todayStr()));
+
+  if(!available.length){
+    listEl.innerHTML=`<div class="empty-state"><span class="empty-icon">🎉</span>${decisions.length?"Check the notifications above!":"No chores right now — check back later!"}</div>`;
+    return;
+  }
+
+  const schedLabel=s=>({once:"One-time",daily:"Daily",weekly:"Weekly",biweekly:"Bi-weekly",monthly:"Monthly"}[s]||s);
+
+  listEl.innerHTML=`
+    <table class="chore-table">
+      <thead>
+        <tr>
+          <th style="width:36px;"></th>
+          <th>Chore</th>
+          <th>Schedule</th>
+          <th style="text-align:right;">Earn</th>
+        </tr>
+      </thead>
+      <tbody id="chore-tbody">
+        ${available.map(c=>`
+          <tr class="chore-row" id="chore-row-${c.id}">
+            <td class="chore-check-cell">
+              <div class="chore-checkbox-wrap" id="chk-${c.id}" onclick="toggleChoreCheck('${c.id}')"></div>
+            </td>
+            <td class="chore-name-cell">
+              ${c.name}
+              ${c.desc?`<div class="chore-desc-small">${c.desc}</div>`:""}
+              ${c.childChooses?`<div class="chore-desc-small">💰 You choose the split</div>`:`<div class="chore-desc-small">💰 ${c.splitChk}% Checking / ${100-c.splitChk}% Savings</div>`}
+            </td>
+            <td class="chore-schedule-cell">${schedLabel(c.schedule)}</td>
+            <td class="chore-amount-cell" id="chore-amt-${c.id}">${fmt(c.amount)}</td>
+          </tr>`).join("")}
+      </tbody>
+    </table>
+    <p style="font-size:.72rem;color:var(--muted);text-align:center;margin-top:8px;">Tap the checkbox when you've completed a chore ✓</p>`;
 }
 
-function saveAllowance() {
-  const data=getChildData(activeChild);
-  data.autoDeposit.checking=parseFloat(document.getElementById("allow-chk").value)||0;
-  data.autoDeposit.savings=parseFloat(document.getElementById("allow-sav").value)||0;
-  syncToCloud("Allowance Update");
-  showToast("Allowance saved.","success");
+function toggleChoreCheck(choreId){
+  const data=getChildData(activeChild||currentUser);
+  const chore=data.chores.find(c=>c.id===choreId);
+  if(!chore||chore.status==="pending")return;
+
+  if(chore.childChooses){
+    // Ask for split first
+    openModal({
+      icon:"✅",title:'Mark "'+chore.name+'" Complete?',
+      body:"Choose how to split your "+fmt(chore.amount)+" reward.",
+      detail:{},confirmText:"Submit ✋",confirmClass:"btn-secondary",
+      onConfirm:()=>{
+        const sl=document.getElementById("modal-split-slider");
+        submitChoreCheck(choreId,sl?parseInt(sl.value):chore.splitChk);
+      }
+    });
+    setTimeout(()=>{
+      const de=document.getElementById("modal-detail");
+      const p=chore.splitChk||50;
+      de.innerHTML=`<div class="split-display"><span class="chk-pct">Checking: <span id="msc-chk">${p}</span>%</span><span class="sav-pct">Savings: <span id="msc-sav">${100-p}</span>%</span></div><input type="range" id="modal-split-slider" min="0" max="100" value="${p}" oninput="document.getElementById('msc-chk').textContent=this.value;document.getElementById('msc-sav').textContent=100-parseInt(this.value);"><p style="font-size:.73rem;color:var(--muted);margin:6px 0 0;text-align:center;">Drag to set your split</p>`;
+      de.classList.remove("hidden");
+    },60);
+  }else{
+    submitChoreCheck(choreId,chore.splitChk);
+  }
 }
 
-function saveRates() {
-  const data=getChildData(activeChild);
-  data.rates.checking=parseFloat(document.getElementById("rate-chk").value)||0;
-  data.rates.savings=parseFloat(document.getElementById("rate-sav").value)||0;
-  renderBalances();
-  syncToCloud("Rates Update");
-  showToast("Interest rates saved.","success");
+function submitChoreCheck(choreId,chkPct){
+  const data=getChildData(activeChild||currentUser);
+  const chore=data.chores.find(c=>c.id===choreId);
+  if(!chore)return;
+
+  // Animate row green
+  const row=document.getElementById("chore-row-"+choreId);
+  const chkEl=document.getElementById("chk-"+choreId);
+  const amtEl=document.getElementById("chore-amt-"+choreId);
+  if(row)row.classList.add("done");
+  if(chkEl){chkEl.classList.add("pending");chkEl.onclick=null;}
+  if(amtEl)amtEl.classList.add("done-amt");
+
+  // Mark pending
+  chore.status="pending";chore.completedBy=currentUser;chore.completedAt=fmtDate(new Date());chore.splitChk=chkPct;
+
+  // Show earned popup
+  showEarnedPopup(chore.amount,chore.name);
+
+  syncToCloud("Chore Submitted");
+  updateChoreBadges();
+  showChoreWaitingBanner();
+}
+
+function dismissChoreNotif(choreId){
+  const data=getChildData(activeChild||currentUser);
+  const idx=data.chores.findIndex(c=>c.id===choreId);
+  if(idx===-1)return;
+  const chore=data.chores[idx];
+  if(chore.schedule==="once")data.chores.splice(idx,1);
+  else Object.assign(chore,{status:"available",completedBy:null,completedAt:null,denialNote:null});
+  syncToCloud("Chore Dismissed");
+  renderChildChores();updateChoreBadges();
 }
 
 // ================================================================
-// CHORES
+// CHORES — PARENT VIEW
 // ================================================================
-function populateMonthlyDays() {
-  const sel=document.getElementById("chore-monthly-day");
-  if(!sel||sel.options.length>0) return;
-  const sfx={1:"st",2:"nd",3:"rd"};
-  for(let d=1;d<=28;d++){const o=document.createElement("option");o.value=d;o.textContent=d+(sfx[d]||"th")+" of the month";sel.appendChild(o);}
-}
-function toggleMonthlyDay() {
-  const s=document.getElementById("chore-schedule").value;
-  document.getElementById("chore-monthly-wrap").classList.toggle("hidden",s!=="monthly");
-}
-function updateSplitLabel() {
-  const pct=parseInt(document.getElementById("chore-split").value);
-  document.getElementById("split-chk-label").textContent=pct;
-  document.getElementById("split-sav-label").textContent=100-pct;
-}
-function scheduleLabel(s,d){
-  return {once:"One-time",daily:"Daily",weekly:"Weekly",biweekly:"Bi-weekly"}[s]||("Monthly, day "+d);
-}
+function populateMonthlyDays(){const sel=document.getElementById("chore-monthly-day");if(!sel||sel.options.length>0)return;const sfx={1:"st",2:"nd",3:"rd"};for(let d=1;d<=28;d++){const o=document.createElement("option");o.value=d;o.textContent=d+(sfx[d]||"th")+" of the month";sel.appendChild(o);}}
+function toggleMonthlyDay(){document.getElementById("chore-monthly-wrap").classList.toggle("hidden",document.getElementById("chore-schedule").value!=="monthly");}
+function updateSplitLabel(){const p=parseInt(document.getElementById("chore-split").value);document.getElementById("split-chk-label").textContent=p;document.getElementById("split-sav-label").textContent=100-p;}
+function scheduleLabel(s,d){return{once:"One-time",daily:"Daily",weekly:"Weekly",biweekly:"Bi-weekly"}[s]||("Monthly, day "+d);}
 
-function createChore() {
-  const msgEl=document.getElementById("chore-form-msg");
-  msgEl.className="field-msg";
+function createChore(){
+  const msgEl=document.getElementById("chore-form-msg");msgEl.className="field-msg";
   const name=document.getElementById("chore-name").value.trim();
   const desc=document.getElementById("chore-desc").value.trim();
   const amount=parseFloat(document.getElementById("chore-amount").value);
@@ -1215,181 +1137,62 @@ function createChore() {
   const monthlyDay=schedule==="monthly"?parseInt(document.getElementById("chore-monthly-day").value):null;
   if(!name){msgEl.className="field-msg error";msgEl.textContent="Chore name is required.";return;}
   if(!amount||amount<=0){msgEl.className="field-msg error";msgEl.textContent="Enter a valid reward amount.";return;}
-
   const data=getChildData(activeChild);
-
-  if (editingChoreId) {
+  if(editingChoreId){
     const ex=data.chores.find(c=>c.id===editingChoreId);
-    if(ex) Object.assign(ex,{name,desc,amount,schedule,monthlyDay,splitChk,childChooses,paused,endDate});
-    editingChoreId=null;
-    setChoreFormMode("create");
-    syncToCloud("Chore Edited");
-    showToast("Chore updated! ✏️","success");
-  } else {
+    if(ex)Object.assign(ex,{name,desc,amount,schedule,monthlyDay,splitChk,childChooses,paused,endDate});
+    editingChoreId=null;setChoreFormMode("create");syncToCloud("Chore Edited");showToast("Chore updated! ✏️","success");
+  }else{
     data.chores.push({id:"chore_"+Date.now(),name,desc,amount,schedule,monthlyDay,splitChk,childChooses,paused,endDate,status:"available",completedBy:null,completedAt:null,denialNote:null,createdAt:fmtDate(new Date())});
-    syncToCloud("Chore Created");
-    showToast('"'+name+'" added!',"success");
+    syncToCloud("Chore Created");showToast('"'+name+'" added! 📋',"success");
   }
-
   ["chore-name","chore-desc","chore-amount","chore-end-date"].forEach(id=>document.getElementById(id).value="");
   document.getElementById("chore-schedule").value="once";
   document.getElementById("chore-split").value=100;
   document.getElementById("chore-child-chooses").checked=false;
   document.getElementById("chore-paused").checked=false;
   document.getElementById("chore-monthly-wrap").classList.add("hidden");
-  updateSplitLabel();
-  setChoreFormMode("create");
-  renderParentChores();
-  renderChildChores();
-  updateChoreBadges();
+  updateSplitLabel();setChoreFormMode("create");
+  renderParentChores();renderChildChores();updateChoreBadges();
 }
 
-function editChore(choreId) {
-  const data=getChildData(activeChild);
-  const chore=data.chores.find(c=>c.id===choreId);
-  if(!chore) return;
+function editChore(choreId){
+  const data=getChildData(activeChild);const chore=data.chores.find(c=>c.id===choreId);if(!chore)return;
   editingChoreId=choreId;
-  document.getElementById("chore-name").value=chore.name||"";
-  document.getElementById("chore-desc").value=chore.desc||"";
-  document.getElementById("chore-amount").value=chore.amount||"";
-  document.getElementById("chore-schedule").value=chore.schedule||"once";
-  document.getElementById("chore-split").value=chore.splitChk!==undefined?chore.splitChk:100;
-  document.getElementById("chore-child-chooses").checked=!!chore.childChooses;
-  document.getElementById("chore-paused").checked=!!chore.paused;
-  document.getElementById("chore-end-date").value=chore.endDate||"";
-  toggleMonthlyDay();
-  if(chore.schedule==="monthly"&&chore.monthlyDay) document.getElementById("chore-monthly-day").value=chore.monthlyDay;
-  updateSplitLabel();
-  setChoreFormMode("edit",chore.name);
-  switchTab("parent","chores");
+  document.getElementById("chore-name").value=chore.name||"";document.getElementById("chore-desc").value=chore.desc||"";document.getElementById("chore-amount").value=chore.amount||"";document.getElementById("chore-schedule").value=chore.schedule||"once";document.getElementById("chore-split").value=chore.splitChk!==undefined?chore.splitChk:100;document.getElementById("chore-child-chooses").checked=!!chore.childChooses;document.getElementById("chore-paused").checked=!!chore.paused;document.getElementById("chore-end-date").value=chore.endDate||"";
+  toggleMonthlyDay();if(chore.schedule==="monthly"&&chore.monthlyDay)document.getElementById("chore-monthly-day").value=chore.monthlyDay;
+  updateSplitLabel();setChoreFormMode("edit",chore.name);switchTab("parent","chores");
   document.getElementById("chore-form-title").scrollIntoView({behavior:"smooth",block:"start"});
   showToast('Editing "'+chore.name+'" — make changes and tap Save.',"info",4000);
 }
 
-function cancelChoreEdit() {
-  editingChoreId=null;
-  setChoreFormMode("create");
+function cancelChoreEdit(){
+  editingChoreId=null;setChoreFormMode("create");
   ["chore-name","chore-desc","chore-amount","chore-end-date"].forEach(id=>document.getElementById(id).value="");
-  document.getElementById("chore-schedule").value="once";
-  document.getElementById("chore-split").value=100;
-  document.getElementById("chore-child-chooses").checked=false;
-  document.getElementById("chore-paused").checked=false;
-  document.getElementById("chore-monthly-wrap").classList.add("hidden");
-  updateSplitLabel();
+  document.getElementById("chore-schedule").value="once";document.getElementById("chore-split").value=100;document.getElementById("chore-child-chooses").checked=false;document.getElementById("chore-paused").checked=false;document.getElementById("chore-monthly-wrap").classList.add("hidden");updateSplitLabel();
+}
+function setChoreFormMode(mode,name){
+  const t=document.getElementById("chore-form-title"),sb=document.getElementById("chore-submit-btn"),cb=document.getElementById("chore-cancel-edit-btn");
+  if(mode==="edit"){if(t)t.textContent="✏️ Editing: "+(name||"Chore");if(sb)sb.textContent="💾 Save Changes";if(cb)cb.classList.remove("hidden");}
+  else{if(t)t.textContent="➕ Create New Chore";if(sb)sb.textContent="✅ Add Chore";if(cb)cb.classList.add("hidden");}
 }
 
-function setChoreFormMode(mode,name) {
-  const t=document.getElementById("chore-form-title");
-  const sb=document.getElementById("chore-submit-btn");
-  const cb=document.getElementById("chore-cancel-edit-btn");
-  if(mode==="edit"){
-    if(t) t.textContent="✏️ Editing: "+(name||"Chore");
-    if(sb) sb.textContent="💾 Save Changes";
-    if(cb) cb.classList.remove("hidden");
-  } else {
-    if(t) t.textContent="➕ Create New Chore";
-    if(sb) sb.textContent="✅ Add Chore";
-    if(cb) cb.classList.add("hidden");
-  }
-}
-
-function renderChildChores() {
-  const listEl=document.getElementById("child-chore-list");
-  const notifEl=document.getElementById("child-chore-notifications");
-  if(!listEl) return;
-  const data=getChildData(activeChild||currentUser);
-  const chores=data.chores||[];
-
-  const decisions=chores.filter(c=>(c.status==="approved"||c.status==="denied")&&c.completedBy===currentUser);
-  if(notifEl){
-    notifEl.innerHTML=decisions.map(c=>`
-      <div class="chore-card ${c.status==="approved"?"state-approved":"state-denied"}">
-        <div class="chore-card-header">
-          <span class="chore-name">${c.status==="approved"?"✅":"❌"} ${c.name}</span>
-          <span class="chore-amount">${fmt(c.amount)}</span>
-        </div>
-        <div class="chore-meta">${c.status==="approved"?"Great work! "+fmt(c.amount)+" added to your account.":"Not approved."+(c.denialNote?" Reason: "+c.denialNote:"")}</div>
-        <button class="btn btn-ghost btn-sm" onclick="dismissChoreNotif('${c.id}')">Dismiss</button>
-      </div>`).join("")||"";
-  }
-
-  const available=chores.filter(c=>!c.paused&&c.status!=="pending"&&c.status!=="approved"&&c.status!=="denied"&&(!c.endDate||c.endDate>=todayStr()));
-  if(!available.length){listEl.innerHTML='<div class="empty-state"><span class="empty-icon">🎉</span>No chores available right now!</div>';return;}
-  listEl.innerHTML=available.map(c=>{
-    const st=c.childChooses?"You choose":""+c.splitChk+"% Chk / "+(100-c.splitChk)+"% Sav";
-    return `<div class="chore-card">
-      <div class="chore-card-header"><span class="chore-name">${c.name}</span><span class="chore-amount">${fmt(c.amount)}</span></div>
-      <div class="chore-meta">📅 ${scheduleLabel(c.schedule,c.monthlyDay)} &nbsp; 💰 ${st}${c.desc?"<br>📝 "+c.desc:""}${c.endDate?"<br>⏰ Expires: "+c.endDate:""}</div>
-      <button class="btn btn-secondary btn-sm" onclick="markChoreComplete('${c.id}')">✋ Mark as Complete</button>
-    </div>`;
-  }).join("");
-}
-
-function dismissChoreNotif(choreId) {
-  const data=getChildData(activeChild||currentUser);
-  const idx=data.chores.findIndex(c=>c.id===choreId);
-  if(idx===-1) return;
-  const chore=data.chores[idx];
-  if(chore.schedule==="once") data.chores.splice(idx,1);
-  else Object.assign(chore,{status:"available",completedBy:null,completedAt:null,denialNote:null});
-  syncToCloud("Chore Dismissed");
-  renderChildChores();
-  updateChoreBadges();
-}
-
-function markChoreComplete(choreId) {
-  const data=getChildData(activeChild||currentUser);
-  const chore=data.chores.find(c=>c.id===choreId);
-  if(!chore) return;
-  if(chore.childChooses){
-    openModal({
-      icon:"✅", title:'Mark "'+chore.name+'" Complete?',
-      body:"You earned "+fmt(chore.amount)+". Choose your split.",
-      detail:{}, confirmText:"Submit for Approval", confirmClass:"btn-secondary",
-      onConfirm:()=>{ const sl=document.getElementById("modal-split-slider"); submitChoreComplete(choreId,sl?parseInt(sl.value):chore.splitChk); }
-    });
-    setTimeout(()=>{
-      const de=document.getElementById("modal-detail");
-      const p=chore.splitChk;
-      de.innerHTML=`<div class="split-display"><span class="chk-pct">Checking: <span id="msc-chk">${p}</span>%</span><span class="sav-pct">Savings: <span id="msc-sav">${100-p}</span>%</span></div><input type="range" id="modal-split-slider" min="0" max="100" value="${p}" oninput="document.getElementById('msc-chk').textContent=this.value;document.getElementById('msc-sav').textContent=100-parseInt(this.value);"><p style="font-size:.73rem;color:var(--muted);margin:6px 0 0;text-align:center;">Drag to set your split</p>`;
-      de.classList.remove("hidden");
-    },60);
-  } else {
-    const st=chore.splitChk===100?"All to Checking":chore.splitChk===0?"All to Savings":chore.splitChk+"% Checking / "+(100-chore.splitChk)+"% Savings";
-    openModal({
-      icon:"✅", title:'Mark "'+chore.name+'" Complete?',
-      body:"Your parent will review and confirm. Money added once approved.",
-      detail:{"Reward":fmt(chore.amount),"Split":st},
-      confirmText:"Yes, I Did It! ✋", confirmClass:"btn-secondary",
-      onConfirm:()=>submitChoreComplete(choreId,chore.splitChk)
-    });
-  }
-}
-
-function submitChoreComplete(choreId,chkPct) {
-  const data=getChildData(activeChild||currentUser);
-  const chore=data.chores.find(c=>c.id===choreId);
-  if(!chore) return;
-  chore.status="pending"; chore.completedBy=currentUser; chore.completedAt=fmtDate(new Date()); chore.splitChk=chkPct;
-  syncToCloud("Chore Submitted");
-  showToast("Submitted for approval! 🎉 Your parent will review it.","success",4000);
-  renderChildChores();
-  updateChoreBadges();
-}
-
-function renderParentChores() {
-  const data=getChildData(activeChild);
-  const chores=data.chores||[];
+function renderParentChores(){
+  const data=getChildData(activeChild);const chores=data.chores||[];
   const approvalsEl=document.getElementById("parent-chore-approvals");
   const pending=chores.filter(c=>c.status==="pending");
   approvalsEl.innerHTML=pending.length?`
     <div class="approval-banner">
-      <h3>⏳ Pending Approval (${pending.length})</h3>
-      ${pending.map(c=>`<div class="chore-card state-pending">
-        <div class="chore-card-header"><span class="chore-name">${c.name}</span><span class="chore-amount">${fmt(c.amount)}</span></div>
-        <div class="chore-meta">Completed by <strong>${c.completedBy}</strong> at ${c.completedAt}<br>Split: ${c.splitChk}% Chk / ${100-c.splitChk}% Sav${c.desc?"<br>📝 "+c.desc:""}</div>
-        <div class="row" style="gap:8px;"><button class="btn btn-secondary btn-sm col" onclick="approveChore('${c.id}')">✅ Approve</button><button class="btn btn-danger btn-sm col" onclick="denyChore('${c.id}')">❌ Deny</button></div>
-      </div>`).join("")}
+      <h3>⏳ Awaiting Approval (${pending.length})</h3>
+      ${pending.map(c=>`
+        <div class="chore-card state-pending">
+          <div class="chore-card-header"><span class="chore-card-name">${c.name}</span><span class="chore-card-amount">${fmt(c.amount)}</span></div>
+          <div class="chore-card-meta">Completed by <strong>${c.completedBy}</strong> at ${c.completedAt}<br>Split: ${c.splitChk}% Chk / ${100-c.splitChk}% Sav${c.desc?"<br>📝 "+c.desc:""}</div>
+          <div class="row" style="gap:8px;">
+            <button class="btn btn-secondary btn-sm col" onclick="approveChore('${c.id}')">✅ Approve</button>
+            <button class="btn btn-danger btn-sm col" onclick="denyChore('${c.id}')">❌ Deny</button>
+          </div>
+        </div>`).join("")}
     </div>`:"";
 
   const listEl=document.getElementById("parent-chore-list");
@@ -1397,8 +1200,8 @@ function renderParentChores() {
   listEl.innerHTML=chores.map(c=>{
     const badge=c.paused?'<span class="status-badge badge-paused">Paused</span>':c.status==="pending"?'<span class="status-badge badge-pending">Awaiting Approval</span>':'<span class="status-badge badge-available">Active</span>';
     return `<div class="chore-card">
-      <div class="chore-card-header"><span class="chore-name">${c.name}</span><span class="chore-amount">${fmt(c.amount)}</span></div>
-      <div class="chore-meta">${badge} 📅 ${scheduleLabel(c.schedule,c.monthlyDay)}<br>💰 ${c.splitChk}% Chk / ${100-c.splitChk}% Sav${c.childChooses?" (child chooses)":""}${c.endDate?"<br>⏰ Ends: "+c.endDate:""}${c.desc?"<br>📝 "+c.desc:""}</div>
+      <div class="chore-card-header"><span class="chore-card-name">${c.name}</span><span class="chore-card-amount">${fmt(c.amount)}</span></div>
+      <div class="chore-card-meta">${badge} 📅 ${scheduleLabel(c.schedule,c.monthlyDay)}<br>💰 ${c.splitChk}% Chk / ${100-c.splitChk}% Sav${c.childChooses?" (child chooses)":""}${c.endDate?"<br>⏰ Ends: "+c.endDate:""}${c.desc?"<br>📝 "+c.desc:""}</div>
       <div class="row" style="gap:8px;margin-top:4px;flex-wrap:wrap;">
         <button class="btn btn-outline btn-sm" onclick="editChore('${c.id}')">✏️ Edit</button>
         <button class="btn btn-ghost btn-sm" onclick="togglePauseChore('${c.id}')">${c.paused?"▶️ Resume":"⏸️ Pause"}</button>
@@ -1408,114 +1211,72 @@ function renderParentChores() {
   }).join("");
 }
 
-function approveChore(choreId) {
-  const data=getChildData(activeChild);
-  const chore=data.chores.find(c=>c.id===choreId);
-  if(!chore) return;
-  const ck=chore.amount*(chore.splitChk/100);
-  const sv=chore.amount*((100-chore.splitChk)/100);
-  openModal({
-    icon:"✅", title:'Approve "'+chore.name+'"?',
-    body:"This deposits the reward into "+chore.completedBy+"'s account right now.",
-    detail:{"Total":fmt(chore.amount),"→ Checking":fmt(ck),"→ Savings":fmt(sv),"By":chore.completedBy},
-    confirmText:"Approve & Pay", confirmClass:"btn-secondary",
+function approveChore(choreId){
+  const data=getChildData(activeChild);const chore=data.chores.find(c=>c.id===choreId);if(!chore)return;
+  const ck=chore.amount*(chore.splitChk/100),sv=chore.amount*((100-chore.splitChk)/100);
+  openModal({icon:"✅",title:'Approve "'+chore.name+'"?',body:"Deposits the reward into "+chore.completedBy+"'s account now.",detail:{"Total":fmt(chore.amount),"→ Checking":fmt(ck),"→ Savings":fmt(sv),"By":chore.completedBy},confirmText:"Approve & Pay",confirmClass:"btn-secondary",
     onConfirm:()=>{
-      data.balances.checking+=ck; data.balances.savings+=sv;
-      if(ck>0) recordTransaction("Bank","Chore: "+chore.name+" (Chk)",ck);
-      if(sv>0) recordTransaction("Bank","Chore: "+chore.name+" (Sav)",sv);
-      if(chore.schedule==="once") data.chores=data.chores.filter(c=>c.id!==choreId);
+      data.balances.checking+=ck;data.balances.savings+=sv;
+      if(ck>0)recordTransaction("Bank","Chore: "+chore.name+" (Chk)",ck);
+      if(sv>0)recordTransaction("Bank","Chore: "+chore.name+" (Sav)",sv);
+      if(chore.schedule==="once")data.chores=data.chores.filter(c=>c.id!==choreId);
       else Object.assign(chore,{status:"available",completedBy:null,completedAt:null,denialNote:null});
-      syncToCloud("Chore Approved");
-      showToast("Approved! "+fmt(chore.amount)+" deposited. 🎉","success");
-      renderParentChores(); renderChildChores(); updateChoreBadges();
-    }
-  });
+      syncToCloud("Chore Approved");showToast("Approved! "+fmt(chore.amount)+" deposited. 🎉","success");
+      renderParentChores();renderChildChores();updateChoreBadges();
+    }});
 }
-
-function denyChore(choreId) {
-  const data=getChildData(activeChild);
-  const chore=data.chores.find(c=>c.id===choreId);
-  if(!chore) return;
-  openInputModal({
-    icon:"❌", title:'Deny "'+chore.name+'"?', body:"Optionally leave a reason.",
-    inputType:"text", inputAttrs:'placeholder="Reason (optional)"',
-    confirmText:"Deny", confirmClass:"btn-danger",
+function denyChore(choreId){
+  const data=getChildData(activeChild);const chore=data.chores.find(c=>c.id===choreId);if(!chore)return;
+  openInputModal({icon:"❌",title:'Deny "'+chore.name+'"?',body:"Optionally leave a reason for "+chore.completedBy+".",inputType:"text",inputAttrs:'placeholder="Reason (optional)"',confirmText:"Deny",confirmClass:"btn-danger",
     onConfirm:(reason)=>{
-      if(chore.schedule==="once") data.chores=data.chores.filter(c=>c.id!==choreId);
-      else Object.assign(chore,{status:"available",completedBy:null,completedAt:null,denialNote:null});
-      syncToCloud("Chore Denied");
-      showToast("Chore denied.","error");
-      renderParentChores(); renderChildChores(); updateChoreBadges();
-    }
-  });
+      const denialNote=reason||null;
+      if(chore.schedule==="once")data.chores=data.chores.filter(c=>c.id!==choreId);
+      else Object.assign(chore,{status:"available",completedBy:null,completedAt:null,denialNote});
+      syncToCloud("Chore Denied");showToast("Chore denied.","error");
+      renderParentChores();renderChildChores();updateChoreBadges();
+    }});
 }
-
-function togglePauseChore(choreId) {
-  const data=getChildData(activeChild);
-  const chore=data.chores.find(c=>c.id===choreId);
-  if(!chore) return;
-  chore.paused=!chore.paused;
-  syncToCloud(chore.paused?"Chore Paused":"Chore Resumed");
-  showToast("Chore "+(chore.paused?"paused.":"resumed."),"info");
-  renderParentChores(); renderChildChores(); updateChoreBadges();
+function togglePauseChore(choreId){
+  const data=getChildData(activeChild);const chore=data.chores.find(c=>c.id===choreId);if(!chore)return;
+  chore.paused=!chore.paused;syncToCloud(chore.paused?"Chore Paused":"Chore Resumed");showToast("Chore "+(chore.paused?"paused.":"resumed."),"info");
+  renderParentChores();renderChildChores();updateChoreBadges();
 }
-
-function deleteChore(choreId) {
-  const data=getChildData(activeChild);
-  const chore=data.chores.find(c=>c.id===choreId);
-  if(!chore) return;
-  openModal({
-    icon:"🗑️", title:'Delete "'+chore.name+'"?',
-    body:"This cannot be undone.",
-    confirmText:"Delete", confirmClass:"btn-danger",
-    onConfirm:()=>{
-      data.chores=data.chores.filter(c=>c.id!==choreId);
-      syncToCloud("Chore Deleted");
-      showToast("Chore deleted.","info");
-      renderParentChores(); renderChildChores(); updateChoreBadges();
-    }
-  });
+function deleteChore(choreId){
+  const data=getChildData(activeChild);const chore=data.chores.find(c=>c.id===choreId);if(!chore)return;
+  openModal({icon:"🗑️",title:'Delete "'+chore.name+'"?',body:"This cannot be undone.",confirmText:"Delete",confirmClass:"btn-danger",
+    onConfirm:()=>{data.chores=data.chores.filter(c=>c.id!==choreId);syncToCloud("Chore Deleted");showToast("Chore deleted.","info");renderParentChores();renderChildChores();updateChoreBadges();}});
 }
 
 // ================================================================
 // CHORE WAITING BANNER
 // ================================================================
-function showChoreWaitingBanner() {
+function showChoreWaitingBanner(){
   const data=getChildData(activeChild||currentUser);
-  const available=(data.chores||[]).filter(c=>!c.paused&&c.status!=="pending"&&c.status!=="approved"&&c.status!=="denied"&&(!c.endDate||c.endDate>=todayStr()));
-  const banner=document.getElementById("chore-waiting-banner");
-  if(!banner) return;
+  const available=(data.chores||[]).filter(c=>!c.paused&&c.status==="available"&&(!c.endDate||c.endDate>=todayStr()));
+  const banner=document.getElementById("chore-waiting-banner");if(!banner)return;
   if(!available.length){banner.classList.add("hidden");return;}
   const title=document.getElementById("chore-banner-title");
-  if(title) title.textContent=available.length===1?"You have 1 chore waiting!":"You have "+available.length+" chores waiting!";
+  if(title)title.textContent=available.length===1?"You have 1 chore waiting!":"You have "+available.length+" chores waiting!";
   banner.classList.remove("hidden");
 }
 
 // ================================================================
 // HISTORY
 // ================================================================
-function openHistory() { renderHistory(); document.getElementById("history-drawer").classList.add("open"); }
-function closeHistory() { document.getElementById("history-drawer").classList.remove("open"); }
-
-function renderHistory() {
+function openHistory(){renderHistory();document.getElementById("history-drawer").classList.add("open");}
+function closeHistory(){document.getElementById("history-drawer").classList.remove("open");}
+function renderHistory(){
   const child=activeChild||currentUser;
   const rows=[...(state.history[child]||[])];
-  const sort=document.getElementById("f-sort").value;
-  const fAcct=document.getElementById("f-acct").value;
-  const fType=document.getElementById("f-type").value;
-
+  const sort=document.getElementById("f-sort").value,fAcct=document.getElementById("f-acct").value,fType=document.getElementById("f-type").value;
   const filtered=rows.filter(h=>{
     const n=(h.note||"").toLowerCase();
     const isSav=n.includes("(sav)")||n.includes("to savings")||n.includes("to sav")||n.includes("interest (sav)");
-    if(fAcct==="chk"&&isSav) return false;
-    if(fAcct==="sav"&&!isSav) return false;
-    if(fType==="pos"&&h.amt<0) return false;
-    if(fType==="neg"&&h.amt>=0) return false;
+    if(fAcct==="chk"&&isSav)return false;if(fAcct==="sav"&&!isSav)return false;
+    if(fType==="pos"&&h.amt<0)return false;if(fType==="neg"&&h.amt>=0)return false;
     return true;
   });
-
-  if(sort==="new") filtered.reverse();
-
+  if(sort==="new")filtered.reverse();
   const totalIn=filtered.filter(r=>r.amt>0).reduce((s,r)=>s+r.amt,0);
   const totalOut=filtered.filter(r=>r.amt<0).reduce((s,r)=>s+r.amt,0);
   const net=totalIn+totalOut;
@@ -1523,7 +1284,6 @@ function renderHistory() {
   document.getElementById("hist-out").textContent=fmt(totalOut);
   document.getElementById("hist-net").textContent=(net>=0?"+":"")+fmt(net);
   document.getElementById("hist-net").className="chip-val "+(net>=0?"pos":"neg");
-
   const listEl=document.getElementById("ledger-list");
   if(!filtered.length){listEl.innerHTML='<div class="empty-state"><span class="empty-icon">🔍</span>No transactions match these filters.</div>';return;}
   listEl.innerHTML=filtered.map(h=>{
@@ -1531,9 +1291,8 @@ function renderHistory() {
     const isSav=n.includes("(sav)")||n.includes("to savings")||n.includes("to sav")||n.includes("interest (sav)");
     const isChore=n.includes("chore:");
     const pillCls=isChore?"acct-pill chore":isSav?"acct-pill sav":"acct-pill";
-    const pillTxt=isChore?"CHORE":isSav?"SAV":"CHK";
     return `<div class="ledger-row">
-      <div class="${pillCls}">${pillTxt}</div>
+      <div class="${pillCls}">${isChore?"CHORE":isSav?"SAV":"CHK"}</div>
       <div><span class="ledger-date">${h.date}</span><span class="ledger-who">${h.user}</span><span class="ledger-note"> — ${h.note}</span></div>
       <div class="ledger-amt ${h.amt>=0?"pos":"neg"}">${h.amt>=0?"+":""}${fmt(h.amt)}</div>
     </div>`;
@@ -1543,54 +1302,38 @@ function renderHistory() {
 // ================================================================
 // ADMIN
 // ================================================================
-function openAdmin() {
-  document.getElementById("admin-login-section").classList.remove("hidden");
-  document.getElementById("admin-settings-section").classList.add("hidden");
-  document.getElementById("admin-pin-input").value="";
-  document.getElementById("admin-pin-error").className="field-msg";
-  document.getElementById("admin-drawer").classList.add("open");
-}
-function closeAdmin() { document.getElementById("admin-drawer").classList.remove("open"); }
-function attemptAdminLogin() {
+function openAdmin(){document.getElementById("admin-login-section").classList.remove("hidden");document.getElementById("admin-settings-section").classList.add("hidden");document.getElementById("admin-pin-input").value="";document.getElementById("admin-pin-error").className="field-msg";document.getElementById("admin-drawer").classList.add("open");}
+function closeAdmin(){document.getElementById("admin-drawer").classList.remove("open");}
+function attemptAdminLogin(){
   const pin=document.getElementById("admin-pin-input").value;
   const errEl=document.getElementById("admin-pin-error");
   if(pin!==(state.config.adminPin||DEFAULT_CONFIG.adminPin)){errEl.className="field-msg error";return;}
   errEl.className="field-msg";
   document.getElementById("admin-login-section").classList.add("hidden");
   document.getElementById("admin-settings-section").classList.remove("hidden");
-  populateAdminForm();
-  renderAdminUsers();
+  populateAdminForm();renderAdminUsers();renderAdminEmailFields();
 }
-function populateAdminForm() {
+function populateAdminForm(){
   const cfg=state.config;
   document.getElementById("admin-bank-name").value=cfg.bankName||"";
   document.getElementById("admin-bank-tagline").value=cfg.tagline||"";
-  document.getElementById("admin-color-primary").value=cfg.colorPrimary||"#2563eb";
-  document.getElementById("admin-color-secondary").value=cfg.colorSecondary||"#10b981";
+  document.getElementById("admin-color-primary").value=cfg.colorPrimary||CFG_COLOR_PRIMARY;
+  document.getElementById("admin-color-secondary").value=cfg.colorSecondary||CFG_COLOR_SECONDARY;
   document.getElementById("admin-img-banner").value=cfg.imgBanner||"";
   document.getElementById("admin-img-logo").value=cfg.imgLogo||"";
-  document.getElementById("admin-img-icon").value=cfg.imgIcon||"";
-  document.getElementById("admin-timezone").value=cfg.timezone||"GMT-5";
-  renderAdminEmails();
+  document.getElementById("admin-timezone").value=cfg.timezone||CFG_TIMEZONE;
 }
-function renderAdminEmails() {
-  if(!state.config.emails) state.config.emails={};
-  const emails=state.config.emails;
-  const container=document.getElementById("admin-email-fields");
-  if(!container) return;
-  container.innerHTML=state.users.map(u=>{
-    const role=state.roles[u]||"child";
-    const roleLabel=role==="parent"?"👤 Parent":"👦 Child";
-    const val=emails[u]||"";
-    return '<div style="margin-bottom:12px;">'
-      +'<label class="field-label">'+u+' <span style="font-size:.65rem;color:var(--muted);font-weight:500;">'+roleLabel+'</span></label>'
-      +'<input type="email" id="admin-email-'+u+'" value="'+val+'" placeholder="'+u.toLowerCase()+'@email.com">'
-      +'</div>';
-  }).join("");
+function renderAdminEmailFields(){
+  const el=document.getElementById("admin-email-fields");if(!el)return;
+  const emails=state.config.emails||{};
+  el.innerHTML=state.users.map(u=>`
+    <div style="margin-bottom:10px;">
+      <label class="field-label">${u} (${state.roles[u]||"child"})</label>
+      <input type="email" id="email-field-${u}" placeholder="${u.toLowerCase()}@email.com" value="${emails[u]||""}" style="margin-bottom:0;">
+    </div>`).join("");
 }
-function renderAdminUsers() {
-  const el=document.getElementById("admin-user-list");
-  if(!el) return;
+function renderAdminUsers(){
+  const el=document.getElementById("admin-user-list");if(!el)return;
   el.innerHTML=state.users.map(u=>{
     const role=state.roles[u]||"child";
     return `<div class="user-row">
@@ -1600,69 +1343,50 @@ function renderAdminUsers() {
     </div>`;
   }).join("");
 }
-function adminResetUserPin(u) {
-  openModal({icon:"🔄",title:"Reset "+u+"'s PIN?",body:"PIN will be set to 0000.",confirmText:"Reset",confirmClass:"btn-danger",
-    onConfirm:()=>{state.pins[u]="0000";syncToCloud("Admin PIN Reset");showToast(u+"'s PIN reset to 0000.","success");}});
-}
-function adminRemoveUser(u) {
-  openModal({icon:"⚠️",title:"Remove "+u+"?",body:"Removes this user login. History remains.",confirmText:"Remove",confirmClass:"btn-danger",
-    onConfirm:()=>{state.users=state.users.filter(x=>x!==u);delete state.pins[u];delete state.roles[u];renderAdminUsers();populateHistoryUserFilter();syncToCloud("User Removed");showToast(u+" removed.","info");}});
-}
-function addUser() {
+function adminResetUserPin(u){openModal({icon:"🔄",title:"Reset "+u+"'s PIN?",body:"PIN will be set to 0000.",confirmText:"Reset",confirmClass:"btn-danger",onConfirm:()=>{state.pins[u]="0000";syncToCloud("Admin PIN Reset");showToast(u+"'s PIN reset to 0000.","success");}});}
+function adminRemoveUser(u){openModal({icon:"⚠️",title:"Remove "+u+"?",body:"Removes this user login. History remains.",confirmText:"Remove",confirmClass:"btn-danger",onConfirm:()=>{state.users=state.users.filter(x=>x!==u);delete state.pins[u];delete state.roles[u];delete (state.config.emails||{})[u];renderAdminUsers();renderAdminEmailFields();syncToCloud("User Removed");showToast(u+" removed.","info");}});}
+function addUser(){
   const name=document.getElementById("new-user-name").value.trim();
   const role=document.getElementById("new-user-role").value;
   const pin=document.getElementById("new-user-pin").value;
-  const msgEl=document.getElementById("new-user-msg");
-  msgEl.className="field-msg";
+  const email=document.getElementById("new-user-email").value.trim();
+  const msgEl=document.getElementById("new-user-msg");msgEl.className="field-msg";
   if(!name){msgEl.className="field-msg error";msgEl.textContent="Name is required.";return;}
-  if(state.users.includes(name)){msgEl.className="field-msg error";msgEl.textContent='A user named "'+name+'" already exists.';return;}
+  if(state.users.includes(name)){msgEl.className="field-msg error";msgEl.textContent='"'+name+'" already exists.';return;}
   if(!pin||pin.length!==4||!/^\d{4}$/.test(pin)){msgEl.className="field-msg error";msgEl.textContent="PIN must be exactly 4 digits.";return;}
-  state.users.push(name); state.pins[name]=pin; state.roles[name]=role;
-  if(role==="child") getChildData(name);
-  if(!state.config.emails) state.config.emails={};
-  state.config.emails[name]="";
-  renderAdminUsers();
-  renderAdminEmails();
-  syncToCloud("User Added");
-  showToast('"'+name+'" added!',"success");
-  document.getElementById("new-user-name").value="";
-  document.getElementById("new-user-pin").value="";
+  state.users.push(name);state.pins[name]=pin;state.roles[name]=role;
+  if(!state.config.emails)state.config.emails={};
+  if(email)state.config.emails[name]=email;
+  if(role==="child")getChildData(name);
+  renderAdminUsers();renderAdminEmailFields();syncToCloud("User Added");showToast('"'+name+'" added!',"success");
+  document.getElementById("new-user-name").value="";document.getElementById("new-user-pin").value="";document.getElementById("new-user-email").value="";
 }
-function saveAdminSettings() {
-  state.config.bankName=document.getElementById("admin-bank-name").value.trim()||"Family Bank";
+function saveAdminSettings(){
+  state.config.bankName=document.getElementById("admin-bank-name").value.trim()||CFG_BANK_NAME;
   state.config.tagline=document.getElementById("admin-bank-tagline").value.trim()||"";
   state.config.colorPrimary=document.getElementById("admin-color-primary").value;
   state.config.colorSecondary=document.getElementById("admin-color-secondary").value;
-  state.config.imgBanner=document.getElementById("admin-img-banner").value.trim()||"images/banner.png";
-  state.config.imgLogo=document.getElementById("admin-img-logo").value.trim()||"images/logo.png";
-  state.config.imgIcon=document.getElementById("admin-img-icon").value.trim()||"images/icon.png";
+  state.config.imgBanner=document.getElementById("admin-img-banner").value.trim()||CFG_IMG_BANNER;
+  state.config.imgLogo=document.getElementById("admin-img-logo").value.trim()||CFG_IMG_LOGO;
   state.config.timezone=document.getElementById("admin-timezone").value;
-  // Save per-user emails from individual input fields
-  if(!state.config.emails) state.config.emails={};
-  state.users.forEach(u=>{
-    const el=document.getElementById("admin-email-"+u);
-    if(el) state.config.emails[u]=el.value.trim();
-  });
-  applyBranding();
-  syncToCloud("Admin Settings Updated");
-  showToast("All settings saved! 💾","success");
+  // Save per-user emails
+  if(!state.config.emails)state.config.emails={};
+  state.users.forEach(u=>{const el=document.getElementById("email-field-"+u);if(el)state.config.emails[u]=el.value.trim();});
+  applyBranding();syncToCloud("Admin Settings Updated");showToast("All settings saved! 💾","success");
 }
-function changeAdminPin() {
-  openInputModal({icon:"🔑",title:"New Admin PIN",body:"Enter a new 4-digit admin PIN.",inputType:"password",inputAttrs:'maxlength="4" inputmode="numeric" placeholder="••••"',confirmText:"Save",
-    onConfirm:(val)=>{if(!val||val.length!==4||!/^\d{4}$/.test(val)){showToast("Admin PIN must be exactly 4 digits.","error");return;}state.config.adminPin=val;syncToCloud("Admin PIN Changed");showToast("Admin PIN updated.","success");}});
-}
+function changeAdminPin(){openInputModal({icon:"🔑",title:"New Admin PIN",body:"Enter a new 4-digit admin PIN.",inputType:"password",inputAttrs:'maxlength="4" inputmode="numeric" placeholder="••••"',confirmText:"Save",onConfirm:v=>{if(!v||v.length!==4||!/^\d{4}$/.test(v)){showToast("Admin PIN must be exactly 4 digits.","error");return;}state.config.adminPin=v;syncToCloud("Admin PIN Changed");showToast("Admin PIN updated.","success");}});}
 
 // ================================================================
 // PWA
 // ================================================================
 let deferredInstallPrompt=null;
-window.addEventListener("beforeinstallprompt",(e)=>{e.preventDefault();deferredInstallPrompt=e;showInstallBanner();});
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredInstallPrompt=e;showInstallBanner();});
 function showInstallBanner(){if(sessionStorage.getItem("installDismissed"))return;document.getElementById("install-banner")?.classList.remove("hidden");}
 function triggerInstall(){if(!deferredInstallPrompt)return;deferredInstallPrompt.prompt();deferredInstallPrompt.userChoice.then(()=>{document.getElementById("install-banner").classList.add("hidden");deferredInstallPrompt=null;});}
 function dismissInstallBanner(){sessionStorage.setItem("installDismissed","1");document.getElementById("install-banner").classList.add("hidden");}
 const isIos=/iphone|ipad|ipod/i.test(navigator.userAgent);
 const isStandalone=window.matchMedia("(display-mode: standalone)").matches||window.navigator.standalone;
-if(isIos&&!isStandalone&&!sessionStorage.getItem("installDismissed")){setTimeout(()=>{const b=document.getElementById("install-banner");if(b){document.getElementById("install-banner-text").textContent='Tap the Share button then "Add to Home Screen" to install.';document.getElementById("install-btn").classList.add("hidden");b.classList.remove("hidden");}},2000);}
+if(isIos&&!isStandalone&&!sessionStorage.getItem("installDismissed")){setTimeout(()=>{const b=document.getElementById("install-banner");if(b){document.getElementById("install-banner-text").textContent='Tap Share then "Add to Home Screen" to install.';document.getElementById("install-btn").classList.add("hidden");b.classList.remove("hidden");}},2000);}
 if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js").catch(()=>{}));}
 
 // ================================================================
