@@ -994,6 +994,39 @@ function saveRates(){const data=getChildData(activeChild);data.rates.checking=pa
 // ================================================================
 // CHORES — CHILD VIEW (Mark's checklist design)
 // ================================================================
+// Tracks active chore filter tab — "today" | "week" | "all"
+let choreFilter = "all";
+
+function setChoreFilter(f){
+  choreFilter=f;
+  ["today","week","all"].forEach(id=>{
+    const el=document.getElementById("cf-"+id);
+    if(!el)return;
+    el.style.background = f===id?"var(--surface)":"transparent";
+    el.style.color       = f===id?"var(--primary)":"var(--muted)";
+    el.style.boxShadow   = f===id?"0 2px 8px rgba(0,0,0,.08)":"none";
+    el.style.fontWeight  = f===id?"700":"600";
+  });
+  renderChoreTable();
+}
+
+function isDueToday(chore){
+  if(chore.schedule==="daily"||chore.schedule==="once") return true;
+  if(chore.schedule==="weekly"){const created=new Date(chore.createdAt||Date.now());return new Date().getDay()===created.getDay();}
+  if(chore.schedule==="biweekly"){const created=new Date(chore.createdAt||Date.now());const diff=Math.floor((Date.now()-created.getTime())/(24*60*60*1000));return diff%14===0;}
+  if(chore.schedule==="monthly"){return new Date().getDate()===parseInt(chore.monthlyDay||1);}
+  return false;
+}
+
+function isDueThisWeek(chore){
+  if(isDueToday(chore)) return true;
+  if(chore.schedule==="daily"||chore.schedule==="once") return true;
+  if(chore.schedule==="weekly"){const created=new Date(chore.createdAt||Date.now());const diff=(created.getDay()-new Date().getDay()+7)%7;return diff<=6;}
+  if(chore.schedule==="biweekly"){const created=new Date(chore.createdAt||Date.now());const days=Math.floor((Date.now()-created.getTime())/(24*60*60*1000));return (14-(days%14))<=7;}
+  if(chore.schedule==="monthly"){const day=parseInt(chore.monthlyDay||1);const today=new Date().getDate();const dim=new Date(new Date().getFullYear(),new Date().getMonth()+1,0).getDate();return ((day-today+dim)%dim)<=6;}
+  return false;
+}
+
 function renderChildChores(){
   const listEl=document.getElementById("child-chore-list");
   const notifEl=document.getElementById("child-chore-notifications");
@@ -1005,7 +1038,7 @@ function renderChildChores(){
   const decisions=chores.filter(c=>(c.status==="approved"||c.status==="denied")&&c.completedBy===currentUser);
   if(notifEl){
     notifEl.innerHTML=decisions.map(c=>`
-      <div class="chore-card ${c.status==="approved"?"state-pending":""}" style="${c.status==="approved"?"border-color:var(--secondary);background:#f0fdf4;":"border-color:var(--danger);background:#fef2f2;"}">
+      <div class="chore-card" style="${c.status==="approved"?"border-color:var(--secondary);background:#f0fdf4;":"border-color:var(--danger);background:#fef2f2;"}">
         <div class="chore-card-header">
           <span class="chore-card-name">${c.status==="approved"?"✅":"❌"} ${c.name}</span>
           <span class="chore-card-amount">${fmt(c.amount)}</span>
@@ -1015,7 +1048,6 @@ function renderChildChores(){
       </div>`).join("")||"";
   }
 
-  // Available chores as checklist table
   const available=chores.filter(c=>!c.paused&&c.status==="available"&&(!c.endDate||c.endDate>=todayStr()));
 
   if(!available.length){
@@ -1023,26 +1055,55 @@ function renderChildChores(){
     return;
   }
 
-  const schedLabel=s=>({once:"One-time",daily:"Daily",weekly:"Weekly",biweekly:"Bi-weekly",monthly:"Monthly"}[s]||s);
+  const totalPossible=available.reduce((s,c)=>s+(parseFloat(c.amount)||0),0);
 
   listEl.innerHTML=`
+    <div style="display:flex;background:var(--bg);border-radius:10px;padding:4px;gap:3px;margin-bottom:14px;">
+      <button id="cf-today" onclick="setChoreFilter('today')" style="flex:1;padding:8px 4px;border:none;border-radius:7px;font-family:var(--font);font-size:.72rem;cursor:pointer;color:var(--muted);background:transparent;transition:all .15s;">Due Today</button>
+      <button id="cf-week"  onclick="setChoreFilter('week')"  style="flex:1;padding:8px 4px;border:none;border-radius:7px;font-family:var(--font);font-size:.72rem;cursor:pointer;color:var(--muted);background:transparent;transition:all .15s;">This Week</button>
+      <button id="cf-all"   onclick="setChoreFilter('all')"   style="flex:1;padding:8px 4px;border:none;border-radius:7px;font-family:var(--font);font-size:.72rem;cursor:pointer;color:var(--muted);background:transparent;transition:all .15s;">All Chores</button>
+    </div>
+    <div style="background:var(--bg);border-radius:10px;padding:8px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;font-size:.75rem;">
+      <span style="color:var(--muted);font-weight:600;">${available.length} chore${available.length===1?"":"s"} available</span>
+      <span style="color:var(--secondary);font-weight:700;font-family:var(--mono);">Up to ${fmt(totalPossible)}</span>
+    </div>
+    <div id="chore-table-wrap"></div>
+    <p style="font-size:.72rem;color:var(--muted);text-align:center;margin-top:8px;">Tap the checkbox when you've finished a chore ✓</p>`;
+
+  setChoreFilter(choreFilter);
+}
+
+function renderChoreTable(){
+  const wrap=document.getElementById("chore-table-wrap");
+  if(!wrap)return;
+  const data=getChildData(activeChild||currentUser);
+  const chores=data.chores||[];
+  const available=chores.filter(c=>!c.paused&&c.status==="available"&&(!c.endDate||c.endDate>=todayStr()));
+  const filtered=available.filter(c=>{
+    if(choreFilter==="today") return isDueToday(c);
+    if(choreFilter==="week")  return isDueThisWeek(c);
+    return true;
+  });
+  const schedLabel=s=>({once:"One-time",daily:"Daily",weekly:"Weekly",biweekly:"Bi-weekly",monthly:"Monthly"}[s]||s);
+  function dueBadge(c){
+    if(isDueToday(c)) return `<span style="font-size:.6rem;font-weight:700;background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:10px;margin-left:5px;">Today</span>`;
+    if(isDueThisWeek(c)) return `<span style="font-size:.6rem;font-weight:700;background:#dbeafe;color:#1d4ed8;padding:2px 6px;border-radius:10px;margin-left:5px;">This Week</span>`;
+    return "";
+  }
+  if(!filtered.length){
+    const msg=choreFilter==="today"?"No chores due today — check 'This Week' or 'All Chores'!":choreFilter==="week"?"No chores due this week — check 'All Chores'!":"No chores available right now!";
+    wrap.innerHTML=`<div class="empty-state"><span class="empty-icon">✅</span>${msg}</div>`;
+    return;
+  }
+  wrap.innerHTML=`
     <table class="chore-table">
-      <thead>
-        <tr>
-          <th style="width:36px;"></th>
-          <th>Chore</th>
-          <th>Schedule</th>
-          <th style="text-align:right;">Earn</th>
-        </tr>
-      </thead>
-      <tbody id="chore-tbody">
-        ${available.map(c=>`
+      <thead><tr><th style="width:36px;"></th><th>Chore</th><th>Schedule</th><th style="text-align:right;">Earn</th></tr></thead>
+      <tbody>
+        ${filtered.map(c=>`
           <tr class="chore-row" id="chore-row-${c.id}">
-            <td class="chore-check-cell">
-              <div class="chore-checkbox-wrap" id="chk-${c.id}" onclick="toggleChoreCheck('${c.id}')"></div>
-            </td>
+            <td class="chore-check-cell"><div class="chore-checkbox-wrap" id="chk-${c.id}" onclick="toggleChoreCheck('${c.id}')"></div></td>
             <td class="chore-name-cell">
-              ${c.name}
+              ${c.name}${dueBadge(c)}
               ${c.desc?`<div class="chore-desc-small">${c.desc}</div>`:""}
               ${c.childChooses?`<div class="chore-desc-small">💰 You choose the split</div>`:`<div class="chore-desc-small">💰 ${c.splitChk}% Checking / ${100-c.splitChk}% Savings</div>`}
             </td>
@@ -1050,8 +1111,7 @@ function renderChildChores(){
             <td class="chore-amount-cell" id="chore-amt-${c.id}">${fmt(c.amount)}</td>
           </tr>`).join("")}
       </tbody>
-    </table>
-    <p style="font-size:.72rem;color:var(--muted);text-align:center;margin-top:8px;">Tap the checkbox when you've completed a chore ✓</p>`;
+    </table>`;
 }
 
 function toggleChoreCheck(choreId){
