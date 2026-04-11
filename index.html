@@ -627,6 +627,9 @@
 // ╔═══════════════════════════════════════════════════════════════════════╗
 // ║                   FAMILY BANK — index.html                           ║
 // ║              Frontend Configuration & Setup Block                     ║
+// ╠═══════════════════════════════════════════════════════════════════════╣
+// ║  Version: v26.0   |   Paired with Code.gs: v26.0                    ║
+// ║  Update version numbers on each deployment                           ║
 // ╚═══════════════════════════════════════════════════════════════════════╝
 //
 // HOW TO DEPLOY:
@@ -650,7 +653,7 @@
 // Paste your Web App URL here every time you redeploy Code.gs.
 // Get it from: Apps Script → Deploy → Manage Deployments → copy URL
 // ------------------------------------------------------------------
-const API_URL = "https://script.google.com/macros/s/AKfycbxCqyyHyjFI4eW-WL_KlE77ESzL1MDFK2cNNw9-1m9KAloAKXQRCgIytxxf7kq-23yXQg/exec"; // ← PASTE NEW URL HERE
+const API_URL = "https://script.google.com/macros/s/AKfycbwfaeGSJLjaQ-eg-7tP94JRQVMNZAdmN1Ybs_0YeFgWKSaNh1aKPv3IR5M_aeXrgOxIuA/exec"; // ← PASTE NEW URL HERE
 
 // ------------------------------------------------------------------
 // STEP 2 — BANK IDENTITY
@@ -929,7 +932,7 @@ function updateChoreBadges(){
   if(!child)return;
   const chores=getChildData(child).chores||[];
   // Child badge — only chores due TODAY
-  const dueToday=chores.filter(c=>c.status==="available"&&(!c.endDate||c.endDate>=todayStr())&&isDueToday(c)).length;
+  const dueToday=chores.filter(c=>c.status==="available"&&(!c.endDate||c.endDate>=todayStr())&&isDueToday(c)&&c.lastCompleted!==todayStr()).length;
   // Parent badge — pending approvals
   const pending=chores.filter(c=>c.status==="pending").length;
   const cb=document.getElementById("child-chore-badge");
@@ -1196,7 +1199,7 @@ function renderChildChores(){
       </div>`).join("")||"";
   }
 
-  const available=chores.filter(c=>!c.paused&&c.status==="available"&&(!c.endDate||c.endDate>=todayStr()));
+  const available=chores.filter(c=>!c.paused&&c.status==="available"&&(!c.endDate||c.endDate>=todayStr())&&c.lastCompleted!==todayStr());
 
   if(!available.length){
     listEl.innerHTML=`<div class="empty-state"><span class="empty-icon">🎉</span>${decisions.length?"Check the notifications above!":"No chores right now — check back later!"}</div>`;
@@ -1227,7 +1230,7 @@ function renderChoreTable(){
   if(!wrap)return;
   const data=getChildData(activeChild||currentUser);
   const chores=data.chores||[];
-  const available=chores.filter(c=>!c.paused&&c.status==="available"&&(!c.endDate||c.endDate>=todayStr()));
+  const available=chores.filter(c=>!c.paused&&c.status==="available"&&(!c.endDate||c.endDate>=todayStr())&&c.lastCompleted!==todayStr());
   const filtered=available.filter(c=>{
     if(choreFilter==="today") return isDueToday(c);
     if(choreFilter==="week")  return isDueThisWeek(c);
@@ -1567,7 +1570,7 @@ function approveChore(choreId){
       if(chore.schedule==="once"){
         data.chores=data.chores.filter(c=>c.id!==choreId);
       } else {
-        Object.assign(chore,{status:"available",completedBy:null,completedAt:null,denialNote:null});
+        Object.assign(chore,{status:"available",completedBy:null,completedAt:null,denialNote:null,lastCompleted:todayStr()});
       }
       state._approvedChoreId=chore.id;
       state._approvedChoreTitle=buildCalEventTitle(chore); // legacy fallback
@@ -1586,7 +1589,7 @@ function denyChore(choreId){
     onConfirm:(reason)=>{
       const denialNote=reason||null;
       if(chore.schedule==="once")data.chores=data.chores.filter(c=>c.id!==choreId);
-      else Object.assign(chore,{status:"available",completedBy:null,completedAt:null,denialNote});
+      else Object.assign(chore,{status:"available",completedBy:null,completedAt:null,denialNote,lastCompleted:null});
       syncToCloud("Chore Denied");showToast("Chore denied.","error");
       renderParentChores();renderChildChores();updateChoreBadges();
     }});
@@ -1613,7 +1616,7 @@ function deleteChore(choreId){
 function showChoreWaitingBanner(){
   const data=getChildData(activeChild||currentUser);
   // Only show banner for chores due TODAY
-  const dueToday=(data.chores||[]).filter(c=>c.status==="available"&&(!c.endDate||c.endDate>=todayStr())&&isDueToday(c));
+  const dueToday=(data.chores||[]).filter(c=>c.status==="available"&&(!c.endDate||c.endDate>=todayStr())&&isDueToday(c)&&c.lastCompleted!==todayStr());
   const banner=document.getElementById("chore-waiting-banner");if(!banner)return;
   if(!dueToday.length){banner.classList.add("hidden");return;}
   const title=document.getElementById("chore-banner-title");
