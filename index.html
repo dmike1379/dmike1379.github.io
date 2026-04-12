@@ -71,8 +71,8 @@
     .btn-logout{background:var(--bg);border:none;color:var(--muted);font-size:.75rem;font-family:var(--font);font-weight:600;cursor:pointer;padding:7px 12px;border-radius:8px}
     .section-block{margin-top:18px;padding-top:18px;border-top:1px solid var(--border)}
     /* Tabs */
-    .tab-bar{display:flex;background:var(--bg);border-radius:10px;padding:4px;gap:3px;margin:14px 0 18px}
-    .tab-btn{flex:1;padding:9px 4px;border:none;border-radius:7px;font-family:var(--font);font-size:.72rem;font-weight:700;cursor:pointer;background:transparent;color:var(--muted);transition:all .15s;white-space:nowrap}
+    .tab-bar{display:flex;flex-wrap:wrap;background:var(--bg);border-radius:10px;padding:4px;gap:3px;margin:14px 0 18px}
+    .tab-btn{flex:1;min-width:calc(33.333% - 4px);max-width:calc(33.333% - 2px);padding:9px 4px;border:none;border-radius:7px;font-family:var(--font);font-size:.72rem;font-weight:700;cursor:pointer;background:transparent;color:var(--muted);transition:all .15s;white-space:nowrap;text-align:center}
     .tab-btn.active{background:var(--surface);color:var(--primary);box-shadow:0 2px 8px rgba(0,0,0,.08)}
     .tab-panel{display:none}
     .tab-panel.active{display:block}
@@ -353,6 +353,15 @@
       </div>
 
       <!-- Chores tab — Mark's checklist design -->
+      <!-- Loans tab panel (child placeholder) -->
+      <div class="tab-panel hidden" id="child-tab-loans">
+        <div class="section-block" style="text-align:center;padding:40px 20px;">
+          <div style="font-size:3rem;margin-bottom:12px;">🏦</div>
+          <h3 style="margin-bottom:8px;">Loans</h3>
+          <p style="color:var(--muted);font-size:.85rem;line-height:1.6;">Loan information will appear here.</p>
+        </div>
+      </div>
+
       <div class="tab-panel" id="child-tab-chores">
         <div id="child-chore-notifications"></div>
         <div id="chore-streaks-wrap"></div>
@@ -363,7 +372,7 @@
 
     <!-- PARENT PANEL -->
     <div id="parent-panel" class="hidden">
-      <div class="tab-bar">
+      <div class="tab-bar" id="parent-tab-bar">
         <button class="tab-btn active" onclick="switchTab('parent','adjust')">💰 Adjust</button>
         <button class="tab-btn" onclick="switchTab('parent','chores')">✅ Chores <span class="notif-badge hidden" id="parent-chore-badge">0</span></button>
         <button class="tab-btn" onclick="switchTab('parent','settings')">⚙️ Settings</button>
@@ -414,6 +423,15 @@
           <button class="btn-full-ghost" onclick="confirmResetChildPin()">🔄 Reset Child PIN to 0000</button>
         </div>
       </div>
+      <!-- Loans tab (placeholder — full feature in v29) -->
+      <div class="tab-panel hidden" id="parent-tab-loans">
+        <div class="section-block" style="text-align:center;padding:40px 20px;">
+          <div style="font-size:3rem;margin-bottom:12px;">🏦</div>
+          <h3 style="margin-bottom:8px;">Loans</h3>
+          <p style="color:var(--muted);font-size:.85rem;line-height:1.6;">The Loans feature is coming in v29.<br>Enable it per child in Admin → Tab Visibility.</p>
+        </div>
+      </div>
+
       <div class="tab-panel" id="parent-tab-chores">
         <div id="parent-chore-approvals"></div>
         <h3 id="chore-form-title">➕ Create New Chore</h3>
@@ -708,7 +726,7 @@
 // ║                   FAMILY BANK — index.html                           ║
 // ║              Frontend Configuration & Setup Block                     ║
 // ╠═══════════════════════════════════════════════════════════════════════╣
-// ║  Version: v28.8   |   Paired with Code.gs: v27.0                    ║
+// ║  Version: v28.9   |   Paired with Code.gs: v27.0                    ║
 // ║  Update version numbers on each deployment                           ║
 // ╚═══════════════════════════════════════════════════════════════════════╝
 //
@@ -1141,6 +1159,7 @@ function selectChild(childName){
   document.getElementById("welcome-msg").textContent="Managing "+childName+" 👋";
   document.getElementById("parent-panel").classList.remove("hidden");
   document.getElementById("child-panel").classList.add("hidden");
+  renderParentTabBar();
   renderBalances();renderParentSettings();renderParentChores();renderParentGoals();updateChoreBadges();
 }
 
@@ -2035,6 +2054,18 @@ function initInactivityTimer(){
 // ================================================================
 // DYNAMIC CHILD TAB BAR
 // ================================================================
+function renderParentTabBar(){
+  const bar=document.getElementById("parent-tab-bar");
+  if(!bar||!activeChild)return;
+  const tabs=getChildTabs(activeChild);
+  // Always show Adjust and Settings; show Loans only if enabled
+  let html=`<button class="tab-btn active" onclick="switchTab('parent','adjust')">💰 Adjust</button>`;
+  html+=`<button class="tab-btn" onclick="switchTab('parent','chores')">✅ Chores <span class="notif-badge hidden" id="parent-chore-badge">0</span></button>`;
+  if(tabs.loans)html+=`<button class="tab-btn" onclick="switchTab('parent','loans')">🏦 Loans</button>`;
+  html+=`<button class="tab-btn" onclick="switchTab('parent','settings')">⚙️ Settings</button>`;
+  bar.innerHTML=html;
+}
+
 function renderChildTabBar(){
   const tabs=getChildTabs(currentUser);
   const bar=document.getElementById("child-tab-bar");
@@ -2043,6 +2074,7 @@ function renderChildTabBar(){
   let firstTab=null;
   if(tabs.money){html+=`<button class="tab-btn" onclick="switchTab('child','money')">💵 Money</button>`;if(!firstTab)firstTab="money";}
   if(tabs.chores){html+=`<button class="tab-btn" onclick="switchTab('child','chores')">✅ Chores <span class="notif-badge hidden" id="child-chore-badge">0</span></button>`;if(!firstTab)firstTab="chores";}
+  if(tabs.loans){html+=`<button class="tab-btn" onclick="switchTab('child','loans')">🏦 Loans</button>`;if(!firstTab)firstTab="loans";}
   bar.innerHTML=html;
   // Activate first available tab
   if(firstTab){
