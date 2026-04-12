@@ -714,7 +714,7 @@
 // ║                   FAMILY BANK — index.html                           ║
 // ║              Frontend Configuration & Setup Block                     ║
 // ╠═══════════════════════════════════════════════════════════════════════╣
-// ║  Version: v28.4   |   Paired with Code.gs: v27.0                    ║
+// ║  Version: v28.5   |   Paired with Code.gs: v27.0                    ║
 // ║  Update version numbers on each deployment                           ║
 // ╚═══════════════════════════════════════════════════════════════════════╝
 //
@@ -1530,6 +1530,29 @@ function onScheduleChange(){
 
 function updateSplitLabel(){const p=parseInt(document.getElementById("chore-split").value);document.getElementById("split-chk-label").textContent=p;document.getElementById("split-sav-label").textContent=100-p;}
 
+function toggleOnceDateField(){
+  const typeEl=document.getElementById("chore-once-type");
+  if(!typeEl)return;
+  const type=typeEl.value;
+  const dateWrap=document.getElementById("chore-onceby-date-wrap");
+  const label=document.getElementById("chore-once-date-label");
+  const hint=document.getElementById("chore-once-hint");
+  if(type==="none"){
+    if(dateWrap)dateWrap.style.display="none";
+    if(hint)hint.style.display="none";
+    const dateEl=document.getElementById("chore-once-date");
+    if(dateEl)dateEl.value="";
+  } else if(type==="by"){
+    if(dateWrap)dateWrap.style.display="block";
+    if(label)label.textContent="Due By Date";
+    if(hint){hint.style.display="block";hint.textContent="Available every day until this date. Expires after.";}
+  } else {
+    if(dateWrap)dateWrap.style.display="block";
+    if(label)label.textContent="Due On Date";
+    if(hint){hint.style.display="block";hint.textContent="Only appears on this specific day.";}
+  }
+}
+
 // Human-readable schedule label for display in chore lists
 function scheduleLabel(chore){
   const s=chore.schedule;
@@ -2140,12 +2163,12 @@ function openNetWorthChart(){
   if(!history.length){
     wrap.innerHTML=`<div class="empty-state"><span class="empty-icon">📈</span>No history yet — keep saving!</div>`;
   } else {
-    const W=500,H=220,PAD=56,PADR=20,PADT=20;
+    const W=500,H=280,PAD=80,PADR=20,PADT=20;
     const maxVal=Math.max(...history.map(d=>d.total),1);
     const minVal=Math.min(0,...history.map(d=>d.total));
     const range=maxVal-minVal||1;
     const chartW=W-PAD-PADR;
-    const chartH=H-PADT-40; // leave room for month+year labels
+    const chartH=H-PADT-90; // leave room for large month+year labels
     const totalPts=allPoints.length;
     const scaleX=(i)=>PAD+(i/(totalPts-1||1))*chartW;
     const scaleY=(v)=>PADT+chartH-((v-minVal)/range)*chartH;
@@ -2171,9 +2194,10 @@ function openNetWorthChart(){
       const isFuture=!!d.future;
       const labelColor=isFuture?"#cbd5e1":"var(--muted)";
       const fontStyle=isFuture?"font-style='italic'":"";
-      const yearLabel=yr!==lastYear?`<text x="${x}" y="${H-2}" text-anchor="middle" font-size="9" fill="${labelColor}" ${fontStyle}>${yr}</text>`:"";
+      const yearDivider=yr!==lastYear&&i>0?`<line x1="${x}" y1="${PADT}" x2="${x}" y2="${PADT+chartH}" stroke="#e2e8f0" stroke-width="2" stroke-dasharray="6,3"/>`:"";
+      const yearLabel=yr!==lastYear?`${yearDivider}<text x="${x}" y="${H+28}" text-anchor="middle" font-size="36" fill="${labelColor}" font-weight="700" ${fontStyle}>${yr}</text>`:"";
       if(yr!==lastYear)lastYear=yr;
-      return `<text x="${x}" y="${H-15}" text-anchor="middle" font-size="11" fill="${labelColor}" ${fontStyle}>${mLabel}</text>${yearLabel}`;
+      return `<text x="${x}" y="${H-18}" text-anchor="middle" font-size="33" fill="${labelColor}" ${fontStyle}>${mLabel}</text>${yearLabel}`;
     }).join("");
 
     // Future zone shading
@@ -2185,7 +2209,7 @@ function openNetWorthChart(){
     // Y axis labels — 3 levels
     const yVals=[minVal,(minVal+maxVal)/2,maxVal];
     const yLabels=yVals.map(v=>`
-      <text x="${PAD-8}" y="${scaleY(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">$${Math.round(v)}</text>
+      <text x="${PAD-8}" y="${scaleY(v)+4}" text-anchor="end" font-size="33" fill="var(--muted)">$${Math.round(v)}</text>
       <line x1="${PAD-4}" y1="${scaleY(v)}" x2="${W-PADR}" y2="${scaleY(v)}" stroke="#f1f5f9" stroke-width="1"/>`).join("");
 
     wrap.innerHTML=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block;margin:0 auto;">
