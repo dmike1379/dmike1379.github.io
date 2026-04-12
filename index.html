@@ -466,7 +466,7 @@
         <div class="row">
           <div class="col" id="chore-enddate-col"><label class="field-label" id="end-date-label">End Date (optional)</label><input type="date" id="chore-end-date"></div>
         </div>
-        <div class="row">
+        <div class="row" id="chore-reminder-row">
           <div class="col">
             <label class="field-label">📅 Calendar Reminder Time</label>
             <select id="chore-reminder-time">
@@ -708,7 +708,7 @@
 // ║                   FAMILY BANK — index.html                           ║
 // ║              Frontend Configuration & Setup Block                     ║
 // ╠═══════════════════════════════════════════════════════════════════════╣
-// ║  Version: v28.7   |   Paired with Code.gs: v27.0                    ║
+// ║  Version: v28.8   |   Paired with Code.gs: v27.0                    ║
 // ║  Update version numbers on each deployment                           ║
 // ╚═══════════════════════════════════════════════════════════════════════╝
 //
@@ -1527,6 +1527,9 @@ function onScheduleChange(){
     const endLabel=document.getElementById("end-date-label");
     if(endLabel)endLabel.textContent="End Date (optional)";
     document.getElementById("chore-once-hint").style.display="none";
+    // Always show reminder row for non-once schedules
+    const rr=document.getElementById("chore-reminder-row");
+    if(rr)rr.classList.remove("hidden");
   }
 }
 
@@ -1548,17 +1551,23 @@ function toggleOnceDateField(){
     return;
   }
 
+  // Reminder time row — hide when one-time + no date
+  const reminderRow=document.getElementById("chore-reminder-row");
+
   if(type==="none"){
-    // No date — hide end date field entirely for one-time
+    // No date — hide end date and reminder time for one-time
     if(endDateCol)endDateCol.classList.add("hidden");
+    if(reminderRow)reminderRow.classList.add("hidden");
     if(hint)hint.style.display="none";
     document.getElementById("chore-end-date").value="";
   } else if(type==="by"){
     if(endDateCol)endDateCol.classList.remove("hidden");
+    if(reminderRow)reminderRow.classList.remove("hidden");
     if(endLabel)endLabel.textContent="Due By Date";
     if(hint){hint.style.display="block";hint.textContent="Available every day until this date. Expires after.";}
   } else {
     if(endDateCol)endDateCol.classList.remove("hidden");
+    if(reminderRow)reminderRow.classList.remove("hidden");
     if(endLabel)endLabel.textContent="Due On Date";
     if(hint){hint.style.display="block";hint.textContent="Only appears on this specific day.";}
   }
