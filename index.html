@@ -538,6 +538,28 @@
 </div>
 
 <!-- NET WORTH CHART DRAWER -->
+<style>
+  #networth-drawer.open {
+    /* Force landscape for net worth chart */
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 1001;
+    overflow-y: auto;
+    background: white;
+    padding: 20px;
+  }
+  @media screen and (orientation: portrait) {
+    #networth-drawer.open {
+      transform: rotate(90deg);
+      transform-origin: left top;
+      width: 100vh;
+      height: 100vw;
+      left: 100%;
+      top: 0;
+      overflow-x: hidden;
+    }
+  }
+</style>
 <div class="history-drawer" id="networth-drawer">
   <div class="drawer-header">
     <h3 style="margin:0;">📈 Net Worth Over Time</h3>
@@ -708,7 +730,7 @@
 // ║                   FAMILY BANK — index.html                           ║
 // ║              Frontend Configuration & Setup Block                     ║
 // ╠═══════════════════════════════════════════════════════════════════════╣
-// ║  Version: v28.2   |   Paired with Code.gs: v27.0                    ║
+// ║  Version: v28.3   |   Paired with Code.gs: v27.0                    ║
 // ║  Update version numbers on each deployment                           ║
 // ╚═══════════════════════════════════════════════════════════════════════╝
 //
@@ -2088,6 +2110,17 @@ function setNwFilter(btn,months){
 function openNetWorthChart(){
   const child=activeChild||currentUser;
   let history=(state.netWorthHistory&&state.netWorthHistory[child])||[];
+  const monthNames=["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  // Build future months to show on chart (next 3 months)
+  const now=new Date();
+  const futureMonths=[];
+  for(let i=1;i<=3;i++){
+    const d=new Date(now.getFullYear(),now.getMonth()+i,1);
+    const key=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+    futureMonths.push({month:key,total:null,future:true});
+  }
+
   // Apply time filter
   if(nwFilterMonths>0&&history.length>0){
     const cutoff=new Date();
@@ -2095,52 +2128,76 @@ function openNetWorthChart(){
     const cutoffKey=cutoff.getFullYear()+"-"+String(cutoff.getMonth()+1).padStart(2,"0");
     history=history.filter(d=>d.month>=cutoffKey);
   }
+
+  // Combine history + future months
+  const allPoints=[...history,...futureMonths];
+
   const wrap=document.getElementById("networth-chart-wrap");
   if(!wrap)return;
 
   if(!history.length){
     wrap.innerHTML=`<div class="empty-state"><span class="empty-icon">📈</span>No history yet — keep saving!</div>`;
   } else {
-    // Build SVG line chart
-    const W=320,H=170,PAD=44,PADR=16;
+    const W=500,H=220,PAD=56,PADR=20,PADT=20;
     const maxVal=Math.max(...history.map(d=>d.total),1);
     const minVal=Math.min(0,...history.map(d=>d.total));
     const range=maxVal-minVal||1;
     const chartW=W-PAD-PADR;
-    const chartH=H-PAD-20;
-    const scaleX=(i)=>PAD+(i/(history.length-1||1))*chartW;
-    const scaleY=(v)=>PAD+chartH-((v-minVal)/range)*chartH;
-    const months=["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const chartH=H-PADT-40; // leave room for month+year labels
+    const totalPts=allPoints.length;
+    const scaleX=(i)=>PAD+(i/(totalPts-1||1))*chartW;
+    const scaleY=(v)=>PADT+chartH-((v-minVal)/range)*chartH;
 
-    // Line path
-    const pts=history.map((d,i)=>`${scaleX(i)},${scaleY(d.total)}`).join(" ");
-    const linePath="M "+pts.split(" ").join(" L ");
-    // Fill path (area under line)
+    // Only draw line through real history points
+    const histPts=history.map((d,i)=>`${scaleX(i)},${scaleY(d.total)}`).join(" ");
+    const linePath="M "+histPts.split(" ").join(" L ");
     const zeroY=scaleY(0);
-    const fillPath="M "+scaleX(0)+","+zeroY+" L "+pts.split(" ").join(" L ")+" L "+scaleX(history.length-1)+","+zeroY+" Z";
+    const fillPath="M "+scaleX(0)+","+zeroY+" L "+histPts.split(" ").join(" L ")+" L "+scaleX(history.length-1)+","+zeroY+" Z";
 
-    // Dots + labels
+    // Dots for real points
     const dots=history.map((d,i)=>{
       const x=scaleX(i),y=scaleY(d.total);
-      const mm=parseInt(d.month.split("-")[1]||0);
-      const label=months[mm]||d.month.substring(5);
-      return `<circle cx="${x}" cy="${y}" r="4" fill="var(--primary)" stroke="white" stroke-width="2"/>
-              <text x="${x}" y="${H-6}" text-anchor="middle" font-size="9" fill="var(--muted)">${label}</text>`;
+      return `<circle cx="${x}" cy="${y}" r="5" fill="var(--primary)" stroke="white" stroke-width="2.5"/>`;
     }).join("");
 
-    // Y axis labels
-    const yLabels=[minVal,maxVal].map(v=>`
-      <text x="${PAD-6}" y="${scaleY(v)+4}" text-anchor="end" font-size="9" fill="var(--muted)">$${Math.round(v)}</text>`).join("");
+    // Month + year labels for ALL points
+    let lastYear="";
+    const labels=allPoints.map((d,i)=>{
+      const x=scaleX(i);
+      const [yr,mm]=d.month.split("-");
+      const mLabel=monthNames[parseInt(mm)]||mm;
+      const isFuture=!!d.future;
+      const labelColor=isFuture?"#cbd5e1":"var(--muted)";
+      const fontStyle=isFuture?"font-style='italic'":"";
+      const yearLabel=yr!==lastYear?`<text x="${x}" y="${H-2}" text-anchor="middle" font-size="9" fill="${labelColor}" ${fontStyle}>${yr}</text>`:"";
+      if(yr!==lastYear)lastYear=yr;
+      return `<text x="${x}" y="${H-15}" text-anchor="middle" font-size="11" fill="${labelColor}" ${fontStyle}>${mLabel}</text>${yearLabel}`;
+    }).join("");
 
-    wrap.innerHTML=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;display:block;margin:0 auto;">
-      <defs><linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="var(--primary)" stop-opacity="0.18"/>
+    // Future zone shading
+    const futureX=scaleX(history.length-1);
+    const futureZone=`<rect x="${futureX}" y="${PADT}" width="${W-PADR-futureX}" height="${chartH}" fill="#f8fafc" opacity="0.9"/>
+      <line x1="${futureX}" y1="${PADT}" x2="${futureX}" y2="${PADT+chartH}" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <text x="${futureX+6}" y="${PADT+12}" font-size="9" fill="#94a3b8">projected</text>`;
+
+    // Y axis labels — 3 levels
+    const yVals=[minVal,(minVal+maxVal)/2,maxVal];
+    const yLabels=yVals.map(v=>`
+      <text x="${PAD-8}" y="${scaleY(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">$${Math.round(v)}</text>
+      <line x1="${PAD-4}" y1="${scaleY(v)}" x2="${W-PADR}" y2="${scaleY(v)}" stroke="#f1f5f9" stroke-width="1"/>`).join("");
+
+    wrap.innerHTML=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block;margin:0 auto;">
+      <defs><linearGradient id="lineGrad2" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="var(--primary)" stop-opacity="0.2"/>
         <stop offset="100%" stop-color="var(--primary)" stop-opacity="0.01"/>
       </linearGradient></defs>
-      <path d="${fillPath}" fill="url(#lineGrad)"/>
-      <line x1="${PAD}" y1="${scaleY(0)}" x2="${W-PADR}" y2="${scaleY(0)}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3,3"/>
-      <path d="${linePath}" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-      ${yLabels}${dots}
+      ${yLabels}
+      ${futureZone}
+      <path d="${fillPath}" fill="url(#lineGrad2)"/>
+      <line x1="${PAD}" y1="${scaleY(0)}" x2="${W-PADR}" y2="${scaleY(0)}" stroke="var(--border)" stroke-width="1" stroke-dasharray="4,4"/>
+      <path d="${linePath}" fill="none" stroke="var(--primary)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      ${dots}
+      ${labels}
     </svg>`;
 
     // Summary stats
@@ -2232,6 +2289,7 @@ function renderParentDashboard(){
 // INIT
 // ================================================================
 populateMonthlyDays();
+onScheduleChange(); // Show correct fields for default "One-time" schedule
 updateSplitLabel();
 document.getElementById("username-input").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("pin-input").focus();});
 document.getElementById("pin-input").addEventListener("keydown",e=>{if(e.key==="Enter")attemptLogin();});
