@@ -58,7 +58,7 @@ const CFG_IMG_LOGO   = "images/logo.png";
 const CFG_IMG_ICON   = "images/icon.png";
 
 // ── Version ──
-const APP_VERSION = "31.0";
+const APP_VERSION = "31.1";
 
 // ╔═══════════════════════════════════════════════════════════════════╗
 // ║         END OF CONFIGURATION — DO NOT EDIT BELOW THIS LINE       ║
@@ -729,9 +729,10 @@ function enterApp(user){
     activeChild=user;
     document.getElementById("main-screen").classList.remove("hidden");
     document.getElementById("welcome-msg").innerHTML=renderAvatar(user,"sm")+' <span>Hi, '+user+'! 👋</span>';
+    document.getElementById("child-switch-bar").classList.add("hidden");  // children never see the switcher
     document.getElementById("child-panel").classList.remove("hidden");
     renderChildTabBar();
-    renderBalances(); renderChildChores(); renderSavingsGoals(); renderPendingDeposits(); renderChildLoans(); showChoreWaitingBanner(); updateChoreBadges();
+    renderBalances(); renderChildChores(); renderSavingsGoals(); renderPendingDeposits(); renderChildLoans(); showChoreWaitingBanner(); updateChoreBadges(); renderChildAvatar();
     initInactivityTimer();
   }
 }
@@ -848,6 +849,7 @@ function restoreRememberedUser(){
 }
 
 function showChildPicker(){
+  if(currentRole!=="parent") return;  // safety: children must never reach the picker
   const children=getAssignedChildren();
   document.getElementById("picker-welcome").innerHTML=renderAvatar(currentUser,"sm")+' <span>Hi '+currentUser+'! 👋</span>';
   document.getElementById("main-screen").classList.add("hidden");
@@ -2897,6 +2899,65 @@ function refreshVisibleAvatars(){
   if(typeof renderBalances==="function") renderBalances();
   if(typeof renderHistory==="function" && document.getElementById("history-drawer")?.classList.contains("open")) renderHistory();
   if(typeof renderParentChores==="function" && activeChild) renderParentChores();
+}
+
+// v31.1: child can edit their own avatar from the Money tab (no admin PIN).
+// Scope-locked: only currentUser (when role is child). Cannot edit siblings.
+function renderChildAvatar(){
+  if(currentRole!=="child" || !currentUser) return;
+  const cur = document.getElementById("child-avatar-current");
+  const grid = document.getElementById("child-avatar-grid");
+  if(!cur || !grid) return;
+  const hasPhoto = !!getAvatarPhoto(currentUser);
+  const selected = getAvatarEmoji(currentUser);
+  cur.innerHTML = renderAvatar(currentUser,"lg") +
+    `<div class="label-stack">
+       <div class="who">${currentUser}</div>
+       <div class="src">${hasPhoto ? "Using device photo — emoji shown if photo removed" : "Using emoji"}</div>
+     </div>`;
+  grid.innerHTML = AVATAR_EMOJIS.map(e =>
+    `<button type="button" class="${e===selected?"selected":""}" onclick="childSelectAvatarEmoji('${e}')">${e}</button>`
+  ).join("");
+}
+
+function childSelectAvatarEmoji(emoji){
+  if(currentRole!=="child" || !currentUser) return;  // scope guard
+  setAvatarEmoji(currentUser, emoji);
+  syncToCloud("Avatar Changed");
+  renderChildAvatar();
+  refreshVisibleAvatars();
+  // Update welcome message live
+  const wm = document.getElementById("welcome-msg");
+  if(wm) wm.innerHTML = renderAvatar(currentUser,"sm") + ' <span>Hi, '+currentUser+'! 👋</span>';
+  showToast("Avatar updated!","success");
+}
+
+async function onChildAvatarPhotoChosen(event){
+  if(currentRole!=="child" || !currentUser){ event.target.value=""; return; }
+  const file = event.target.files && event.target.files[0];
+  if(!file) return;
+  try {
+    const dataUrl = await resizeImageFileTo200(file);
+    setAvatarPhoto(currentUser, dataUrl);
+    showToast("Photo saved on this device.","success");
+    renderChildAvatar();
+    refreshVisibleAvatars();
+    const wm = document.getElementById("welcome-msg");
+    if(wm) wm.innerHTML = renderAvatar(currentUser,"sm") + ' <span>Hi, '+currentUser+'! 👋</span>';
+  } catch(e){
+    showToast("Could not process photo.","error");
+  }
+  event.target.value = "";
+}
+
+function removeChildAvatarPhoto(){
+  if(currentRole!=="child" || !currentUser) return;
+  clearAvatarPhoto(currentUser);
+  showToast("Photo removed from this device.","info");
+  renderChildAvatar();
+  refreshVisibleAvatars();
+  const wm = document.getElementById("welcome-msg");
+  if(wm) wm.innerHTML = renderAvatar(currentUser,"sm") + ' <span>Hi, '+currentUser+'! 👋</span>';
 }
 
 function toggleEditCalField(){

@@ -230,6 +230,18 @@
         </div>
 
         <div class="section-block">
+          <h3><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-user"/></svg> My Avatar</h3>
+          <div class="avatar-picker-current" id="child-avatar-current"></div>
+          <div class="avatar-picker-grid" id="child-avatar-grid"></div>
+          <input type="file" id="child-avatar-photo-input" accept="image/*" style="display:none" onchange="onChildAvatarPhotoChosen(event)">
+          <div class="avatar-photo-btns">
+            <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('child-avatar-photo-input').click()"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-image"/></svg> Upload Photo</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="removeChildAvatarPhoto()"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-trash"/></svg> Remove Photo</button>
+          </div>
+          <div class="avatar-photo-note"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-info"/></svg> Photos saved on this device only — add again on other devices.</div>
+        </div>
+
+        <div class="section-block">
           <button class="btn-full-ghost" onclick="changePinPrompt('child')"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-key"/></svg> Change My PIN</button>
         </div>
       </div>

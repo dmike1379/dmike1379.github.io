@@ -1,5 +1,5 @@
 {
-  "version": "31.0",
+  "version": "31.1",
   "released": "2026-04-14",
-  "notes": "Phosphor icon migration • avatar system (emoji + per-device photo) • empty-state illustrations • upgraded chore celebration (confetti + optional sound)"
+  "notes": "Fix: child-switch bar hidden from children on login • Children can now change their own avatar from the Money tab (self-scope only, no admin PIN required)"
 }
