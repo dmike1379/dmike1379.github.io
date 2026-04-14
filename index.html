@@ -168,6 +168,10 @@
     .toast.success{background:var(--secondary)}
     .toast.error{background:var(--danger)}
     .toast.info{background:var(--primary)}
+    /* Pill/chip selector (used in admin edit form) */
+    .sel-pill{display:inline-flex;align-items:center;padding:8px 14px;border-radius:20px;border:2px solid var(--border);background:var(--bg);color:var(--muted);font-size:.78rem;font-weight:700;cursor:pointer;transition:all .15s;user-select:none;-webkit-user-select:none;}
+    .sel-pill.active{background:var(--primary);border-color:var(--primary);color:white;}
+    .sel-pill.active-green{background:var(--secondary);border-color:var(--secondary);color:white;}
     /* Status pill */
     .status-pill{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;color:var(--muted);font-weight:500;padding:6px 12px;background:var(--bg);border-radius:20px}
     .status-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0}
@@ -342,9 +346,10 @@
         <h3>Manage My Money</h3>
         <label class="field-label">Action</label>
         <select id="child-action" onchange="onChildActionChange()">
-          <option value="withdraw">💸 Withdraw Cash</option>
+          <option value="withdraw">💸 Withdraw</option>
           <option value="transfer">🏦 Move to Savings</option>
-          <option value="deposit">📥 Deposit Request</option>
+          <option value="deposit">📥 Deposit</option>
+          <option value="loanpayment">💳 Loan Payment to Principal</option>
         </select>
         <div id="child-action-hint" class="info-box" style="margin-bottom:10px;"></div>
         <label class="field-label">Amount $</label>
@@ -664,8 +669,7 @@
     <div><span class="field-label">Sort</span><select id="f-sort" onchange="renderHistory()"><option value="new">Newest First</option><option value="old">Oldest First</option></select></div>
     <div><span class="field-label">Account</span><select id="f-acct" onchange="renderHistory()"><option value="all">All Accounts</option><option value="chk">Checking</option><option value="sav">Savings</option></select></div>
     <div><span class="field-label">Type</span><select id="f-type" onchange="renderHistory()"><option value="all">All Types</option><option value="pos">Deposits</option><option value="neg">Withdrawals</option></select></div>
-    <div><span class="field-label">Month</span><select id="f-month" onchange="renderHistory()"></select></div>
-    <div><span class="field-label">Year</span><select id="f-year" onchange="renderHistory()"></select></div>
+    <div style="grid-column:1/-1;"><span class="field-label">Date</span><select id="f-date" onchange="renderHistory()"></select></div>
   </div>
   <div id="ledger-list"></div>
 </div>
@@ -684,40 +688,7 @@
     <button class="btn btn-primary" onclick="attemptAdminLogin()">🔐 Unlock Admin</button>
   </div>
   <div id="admin-settings-section" class="hidden">
-    <h3>🏦 Bank Branding</h3>
-    <label class="field-label">Bank Name</label><input type="text" id="admin-bank-name" placeholder="Family Bank">
-    <label class="field-label">Tagline</label><input type="text" id="admin-bank-tagline" placeholder="Your money, your future.">
-    <label class="field-label">Primary Color</label>
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-      <input type="color" id="admin-color-primary" value="#2563eb" style="width:50px;height:40px;padding:2px;border-radius:8px;cursor:pointer;margin:0;border:1.5px solid var(--border);" oninput="previewColor('primary',this.value)">
-      <span style="font-size:.78rem;color:var(--muted);">Buttons, checking card, links</span>
-    </div>
-    <label class="field-label">Secondary Color</label>
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-      <input type="color" id="admin-color-secondary" value="#10b981" style="width:50px;height:40px;padding:2px;border-radius:8px;cursor:pointer;margin:0;border:1.5px solid var(--border);" oninput="previewColor('secondary',this.value)">
-      <span style="font-size:.78rem;color:var(--muted);">Savings card, deposit amounts</span>
-    </div>
-    <div class="section-block">
-      <h3>🖼️ Images</h3>
-      <div class="info-box">Host images anywhere and paste the direct URL, or replace files in your images/ folder.</div>
-      <label class="field-label">Banner URL</label><input type="url" id="admin-img-banner" placeholder="https://...banner.png">
-      <label class="field-label">Logo URL</label><input type="url" id="admin-img-logo" placeholder="https://...logo.png">
-    </div>
-    <div class="section-block">
-      <h3>🌐 Timezone</h3>
-      <select id="admin-timezone">
-        <option value="GMT-5">Eastern (GMT-5)</option>
-        <option value="GMT-6">Central (GMT-6)</option>
-        <option value="GMT-7">Mountain (GMT-7)</option>
-        <option value="GMT-8">Pacific (GMT-8)</option>
-        <option value="GMT-4">Atlantic (GMT-4)</option>
-        <option value="GMT+0">UTC</option>
-        <option value="GMT+1">UK (GMT+1)</option>
-        <option value="GMT+2">Central Europe (GMT+2)</option>
-      </select>
-    </div>
-    <div class="section-block">
-      <h3>👥 User Management</h3>
+    <h3>👥 User Management</h3>
       <div class="info-box">Tap Edit to update a user's settings, email, and notifications.</div>
       <div id="admin-user-list"></div>
       <!-- Edit user form — hidden until Edit tapped -->
@@ -754,6 +725,18 @@
             <strong>📅 Calendar Setup:</strong> Create a calendar in Google Calendar → share with child's email → copy Calendar ID from Settings → paste above.
           </div>
         </div>
+        <!-- Parent: child assignment pills -->
+        <div id="edit-parent-assignment" style="display:none;">
+          <label class="field-label" style="margin-top:10px;">👶 Assigned Children</label>
+          <div class="info-box" style="margin-bottom:8px;">Tap to toggle. No selection = sees all children.</div>
+          <div id="edit-child-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;"></div>
+        </div>
+        <!-- Child: tab visibility as pill selector -->
+        <div id="edit-tab-visibility" style="display:none;">
+          <label class="field-label" style="margin-top:10px;">📋 Visible Tabs</label>
+          <div class="info-box" style="margin-bottom:8px;">Tap to toggle. Money and Chores are on by default.</div>
+          <div id="edit-tab-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;"></div>
+        </div>
         <div class="row" style="gap:8px;margin-top:10px;">
           <button class="btn btn-primary col" onclick="saveUserEdit()">💾 Save Changes</button>
           <button class="btn btn-ghost col" onclick="cancelUserEdit()">Cancel</button>
@@ -774,6 +757,40 @@
       </div>
     </div>
     <div class="section-block">
+      <h3>🏦 Bank Branding</h3>
+      <label class="field-label">Bank Name</label><input type="text" id="admin-bank-name" placeholder="Family Bank">
+      <label class="field-label">Tagline</label><input type="text" id="admin-bank-tagline" placeholder="Your money, your future.">
+      <label class="field-label">Primary Color</label>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <input type="color" id="admin-color-primary" value="#2563eb" style="width:50px;height:40px;padding:2px;border-radius:8px;cursor:pointer;margin:0;border:1.5px solid var(--border);" oninput="previewColor('primary',this.value)">
+        <span style="font-size:.78rem;color:var(--muted);">Buttons, checking card, links</span>
+      </div>
+      <label class="field-label">Secondary Color</label>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <input type="color" id="admin-color-secondary" value="#10b981" style="width:50px;height:40px;padding:2px;border-radius:8px;cursor:pointer;margin:0;border:1.5px solid var(--border);" oninput="previewColor('secondary',this.value)">
+        <span style="font-size:.78rem;color:var(--muted);">Savings card, deposit amounts</span>
+      </div>
+      <div style="margin-top:10px;">
+        <h3 style="font-size:.88rem;margin-bottom:8px;">🖼️ Images</h3>
+        <div class="info-box">Host images anywhere and paste the direct URL, or replace files in your images/ folder.</div>
+        <label class="field-label">Banner URL</label><input type="url" id="admin-img-banner" placeholder="https://...banner.png">
+        <label class="field-label">Logo URL</label><input type="url" id="admin-img-logo" placeholder="https://...logo.png">
+      </div>
+      <div style="margin-top:14px;">
+        <h3 style="font-size:.88rem;margin-bottom:8px;">🌐 Timezone</h3>
+        <select id="admin-timezone">
+          <option value="GMT-5">Eastern (GMT-5)</option>
+          <option value="GMT-6">Central (GMT-6)</option>
+          <option value="GMT-7">Mountain (GMT-7)</option>
+          <option value="GMT-8">Pacific (GMT-8)</option>
+          <option value="GMT-4">Atlantic (GMT-4)</option>
+          <option value="GMT+0">UTC</option>
+          <option value="GMT+1">UK (GMT+1)</option>
+          <option value="GMT+2">Central Europe (GMT+2)</option>
+        </select>
+      </div>
+    </div>
+    <div class="section-block">
       <h3>⏱️ Auto-Logout Timer</h3>
       <div class="info-box">Automatically returns to login screen after inactivity. Set to 0 to disable.</div>
       <label class="field-label">Minutes of inactivity before logout</label>
@@ -785,16 +802,7 @@
         <option value="15">15 minutes</option>
       </select>
     </div>
-    <div class="section-block">
-      <h3>👨‍👩‍👧 Parent → Child Assignment</h3>
-      <div class="info-box">Select which children each parent can see and manage. Leave all unchecked to allow a parent to see all children.</div>
-      <div id="admin-parent-children-fields"></div>
-    </div>
-    <div class="section-block">
-      <h3>👶 Child Tab Visibility</h3>
-      <div class="info-box">Choose which tabs each child can see. Uncheck to hide.</div>
-      <div id="admin-tabs-fields"></div>
-    </div>
+
     <div class="section-block">
       <h3>🔑 Admin PIN</h3>
       <button class="btn-full-ghost" onclick="changeAdminPin()">Change Admin PIN</button>
@@ -838,7 +846,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbwk8cM1mmmHMz2F8Ss5nBBk
 // ║                   FAMILY BANK — index.html                           ║
 // ║              Frontend Configuration & Setup Block                     ║
 // ╠═══════════════════════════════════════════════════════════════════════╣
-// ║  Version: v29.2   |   Paired with Code.gs: v29.0                    ║
+// ║  Version: v29.3   |   Paired with Code.gs: v29.0                    ║
 // ║  Update version numbers on each deployment                           ║
 // ╚═══════════════════════════════════════════════════════════════════════╝
 //
@@ -1958,13 +1966,8 @@ function renderHistory(){
   const rows=[...(state.history[child]||[])];
   const sort=document.getElementById("f-sort").value,fAcct=document.getElementById("f-acct").value,fType=document.getElementById("f-type").value;
   // Date filters
-  const monthSel=document.getElementById("f-month");
-  const yearSel=document.getElementById("f-year");
-  const fMonth=monthSel?monthSel.value:"all";
-  const fYear=yearSel?yearSel.value:"all";
-  // Get the year associated with the selected month option
-  const selMonthOpt=monthSel&&monthSel.selectedOptions[0];
-  const fMonthYear=selMonthOpt&&selMonthOpt.dataset.year?parseInt(selMonthOpt.dataset.year):new Date().getFullYear();
+  const dateSel=document.getElementById("f-date");
+  const fDate=dateSel?dateSel.value:"all";
 
   const filtered=rows.filter(h=>{
     const n=(h.note||"").toLowerCase();
@@ -1972,12 +1975,18 @@ function renderHistory(){
     if(fAcct==="chk"&&isSav)return false;if(fAcct==="sav"&&!isSav)return false;
     if(fType==="pos"&&h.amt<0)return false;if(fType==="neg"&&h.amt>=0)return false;
     // Date filter
-    if(fMonth!=="all"||fYear!=="all"){
+    if(fDate!=="all"){
       let d=null;
       try{d=new Date(h.date);}catch(e){}
       if(d&&!isNaN(d)){
-        if(fMonth!=="all"&&(d.getMonth()!==parseInt(fMonth)||d.getFullYear()!==fMonthYear))return false;
-        if(fYear!=="all"&&fMonth==="all"&&d.getFullYear()!==parseInt(fYear))return false;
+        if(fDate.startsWith("month-")){
+          const parts=fDate.split("-");
+          const yr=parseInt(parts[1]);const mo=parseInt(parts[2]);
+          if(d.getFullYear()!==yr||d.getMonth()!==mo)return false;
+        } else if(fDate.startsWith("year-")){
+          const yr=parseInt(fDate.split("-")[1]);
+          if(d.getFullYear()!==yr)return false;
+        }
       }
     }
     return true;
@@ -2017,7 +2026,7 @@ function attemptAdminLogin(){
   errEl.className="field-msg";
   document.getElementById("admin-login-section").classList.add("hidden");
   document.getElementById("admin-settings-section").classList.remove("hidden");
-  populateAdminForm();renderAdminUsers();renderAdminTabFields();renderAdminParentChildren();
+  populateAdminForm();renderAdminUsers();
 }
 function populateAdminForm(){
   const cfg=state.config;
@@ -2030,44 +2039,7 @@ function populateAdminForm(){
   document.getElementById("admin-timezone").value=cfg.timezone||CFG_TIMEZONE;
   document.getElementById("admin-autologout").value=String(cfg.autoLogout||0);
 }
-function renderAdminEmailFields(){
-  const el=document.getElementById("admin-notify-fields");
-  if(!el) return;
-  const emails=state.config.emails||{};
-  const calendars=state.config.calendars||{};
-  const notify=state.config.notify||{};
-  // Show all users for email; only children for calendar
-  const allUsers=state.users||[];
-  const children=getChildNames();
-  el.innerHTML=allUsers.map(u=>{
-    const role=state.roles[u]||"child";
-    const isChild=role==="child";
-    const nEmail=!!(notify[u]&&notify[u].email!==false);   // default ON
-    const nCal=!!(notify[u]&&notify[u].calendar===true);   // default OFF
-    const nChoreRewards=!(notify[u]&&notify[u].choreRewards===false); // default ON
-    return `
-    <div style="border:1.5px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;">
-      <div style="font-weight:700;font-size:.88rem;margin-bottom:10px;">${u} <span style="font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:4px;background:${isChild?"#d1fae5;color:#065f46":"#dbeafe;color:#1d4ed8"};">${role.charAt(0).toUpperCase()+role.slice(1)}</span></div>
-      <label class="field-label">Email Address</label>
-      <input type="email" id="email-field-${u}" placeholder="${u.toLowerCase()}@email.com" value="${emails[u]||""}">
-      <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:${isChild?"10px":"0"};">
-        <label style="display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--muted);font-weight:500;cursor:pointer;">
-          <input type="checkbox" id="notify-email-${u}" ${nEmail?"checked":""} style="width:18px!important;height:18px!important;"> 📧 Email notifications
-        </label>
-        ${isChild?`<label style="display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--muted);font-weight:500;cursor:pointer;">
-          <input type="checkbox" id="notify-cal-${u}" ${nCal?"checked":""} style="width:18px!important;height:18px!important;" onchange="toggleCalField('${u}')"> 📅 Calendar notifications
-        </label>
-        <label style="display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--muted);font-weight:500;cursor:pointer;">
-          <input type="checkbox" id="notify-chore-rewards-${u}" ${nChoreRewards?"checked":""} style="width:18px!important;height:18px!important;"> 💰 Show chore rewards
-        </label>`:""}
-      </div>
-      ${isChild?`<div id="cal-wrap-${u}" style="${nCal?"":"display:none;"}">
-        <label class="field-label">Calendar ID</label>
-        <input type="text" id="cal-field-${u}" placeholder="abc123@group.calendar.google.com" value="${calendars[u]||""}" style="font-size:13px;">
-      </div>`:""}
-    </div>`;
-  }).join("");
-}
+function renderAdminEmailFields(){/* handled in user edit form */}
 
 function toggleCalField(username){
   const cb=document.getElementById("notify-cal-"+username);
@@ -2115,25 +2087,8 @@ function saveAdminSettings(){
   state.config.imgLogo=document.getElementById("admin-img-logo").value.trim()||CFG_IMG_LOGO;
   state.config.timezone=document.getElementById("admin-timezone").value;
   state.config.autoLogout=parseInt(document.getElementById("admin-autologout").value)||0;
-  // Save per-parent child assignments
-  if(!state.config.parentChildren)state.config.parentChildren={};
-  getParentNames().forEach(p=>{
-    const children=getChildNames();
-    const assigned=children.filter(c=>{
-      const cb=document.getElementById("pc-"+p+"-"+c);
-      return cb&&cb.checked;
-    });
-    state.config.parentChildren[p]=assigned; // empty array = see all
-  });
-  // Save per-child tab visibility
-  if(!state.config.tabs)state.config.tabs={};
-  getChildNames().forEach(u=>{
-    state.config.tabs[u]={
-      money: document.getElementById("tab-money-"+u)?.checked!==false,
-      chores:document.getElementById("tab-chores-"+u)?.checked!==false,
-      loans: document.getElementById("tab-loans-"+u)?.checked===true
-    };
-  });
+  // Tab visibility and parent assignments now managed via user edit form pills
+  // No standalone fields to save here
   // Save per-user emails + notification prefs + calendar IDs
   if(!state.config.emails)state.config.emails={};
   if(!state.config.calendars)state.config.calendars={};
@@ -2469,33 +2424,7 @@ function renderStreaks(){
 // ================================================================
 // ADMIN — Tab visibility and auto-logout
 // ================================================================
-function renderAdminTabFields(){
-  const el=document.getElementById("admin-tabs-fields");
-  if(!el)return;
-  const children=getChildNames();
-  const tabs=state.config.tabs||{};
-  if(!children.length){el.innerHTML=`<p style="font-size:.78rem;color:var(--muted);">No children added yet.</p>`;return;}
-  el.innerHTML=children.map(c=>{
-    const ct=tabs[c]||{};
-    const money =ct.money !==false;
-    const chores=ct.chores!==false;
-    const loans =ct.loans ===true;
-    return `<div style="border:1.5px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;">
-      <div style="font-weight:700;font-size:.88rem;margin-bottom:10px;">${c}</div>
-      <div style="display:flex;flex-wrap:wrap;gap:12px;">
-        <label style="display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--muted);font-weight:500;cursor:pointer;">
-          <input type="checkbox" id="tab-money-${c}" ${money?"checked":""} style="width:18px!important;height:18px!important;"> 💵 Money
-        </label>
-        <label style="display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--muted);font-weight:500;cursor:pointer;">
-          <input type="checkbox" id="tab-chores-${c}" ${chores?"checked":""} style="width:18px!important;height:18px!important;"> ✅ Chores
-        </label>
-        <label style="display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--muted);font-weight:500;cursor:pointer;">
-          <input type="checkbox" id="tab-loans-${c}" ${loans?"checked":""} style="width:18px!important;height:18px!important;"> 🏦 Loans
-        </label>
-      </div>
-    </div>`;
-  }).join("");
-}
+function renderAdminTabFields(){/* handled in user edit form */}
 
 // ================================================================
 // PARENT DASHBOARD SUMMARY
@@ -2676,30 +2605,7 @@ function clearStreakForm(){
 // ================================================================
 // ADMIN — PARENT-CHILD ASSIGNMENT
 // ================================================================
-function renderAdminParentChildren(){
-  const el=document.getElementById("admin-parent-children-fields");
-  if(!el)return;
-  const parents=getParentNames();
-  const children=getChildNames();
-  if(!parents.length||!children.length){
-    el.innerHTML=`<p style="font-size:.78rem;color:var(--muted);">Need at least one parent and one child to configure assignments.</p>`;
-    return;
-  }
-  const assignments=state.config.parentChildren||{};
-  el.innerHTML=parents.map(p=>{
-    const assigned=assignments[p]||[];
-    return `<div style="border:1.5px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;">
-      <div style="font-weight:700;font-size:.88rem;margin-bottom:10px;">${p} <span style="font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:4px;background:#dbeafe;color:#1d4ed8;">Parent</span></div>
-      <div style="font-size:.73rem;color:var(--muted);margin-bottom:8px;">Leave all unchecked to allow access to all children.</div>
-      <div style="display:flex;flex-wrap:wrap;gap:12px;">
-        ${children.map(c=>`<label style="display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--muted);font-weight:500;cursor:pointer;">
-          <input type="checkbox" id="pc-${p}-${c}" ${assigned.indexOf(c)!==-1?"checked":""} style="width:18px!important;height:18px!important;">
-          👤 ${c}
-        </label>`).join("")}
-      </div>
-    </div>`;
-  }).join("");
-}
+function renderAdminParentChildren(){/* handled in user edit form */}
 
 // ================================================================
 // CHILD PICKER — filter by parent assignment
@@ -2964,6 +2870,32 @@ function onChildActionChange(){
 
 function doChildAction(){
   const action=document.getElementById("child-action").value;
+  if(action==="loanpayment"){
+    const child=activeChild||currentUser;
+    const data=getChildData(child);
+    const activeLoans=(data.loans||[]).filter(l=>l.status==="active");
+    if(!activeLoans.length){showToast("No active loans to pay.","info");return;}
+    const loan=activeLoans[0];
+    const payment=Math.min(loan.monthlyPayment,loan.balance);
+    if(data.balances.checking<payment){
+      showToast("Not enough in checking! Balance: "+fmt(data.balances.checking),"error");return;
+    }
+    openModal({icon:"💳",title:"Loan Payment",
+      body:"Pay "+fmt(payment)+" toward your "+loan.name+".",
+      detail:{"Payment":fmt(payment),"Checking After":fmt(data.balances.checking-payment),"Remaining Balance":fmt(Math.max(0,loan.balance-payment))},
+      confirmText:"Make Payment",confirmClass:"btn-warning",
+      onConfirm:()=>{
+        data.balances.checking-=payment;
+        loan.balance=parseFloat(Math.max(0,loan.balance-payment).toFixed(2));
+        loan.paidMonths=(loan.paidMonths||0)+1;
+        if(loan.balance<=0){loan.status="paid";showToast(loan.name+" fully paid off! 🎉","success");}
+        recordTransaction(currentUser,"Loan Payment: "+loan.name+" (Chk)",-payment);
+        syncToCloud("Loan Payment");
+        renderChildLoans();renderBalances();
+        if(loan.balance>0)showToast("Payment made! "+fmt(loan.balance)+" remaining.","success");
+      }});
+    return;
+  }
   // Re-use child-note as source for deposit
   if(action==="deposit"){
     // Map fields for deposit
@@ -3245,6 +3177,7 @@ function renderChildLoans(){
   }
   el.innerHTML=loans.map(l=>{
     const pct=Math.min(100,Math.round(((l.principal-l.balance)/l.principal)*100));
+    const nextPmt=fmtNextPayment(l);
     return `<div class="chore-card" style="margin-bottom:10px;">
       <div class="chore-card-header">
         <span class="chore-card-name">💳 ${l.name}</span>
@@ -3254,6 +3187,7 @@ function renderChildLoans(){
         <div style="background:var(--primary);height:100%;width:${pct}%;border-radius:6px;transition:width .3s;"></div>
       </div>
       <div class="chore-card-meta">${pct}% paid off · ${fmt(l.monthlyPayment)}/month</div>
+      <div style="font-size:.72rem;color:var(--warning);font-weight:700;margin-top:4px;">📅 Next payment: ${nextPmt}</div>
     </div>`;
   }).join("");
 }
@@ -3289,6 +3223,292 @@ function deleteLoan(loanId){
       syncToCloud("Loan Deleted");showToast("Loan removed.","info");
       renderParentLoans();renderChildLoans();
     }});
+}
+
+
+// ================================================================
+// PILL CHIP SELECTOR HELPERS
+// ================================================================
+function makePill(label, value, active, colorClass, onToggle){
+  const el=document.createElement("div");
+  el.className="sel-pill"+(active?" "+(colorClass||"active"):"");
+  el.textContent=label;
+  el.dataset.value=value;
+  el.addEventListener("click",()=>{
+    el.classList.toggle("active");
+    if(colorClass) el.classList.toggle(colorClass);
+    if(onToggle) onToggle(value, el.classList.contains("active")||el.classList.contains(colorClass));
+  });
+  return el;
+}
+
+function getPillActiveValues(containerId){
+  const vals=[];
+  document.querySelectorAll("#"+containerId+" .sel-pill").forEach(p=>{
+    if(p.classList.contains("active")||p.classList.contains("active-green"))
+      vals.push(p.dataset.value);
+  });
+  return vals;
+}
+
+// ================================================================
+// ADMIN — openUserEdit with pills for assignment + tab visibility
+// ================================================================
+function openUserEdit(username){
+  editingUserName=username;
+  const role=state.roles[username]||"child";
+  const isChild=role==="child";
+  const isParent=role==="parent";
+  const emails=state.config.emails||{};
+  const notify=(state.config.notify&&state.config.notify[username])||{};
+  const cals=state.config.calendars||{};
+
+  document.getElementById("admin-edit-title").textContent="✏️ Edit: "+username;
+  document.getElementById("edit-user-name").value=username;
+  document.getElementById("edit-user-role").value=role;
+  document.getElementById("edit-user-pin").value="";
+  document.getElementById("edit-user-email").value=emails[username]||"";
+
+  // Show/hide child-specific fields
+  const childFields=document.getElementById("edit-child-fields");
+  if(childFields) childFields.style.display=isChild?"":"none";
+
+  if(isChild){
+    document.getElementById("edit-notify-email").checked=notify.email!==false;
+    document.getElementById("edit-notify-cal").checked=!!notify.calendar;
+    document.getElementById("edit-chore-rewards").checked=notify.choreRewards!==false;
+    document.getElementById("edit-cal-id").value=cals[username]||"";
+    toggleEditCalField();
+
+    // Tab visibility pills
+    const tabWrap=document.getElementById("edit-tab-visibility");
+    if(tabWrap) tabWrap.style.display="";
+    const tabChips=document.getElementById("edit-tab-chips");
+    if(tabChips){
+      tabChips.innerHTML="";
+      const tabCfg=(state.config.tabs&&state.config.tabs[username])||{};
+      const moneyOn=tabCfg.money!==false;
+      const choresOn=tabCfg.chores!==false;
+      const loansOn=tabCfg.loans===true;
+      [
+        {label:"💵 Money", val:"money", on:moneyOn},
+        {label:"✅ Chores", val:"chores", on:choresOn},
+        {label:"💳 Loans", val:"loans", on:loansOn}
+      ].forEach(t=>{
+        tabChips.appendChild(makePill(t.label, t.val, t.on, "active"));
+      });
+    }
+  } else {
+    const tabWrap=document.getElementById("edit-tab-visibility");
+    if(tabWrap) tabWrap.style.display="none";
+  }
+
+  // Parent assignment pills
+  const assignWrap=document.getElementById("edit-parent-assignment");
+  if(assignWrap) assignWrap.style.display=isParent?"":"none";
+  if(isParent){
+    const chipContainer=document.getElementById("edit-child-chips");
+    if(chipContainer){
+      chipContainer.innerHTML="";
+      const allChildren=getChildNames();
+      const assignments=(state.config.parentChildren&&state.config.parentChildren[username])||[];
+      allChildren.forEach(c=>{
+        const active=assignments.indexOf(c)!==-1;
+        chipContainer.appendChild(makePill("👤 "+c, c, active, "active-green"));
+      });
+      if(!allChildren.length){
+        chipContainer.innerHTML='<span style="font-size:.78rem;color:var(--muted);">No children added yet.</span>';
+      }
+    }
+  }
+
+  document.getElementById("admin-user-edit-wrap").classList.remove("hidden");
+  document.getElementById("admin-user-edit-wrap").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+// ================================================================
+// ADMIN — saveUserEdit updated to read pills
+// ================================================================
+function saveUserEdit(){
+  if(!editingUserName)return;
+  const u=editingUserName;
+  const role=document.getElementById("edit-user-role").value;
+  const pin=document.getElementById("edit-user-pin").value;
+  const email=document.getElementById("edit-user-email").value.trim();
+
+  state.roles[u]=role;
+  if(pin){
+    if(pin.length!==4||!/^\d{4}$/.test(pin)){showToast("PIN must be exactly 4 digits.","error");return;}
+    state.pins[u]=pin;
+  }
+  if(!state.config.emails)state.config.emails={};
+  state.config.emails[u]=email;
+
+  if(role==="child"){
+    if(!state.config.notify)state.config.notify={};
+    if(!state.config.notify[u])state.config.notify[u]={};
+    state.config.notify[u].email=document.getElementById("edit-notify-email").checked;
+    state.config.notify[u].calendar=document.getElementById("edit-notify-cal").checked;
+    state.config.notify[u].choreRewards=document.getElementById("edit-chore-rewards").checked;
+    const calId=document.getElementById("edit-cal-id").value.trim();
+    if(!state.config.calendars)state.config.calendars={};
+    if(calId)state.config.calendars[u]=calId;
+    // Tab visibility from pills
+    if(!state.config.tabs)state.config.tabs={};
+    const activeTabVals=getPillActiveValues("edit-tab-chips");
+    state.config.tabs[u]={
+      money: activeTabVals.indexOf("money")!==-1,
+      chores: activeTabVals.indexOf("chores")!==-1,
+      loans: activeTabVals.indexOf("loans")!==-1
+    };
+  }
+
+  if(role==="parent"){
+    // Child assignment from pills
+    if(!state.config.parentChildren)state.config.parentChildren={};
+    state.config.parentChildren[u]=getPillActiveValues("edit-child-chips");
+  }
+
+  syncToCloud("User Updated");
+  showToast(u+" updated! 💾","success");
+  cancelUserEdit();
+  renderAdminUsers();
+}
+
+// ================================================================
+// HISTORY — combined date filter, data-only months
+// ================================================================
+function populateHistoryDateFilters(){
+  const dateSel=document.getElementById("f-date");
+  if(!dateSel)return;
+
+  const child=activeChild||currentUser;
+  const rows=state.history[child]||[];
+  const now=new Date();
+  const monthNames=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  // Collect year-month keys from actual data
+  const dataKeys=new Set();
+  const dataYears=new Set();
+  rows.forEach(h=>{
+    try{
+      const d=new Date(h.date);
+      if(!isNaN(d)){
+        const k=d.getFullYear()+"-"+d.getMonth();
+        dataKeys.add(k);
+        dataYears.add(d.getFullYear());
+      }
+    }catch(e){}
+  });
+
+  // Always include current month
+  dataKeys.add(now.getFullYear()+"-"+now.getMonth());
+  dataYears.add(now.getFullYear());
+
+  const years=[...dataYears].sort((a,b)=>b-a);
+  const curKey=now.getFullYear()+"-"+now.getMonth();
+
+  dateSel.innerHTML="";
+  const allOpt=document.createElement("option");
+  allOpt.value="all";allOpt.textContent="All Time";
+  dateSel.appendChild(allOpt);
+
+  years.forEach(yr=>{
+    // Check if this year has any data months
+    const yearMonths=[...dataKeys].filter(k=>k.startsWith(yr+"-"));
+    if(!yearMonths.length)return;
+
+    // Year-all option
+    const yrOpt=document.createElement("option");
+    yrOpt.value="year-"+yr;
+    yrOpt.textContent=yr+" — All";
+    dateSel.appendChild(yrOpt);
+
+    // Month options newest first
+    for(let m=11;m>=0;m--){
+      const k=yr+"-"+m;
+      if(!dataKeys.has(k))continue;
+      const mo=document.createElement("option");
+      mo.value="month-"+yr+"-"+m;
+      mo.textContent=monthNames[m]+" "+yr;
+      if(k===curKey)mo.selected=true;
+      dateSel.appendChild(mo);
+    }
+  });
+}
+
+// ================================================================
+// LOANS — next payment due date calculation
+// ================================================================
+function calcNextPaymentDate(loan){
+  if(!loan.startDate)return null;
+  try{
+    const start=new Date(loan.startDate+"T00:00:00");
+    const paid=parseInt(loan.paidMonths)||0;
+    const nextMonth=new Date(start.getFullYear(), start.getMonth()+paid+1, start.getDate());
+    return nextMonth;
+  }catch(e){return null;}
+}
+
+function fmtNextPayment(loan){
+  if(loan.balance<=0)return "Paid off! 🎉";
+  const d=calcNextPaymentDate(loan);
+  if(!d)return "—";
+  const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const today=new Date();
+  const diffDays=Math.round((d-today)/(24*60*60*1000));
+  const dateStr=months[d.getMonth()]+" "+d.getDate()+", "+d.getFullYear();
+  if(diffDays<0) return "Overdue! ("+dateStr+")";
+  if(diffDays===0) return "Due today! ("+dateStr+")";
+  if(diffDays<=7) return "Due in "+diffDays+" days ("+dateStr+")";
+  return dateStr;
+}
+
+// ================================================================
+// CHILD ACTION — add loan payment handling
+// ================================================================
+function onChildActionChange(){
+  const action=document.getElementById("child-action").value;
+  const hint=document.getElementById("child-action-hint");
+  const noteLabel=document.getElementById("child-note-label");
+  const splitWrap=document.getElementById("child-deposit-split-wrap");
+  const btn=document.getElementById("child-action-btn");
+  const noteEl=document.getElementById("child-note");
+  const child=activeChild||currentUser;
+  const data=getChildData(child);
+  const activeLoans=(data.loans||[]).filter(l=>l.status==="active");
+
+  if(action==="withdraw"){
+    hint.textContent="Money comes out of checking. Remember to take the same amount from your real bank account.";
+    noteLabel.textContent="What is this for?";
+    noteEl.placeholder="e.g. New shoes, snack money...";
+    splitWrap.classList.add("hidden");
+    btn.textContent="💸 Withdraw Cash";btn.className="btn btn-primary";
+  } else if(action==="transfer"){
+    hint.textContent="Moves money from checking into savings.";
+    noteLabel.textContent="What is this for?";
+    noteEl.placeholder="e.g. Saving up for a bike...";
+    splitWrap.classList.add("hidden");
+    btn.textContent="🏦 Move to Savings";btn.className="btn btn-secondary";
+  } else if(action==="deposit"){
+    hint.textContent="Got cash from a birthday or job? Request to add it to your bank account.";
+    noteLabel.textContent="Where did the money come from?";
+    noteEl.placeholder="e.g. Birthday money from Grandma";
+    splitWrap.classList.remove("hidden");
+    btn.textContent="📥 Request Deposit";btn.className="btn btn-secondary";
+  } else if(action==="loanpayment"){
+    if(!activeLoans.length){
+      hint.textContent="You don\'t have any active loans right now.";
+      btn.textContent="💳 No Active Loans";btn.className="btn btn-ghost";btn.disabled=true;
+    } else {
+      const loan=activeLoans[0];
+      hint.textContent="Pays "+fmt(loan.monthlyPayment)+" toward your "+loan.name+". Next payment: "+fmtNextPayment(loan);
+      btn.textContent="💳 Pay "+fmt(loan.monthlyPayment);btn.className="btn btn-warning";btn.disabled=false;
+    }
+    noteLabel.textContent="Loan";
+    noteEl.placeholder="";
+    splitWrap.classList.add("hidden");
+  }
 }
 
 // ================================================================
