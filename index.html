@@ -259,11 +259,15 @@
     <label class="field-label">PIN</label>
     <input type="password" id="pin-input" placeholder="••••" maxlength="4" inputmode="numeric" autocomplete="off">
     <div class="field-msg" id="pin-error"></div>
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
       <input type="checkbox" id="remember-me" onchange="onRememberMeChange()">
-      <label for="remember-me" style="font-size:.82rem;color:var(--muted);font-weight:500;margin:0;cursor:pointer;">Remember me on this device</label>
+      <label for="remember-me" style="font-size:.82rem;color:var(--muted);font-weight:500;margin:0;cursor:pointer;">Remember my username</label>
     </div>
-    <button class="btn btn-primary" onclick="attemptLogin()">🔐 Log In</button>
+    <div id="auto-login-wrap" style="display:none;align-items:center;gap:10px;margin-bottom:4px;padding-left:4px;">
+      <input type="checkbox" id="auto-login-cb" onchange="onAutoLoginChange()">
+      <label for="auto-login-cb" style="font-size:.82rem;color:var(--muted);font-weight:500;margin:0;cursor:pointer;">Auto login on this device <span style="font-size:.7rem;color:var(--warning);">⚠️ Only use on your personal device</span></label>
+    </div>
+    <button class="btn btn-primary" onclick="attemptLoginV291()">🔐 Log In</button>
     <div style="text-align:center;margin-top:14px;">
       <span class="status-pill" id="status-pill">
         <span class="status-dot loading" id="status-dot"></span>
@@ -581,8 +585,32 @@
 
       <!-- Settings tab -->
       <div class="tab-panel" id="parent-tab-settings">
-        <h3>Weekly Allowance</h3>
-        <div class="info-box">Deposited automatically every Monday.</div>
+        <h3>Allowance</h3>
+        <div class="info-box">Set the schedule and amount deposited automatically.</div>
+        <label class="field-label">Schedule</label>
+        <select id="allow-schedule" onchange="onAllowanceScheduleChange()">
+          <option value="weekly">Weekly</option>
+          <option value="biweekly">Bi-weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+        <!-- Weekly / Bi-weekly day picker -->
+        <div id="allow-day-wrap">
+          <label class="field-label" id="allow-day-label">Day of Week</label>
+          <div id="allow-day-toggles" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
+            <button type="button" class="day-toggle" data-day="0" onclick="toggleAllowanceDay(this)">Su</button>
+            <button type="button" class="day-toggle" data-day="1" onclick="toggleAllowanceDay(this)">Mo</button>
+            <button type="button" class="day-toggle" data-day="2" onclick="toggleAllowanceDay(this)">Tu</button>
+            <button type="button" class="day-toggle" data-day="3" onclick="toggleAllowanceDay(this)">We</button>
+            <button type="button" class="day-toggle" data-day="4" onclick="toggleAllowanceDay(this)">Th</button>
+            <button type="button" class="day-toggle" data-day="5" onclick="toggleAllowanceDay(this)">Fr</button>
+            <button type="button" class="day-toggle" data-day="6" onclick="toggleAllowanceDay(this)">Sa</button>
+          </div>
+        </div>
+        <!-- Monthly day picker -->
+        <div id="allow-monthly-wrap" class="hidden">
+          <label class="field-label">Day of Month</label>
+          <select id="allow-monthly-day"></select>
+        </div>
         <div class="row">
           <div class="col"><label class="field-label">Checking $</label><input type="number" id="allow-chk" step="0.01" placeholder="0.00"></div>
           <div class="col"><label class="field-label">Savings $</label><input type="number" id="allow-sav" step="0.01" placeholder="0.00"></div>
@@ -775,10 +803,16 @@
 
 <script>
 // ╔═══════════════════════════════════════════════════════════════════════╗
+// ║  API_URL — ONLY LINE THAT CHANGES ON REDEPLOY                        ║
+// ║  Get from: Apps Script → Deploy → Manage Deployments → copy URL      ║
+// ╚═══════════════════════════════════════════════════════════════════════╝
+const API_URL = "https://script.google.com/macros/s/AKfycbwk8cM1mmmHMz2F8Ss5nBBkLt4KKTL2m7_PVRSV4X0kHn-B0mpJCc93DaW8j6TMnZa3jw/exec";
+
+// ╔═══════════════════════════════════════════════════════════════════════╗
 // ║                   FAMILY BANK — index.html                           ║
 // ║              Frontend Configuration & Setup Block                     ║
 // ╠═══════════════════════════════════════════════════════════════════════╣
-// ║  Version: v29.0   |   Paired with Code.gs: v29.0                    ║
+// ║  Version: v29.1   |   Paired with Code.gs: v29.0                    ║
 // ║  Update version numbers on each deployment                           ║
 // ╚═══════════════════════════════════════════════════════════════════════╝
 //
@@ -799,11 +833,7 @@
 // ╚═══════════════════════════════════════════════════════════════════════╝
 
 // ------------------------------------------------------------------
-// STEP 1 — GOOGLE APPS SCRIPT URL  ← THE ONLY LINE THAT CHANGES ON REDEPLOY
-// Paste your Web App URL here every time you redeploy Code.gs.
-// Get it from: Apps Script → Deploy → Manage Deployments → copy URL
-// ------------------------------------------------------------------
-const API_URL = "https://script.google.com/macros/s/AKfycbwk8cM1mmmHMz2F8Ss5nBBkLt4KKTL2m7_PVRSV4X0kHn-B0mpJCc93DaW8j6TMnZa3jw/exec"; // ← PASTE NEW URL HERE
+// STEP 1 — API_URL is now at the very top of this script block.
 
 // ------------------------------------------------------------------
 // STEP 2 — BANK IDENTITY
@@ -1118,35 +1148,14 @@ function switchTab(panel,tab){
 // ================================================================
 // LOGIN
 // ================================================================
-function attemptLogin(){
-  clearFieldError("pin-input","pin-error");
-  const userRaw=document.getElementById("username-input").value.trim();
-  const pin=document.getElementById("pin-input").value;
-  const user=state.users.find(u=>u.toLowerCase()===userRaw.toLowerCase());
-  if(!user){showFieldError("pin-input","pin-error","Name not recognised — check spelling.");return;}
-  if(state.pins[user]!==pin){showFieldError("pin-input","pin-error","Incorrect PIN. Try again.");document.getElementById("pin-input").value="";return;}
-  if(document.getElementById("remember-me").checked){
-    try{localStorage.setItem("fb_remembered_user",user);localStorage.setItem("fb_remembered_pin",pin);}catch(e){}
-  }
-  currentUser=user;
-  currentRole=state.roles[user]||"child";
-  document.getElementById("login-screen").classList.add("hidden");
-  if(currentRole==="parent"){
-    const children=getAssignedChildren();
-    if(children.length===1){document.getElementById("main-screen").classList.remove("hidden");selectChild(children[0]);}
-    else if(children.length>1){document.getElementById("child-picker-screen").classList.remove("hidden");showChildPicker();}
-    else{document.getElementById("main-screen").classList.remove("hidden");document.getElementById("welcome-msg").textContent="Hi, "+user+"! 👋";document.getElementById("parent-panel").classList.remove("hidden");}
-  }else{
-    activeChild=user;
-    document.getElementById("main-screen").classList.remove("hidden");
-    document.getElementById("welcome-msg").textContent="Hi, "+user+"! 👋";
-    document.getElementById("child-panel").classList.remove("hidden");
-    renderChildTabBar();
-    renderBalances();renderChildChores();renderSavingsGoals();renderPendingDeposits();showChoreWaitingBanner();updateChoreBadges();
-    initInactivityTimer();
-  }
+// attemptLogin — replaced by attemptLoginV291 in v29.1
+function logout(){
+  // Clear auto-login PIN on logout so user must re-enter PIN next time
+  // (unless they explicitly have auto-login checked, which means they want it)
+  // We clear it — if they want auto-login they can re-check the box on next login
+  try{ localStorage.removeItem("fb_remembered_pin"); }catch(e){}
+  location.reload();
 }
-function logout(){location.reload();}
 
 function changePinPrompt(who){
   const target=who==="parent"?currentUser:activeChild||getChildNames()[0]||currentUser;
@@ -1162,43 +1171,9 @@ function confirmResetChildPin(){
 // ================================================================
 // REMEMBER ME
 // ================================================================
-function restoreRememberedUser(){
-  try{
-    const saved=localStorage.getItem("fb_remembered_user");
-    if(!saved)return;
-    const valid=state.users.find(u=>u.toLowerCase()===saved.toLowerCase());
-    if(!valid){localStorage.removeItem("fb_remembered_user");return;}
-    // Try auto-login if PIN also stored
-    const savedPin=localStorage.getItem("fb_remembered_pin");
-    if(savedPin&&state.pins[valid]===savedPin){
-      // Auto-login silently
-      currentUser=valid;
-      currentRole=state.roles[valid]||"child";
-      document.getElementById("login-screen").classList.add("hidden");
-      if(currentRole==="parent"){
-        const children=getAssignedChildren();
-        if(children.length===1){document.getElementById("main-screen").classList.remove("hidden");selectChild(children[0]);}
-        else if(children.length>1){document.getElementById("child-picker-screen").classList.remove("hidden");showChildPicker();}
-        else{document.getElementById("main-screen").classList.remove("hidden");document.getElementById("welcome-msg").textContent="Hi, "+valid+"! 👋";document.getElementById("parent-panel").classList.remove("hidden");}
-      }else{
-        activeChild=valid;
-        document.getElementById("main-screen").classList.remove("hidden");
-        document.getElementById("welcome-msg").textContent="Hi, "+valid+"! 👋";
-        document.getElementById("child-panel").classList.remove("hidden");
-        renderChildTabBar();
-        renderBalances();renderChildChores();renderSavingsGoals();renderPendingDeposits();showChoreWaitingBanner();updateChoreBadges();
-        initInactivityTimer();
-      }
-      return;
-    }
-    // No pin stored — just pre-fill the username
-    const ni=document.getElementById("username-input"),rc=document.getElementById("remember-me"),nb=document.getElementById("not-you-btn");
-    if(ni)ni.value=valid;if(rc)rc.checked=true;if(nb)nb.classList.remove("hidden");
-    setTimeout(()=>document.getElementById("pin-input")?.focus(),400);
-  }catch(e){}
-}
-function onRememberMeChange(){if(!document.getElementById("remember-me").checked){try{localStorage.removeItem("fb_remembered_user");localStorage.removeItem("fb_remembered_pin");}catch(e){}document.getElementById("not-you-btn").classList.add("hidden");}}
-function clearRememberedUser(){try{localStorage.removeItem("fb_remembered_user");localStorage.removeItem("fb_remembered_pin");}catch(e){}const ni=document.getElementById("username-input"),rc=document.getElementById("remember-me"),nb=document.getElementById("not-you-btn");if(ni){ni.value="";ni.focus();}if(rc)rc.checked=false;if(nb)nb.classList.add("hidden");}
+// restoreRememberedUser — see updated version in v29.1 block above
+// onRememberMeChange — see updated version in v29.1 block above
+// clearRememberedUser — see updated version in v29.1 block above
 
 // ================================================================
 // CHILD PICKER
@@ -1281,6 +1256,17 @@ function renderParentSettings(){
   document.getElementById("rate-sav").value=data.rates.savings||0;
   document.getElementById("allow-chk").value=(data.autoDeposit.checking||0).toFixed(2);
   document.getElementById("allow-sav").value=(data.autoDeposit.savings||0).toFixed(2);
+  // Populate allowance schedule
+  const schedule=data.autoDeposit.schedule||"weekly";
+  const schedEl=document.getElementById("allow-schedule");
+  if(schedEl) schedEl.value=schedule;
+  onAllowanceScheduleChange();
+  if(schedule==="monthly"){
+    const mdEl=document.getElementById("allow-monthly-day");
+    if(mdEl) mdEl.value=data.autoDeposit.monthlyDay||"1";
+  } else {
+    setAllowanceDayToggles(data.autoDeposit.days&&data.autoDeposit.days.length?data.autoDeposit.days:[1]); // default Monday
+  }
 }
 function confirmAdjust(){
   const chk=parseFloat(document.getElementById("adj-chk").value)||0;
@@ -1304,7 +1290,22 @@ function confirmInterest(){
   openModal({icon:"📈",title:"Apply 1 Month of Interest?",body:"Adds interest based on current APY rates.",detail:{"Checking APY":data.rates.checking+"%","Checking Earned":"+"+fmt(ec),"Savings APY":data.rates.savings+"%","Savings Earned":"+"+fmt(es),"Total":"+"+fmt(ec+es)},confirmText:"Apply Interest",confirmClass:"btn-purple",
     onConfirm:()=>{data.balances.checking+=ec;data.balances.savings+=es;if(ec>0)recordTransaction("Bank","Interest (Chk)",ec);if(es>0)recordTransaction("Bank","Interest (Sav)",es);syncToCloud("Interest Run");showToast("Interest applied! 📈","success");}});
 }
-function saveAllowance(){const data=getChildData(activeChild);data.autoDeposit.checking=parseFloat(document.getElementById("allow-chk").value)||0;data.autoDeposit.savings=parseFloat(document.getElementById("allow-sav").value)||0;syncToCloud("Allowance Update");showToast("Allowance saved.","success");}
+function saveAllowance(){
+  const data=getChildData(activeChild);
+  data.autoDeposit.checking=parseFloat(document.getElementById("allow-chk").value)||0;
+  data.autoDeposit.savings=parseFloat(document.getElementById("allow-sav").value)||0;
+  // Save schedule settings
+  const schedule=document.getElementById("allow-schedule")?.value||"weekly";
+  data.autoDeposit.schedule=schedule;
+  if(schedule==="monthly"){
+    data.autoDeposit.monthlyDay=document.getElementById("allow-monthly-day")?.value||"1";
+    data.autoDeposit.days=[];
+  } else {
+    data.autoDeposit.days=getAllowanceSelectedDay();
+    data.autoDeposit.monthlyDay=null;
+  }
+  syncToCloud("Allowance Update");showToast("Allowance saved.","success");
+}
 function saveRates(){const data=getChildData(activeChild);data.rates.checking=parseFloat(document.getElementById("rate-chk").value)||0;data.rates.savings=parseFloat(document.getElementById("rate-sav").value)||0;renderBalances();syncToCloud("Rates Update");showToast("Interest rates saved.","success");}
 
 // ================================================================
@@ -2671,15 +2672,232 @@ function getAssignedChildren(){
 }
 
 
+
+// ================================================================
+// REMEMBER ME — TWO-CHECKBOX SYSTEM
+// Checkbox 1: "Remember username" — pre-fills name, requires PIN
+// Checkbox 2: "Auto login on this device" — stores PIN, skips login
+// ================================================================
+
+function onRememberMeChange(){
+  const checked=document.getElementById("remember-me").checked;
+  const autoWrap=document.getElementById("auto-login-wrap");
+  const autoCb=document.getElementById("auto-login-cb");
+  // Show/hide auto-login option
+  if(autoWrap) autoWrap.style.display=checked?"flex":"none";
+  // If unchecking remember-me, also clear auto-login
+  if(!checked){
+    if(autoCb) autoCb.checked=false;
+    try{
+      localStorage.removeItem("fb_remembered_user");
+      localStorage.removeItem("fb_remembered_pin");
+    }catch(e){}
+    const nb=document.getElementById("not-you-btn");
+    if(nb) nb.classList.add("hidden");
+  }
+}
+
+function onAutoLoginChange(){
+  const autoCb=document.getElementById("auto-login-cb");
+  if(!autoCb||!autoCb.checked){
+    try{ localStorage.removeItem("fb_remembered_pin"); }catch(e){}
+  }
+}
+
+function clearRememberedUser(){
+  try{
+    localStorage.removeItem("fb_remembered_user");
+    localStorage.removeItem("fb_remembered_pin");
+  }catch(e){}
+  const ni=document.getElementById("username-input");
+  const rc=document.getElementById("remember-me");
+  const ac=document.getElementById("auto-login-cb");
+  const nb=document.getElementById("not-you-btn");
+  const aw=document.getElementById("auto-login-wrap");
+  if(ni){ni.value="";ni.focus();}
+  if(rc) rc.checked=false;
+  if(ac) ac.checked=false;
+  if(nb) nb.classList.add("hidden");
+  if(aw) aw.style.display="none";
+}
+
+function restoreRememberedUser(){
+  try{
+    const saved=localStorage.getItem("fb_remembered_user");
+    if(!saved) return;
+    const valid=state.users.find(u=>u.toLowerCase()===saved.toLowerCase());
+    if(!valid){localStorage.removeItem("fb_remembered_user");localStorage.removeItem("fb_remembered_pin");return;}
+
+    // Restore "Remember username" checkbox state
+    const ni=document.getElementById("username-input");
+    const rc=document.getElementById("remember-me");
+    const aw=document.getElementById("auto-login-wrap");
+    const nb=document.getElementById("not-you-btn");
+    if(ni) ni.value=valid;
+    if(rc) rc.checked=true;
+    if(aw) aw.style.display="flex";
+    if(nb) nb.classList.remove("hidden");
+
+    // Try auto-login if PIN stored and auto-login checkbox was set
+    const savedPin=localStorage.getItem("fb_remembered_pin");
+    if(savedPin && state.pins[valid]===savedPin){
+      const ac=document.getElementById("auto-login-cb");
+      if(ac) ac.checked=true;
+      // Auto-login
+      currentUser=valid;
+      currentRole=state.roles[valid]||"child";
+      document.getElementById("login-screen").classList.add("hidden");
+      if(currentRole==="parent"){
+        const children=getAssignedChildren();
+        if(children.length===1){
+          document.getElementById("main-screen").classList.remove("hidden");
+          selectChild(children[0]);
+        } else if(children.length>1){
+          document.getElementById("child-picker-screen").classList.remove("hidden");
+          showChildPicker();
+        } else {
+          document.getElementById("main-screen").classList.remove("hidden");
+          document.getElementById("welcome-msg").textContent="Hi, "+valid+"! 👋";
+          document.getElementById("parent-panel").classList.remove("hidden");
+        }
+      } else {
+        activeChild=valid;
+        document.getElementById("main-screen").classList.remove("hidden");
+        document.getElementById("welcome-msg").textContent="Hi, "+valid+"! 👋";
+        document.getElementById("child-panel").classList.remove("hidden");
+        renderChildTabBar();
+        renderBalances();renderChildChores();renderSavingsGoals();renderPendingDeposits();showChoreWaitingBanner();updateChoreBadges();
+        initInactivityTimer();
+      }
+      return;
+    }
+    // No auto-login — just focus PIN field
+    setTimeout(()=>document.getElementById("pin-input")?.focus(),400);
+  }catch(e){}
+}
+
+// Override attemptLogin to save username + conditionally save PIN
+function attemptLoginV291(){
+  clearFieldError("pin-input","pin-error");
+  const userRaw=document.getElementById("username-input").value.trim();
+  const pin=document.getElementById("pin-input").value;
+  const user=state.users.find(u=>u.toLowerCase()===userRaw.toLowerCase());
+  if(!user){showFieldError("pin-input","pin-error","Name not recognised — check spelling.");return;}
+  if(state.pins[user]!==pin){showFieldError("pin-input","pin-error","Incorrect PIN. Try again.");document.getElementById("pin-input").value="";return;}
+
+  const rememberUser=document.getElementById("remember-me").checked;
+  const autoLogin=document.getElementById("auto-login-cb")?.checked;
+  try{
+    if(rememberUser){
+      localStorage.setItem("fb_remembered_user",user);
+      if(autoLogin){
+        localStorage.setItem("fb_remembered_pin",pin);
+      } else {
+        localStorage.removeItem("fb_remembered_pin");
+      }
+    } else {
+      localStorage.removeItem("fb_remembered_user");
+      localStorage.removeItem("fb_remembered_pin");
+    }
+  }catch(e){}
+
+  currentUser=user;
+  currentRole=state.roles[user]||"child";
+  document.getElementById("login-screen").classList.add("hidden");
+  if(currentRole==="parent"){
+    const children=getAssignedChildren();
+    if(children.length===1){document.getElementById("main-screen").classList.remove("hidden");selectChild(children[0]);}
+    else if(children.length>1){document.getElementById("child-picker-screen").classList.remove("hidden");showChildPicker();}
+    else{document.getElementById("main-screen").classList.remove("hidden");document.getElementById("welcome-msg").textContent="Hi, "+user+"! 👋";document.getElementById("parent-panel").classList.remove("hidden");}
+  }else{
+    activeChild=user;
+    document.getElementById("main-screen").classList.remove("hidden");
+    document.getElementById("welcome-msg").textContent="Hi, "+user+"! 👋";
+    document.getElementById("child-panel").classList.remove("hidden");
+    renderChildTabBar();
+    renderBalances();renderChildChores();renderSavingsGoals();renderPendingDeposits();showChoreWaitingBanner();updateChoreBadges();
+    initInactivityTimer();
+  }
+}
+
+// ================================================================
+// ALLOWANCE SCHEDULE PICKER
+// ================================================================
+function populateAllowanceMonthlyDays(){
+  const sel=document.getElementById("allow-monthly-day");
+  if(!sel||sel.options.length>0) return;
+  const sfx={1:"st",2:"nd",3:"rd"};
+  for(let d=1;d<=28;d++){
+    const o=document.createElement("option");
+    o.value=String(d);
+    o.textContent=d+(sfx[d]||"th")+" of the month";
+    sel.appendChild(o);
+  }
+  [["last","Last day of month"],["last-1","2nd to last day"],["last-2","3rd to last day"]].forEach(([v,t])=>{
+    const o=document.createElement("option");o.value=v;o.textContent=t;sel.appendChild(o);
+  });
+}
+
+function onAllowanceScheduleChange(){
+  const s=document.getElementById("allow-schedule").value;
+  const dayWrap=document.getElementById("allow-day-wrap");
+  const monthWrap=document.getElementById("allow-monthly-wrap");
+  const dayLabel=document.getElementById("allow-day-label");
+  if(s==="monthly"){
+    if(dayWrap) dayWrap.classList.add("hidden");
+    if(monthWrap) monthWrap.classList.remove("hidden");
+  } else {
+    if(dayWrap) dayWrap.classList.remove("hidden");
+    if(monthWrap) monthWrap.classList.add("hidden");
+    if(dayLabel) dayLabel.textContent=s==="biweekly"?"Day of Week (every other week)":"Day of Week";
+    // Biweekly: allow multi-select; weekly: single select
+    // Reset to single selection for weekly
+    if(s==="weekly"){
+      document.querySelectorAll("#allow-day-toggles .day-toggle.selected").forEach((b,i)=>{
+        if(i>0) b.classList.remove("selected");
+      });
+    }
+  }
+}
+
+function toggleAllowanceDay(btn){
+  const s=document.getElementById("allow-schedule").value;
+  if(s==="weekly"){
+    // Single select
+    document.querySelectorAll("#allow-day-toggles .day-toggle").forEach(b=>b.classList.remove("selected"));
+    btn.classList.add("selected");
+  } else {
+    btn.classList.toggle("selected");
+  }
+}
+
+function getAllowanceSelectedDay(){
+  const selected=[];
+  document.querySelectorAll("#allow-day-toggles .day-toggle.selected").forEach(b=>selected.push(parseInt(b.getAttribute("data-day"))));
+  return selected;
+}
+
+function setAllowanceDayToggles(days){
+  document.querySelectorAll("#allow-day-toggles .day-toggle").forEach(b=>b.classList.remove("selected"));
+  (days||[]).forEach(d=>{
+    const btn=document.querySelector("#allow-day-toggles .day-toggle[data-day='"+d+"']");
+    if(btn) btn.classList.add("selected");
+  });
+}
+
 // ================================================================
 // INIT
 // ================================================================
 populateMonthlyDays();
+populateAllowanceMonthlyDays();
 onScheduleChange(); // Show correct fields for default "One-time" schedule
+onAllowanceScheduleChange(); // Set initial allowance schedule UI
+// Default allowance day to Monday
+document.querySelector("#allow-day-toggles .day-toggle[data-day='1']")?.classList.add("selected");
 updateSplitLabel();
 updateDepositSplitLabel();
 document.getElementById("username-input").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("pin-input").focus();});
-document.getElementById("pin-input").addEventListener("keydown",e=>{if(e.key==="Enter")attemptLogin();});
+document.getElementById("pin-input").addEventListener("keydown",e=>{if(e.key==="Enter")attemptLoginV291();});
 document.getElementById("admin-pin-input").addEventListener("keydown",e=>{if(e.key==="Enter")attemptAdminLogin();});
 loadFromCloud();
 </script>
