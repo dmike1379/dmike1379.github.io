@@ -282,7 +282,7 @@
   <div class="screen hidden" id="child-picker-screen">
     <div class="top-bar">
       <span class="welcome-text" id="picker-welcome">Hi Dad! 👋</span>
-      <button class="btn-logout" onclick="logout()">Logout</button>
+      <button class="btn-logout" id="logout-btn-picker" onclick="logout()">Log Out</button>
     </div>
     <p class="page-subtitle" style="text-align:left;margin-bottom:20px;">Which account would you like to manage?</p>
     <div id="child-picker-list"></div>
@@ -292,7 +292,7 @@
   <div class="screen hidden" id="main-screen">
     <div class="top-bar">
       <span class="welcome-text" id="welcome-msg">Hello!</span>
-      <button class="btn-logout" onclick="logout()">Logout</button>
+      <button class="btn-logout" id="logout-btn-main" onclick="logout()">Log Out</button>
     </div>
 
     <!-- Parent child-switch bar -->
@@ -340,14 +340,31 @@
       <!-- Money tab -->
       <div class="tab-panel active" id="child-tab-money">
         <h3>Manage My Money</h3>
-        <label class="field-label">Amount</label>
+        <label class="field-label">Action</label>
+        <select id="child-action" onchange="onChildActionChange()">
+          <option value="withdraw">💸 Withdraw Cash</option>
+          <option value="transfer">🏦 Move to Savings</option>
+          <option value="deposit">📥 Deposit Request</option>
+        </select>
+        <div id="child-action-hint" class="info-box" style="margin-bottom:10px;"></div>
+        <label class="field-label">Amount $</label>
         <input type="number" id="child-amt" placeholder="$0.00" step="0.01" min="0">
         <div class="field-msg" id="child-amt-msg"></div>
-        <label class="field-label">What is this for?</label>
+        <label class="field-label" id="child-note-label">What is this for?</label>
         <input type="text" id="child-note" placeholder="e.g. New shoes, saving up...">
         <div class="field-msg" id="child-note-msg"></div>
-        <button class="btn btn-secondary" onclick="confirmTransfer()">🏦 Move to Savings</button>
-        <button class="btn btn-primary" onclick="confirmWithdraw()">💸 Withdraw Cash</button>
+        <!-- Deposit split — only shown for deposit action -->
+        <div id="child-deposit-split-wrap" class="hidden">
+          <label class="field-label">Payout Split</label>
+          <div class="split-display">
+            <span class="chk-pct">💵 Checking: <strong><span id="dep-split-chk-label">100</span>%</strong></span>
+            <span class="sav-pct">🏦 Savings: <strong><span id="dep-split-sav-label">0</span>%</strong></span>
+          </div>
+          <input type="range" id="deposit-split" min="0" max="100" value="100" oninput="updateDepositSplitLabel()">
+          <div style="display:flex;justify-content:space-between;font-size:.65rem;color:var(--muted);margin-top:2px;margin-bottom:8px;"><span>← All Savings</span><span>50/50</span><span>All Checking →</span></div>
+        </div>
+        <div id="deposit-pending-list"></div>
+        <button class="btn btn-primary" id="child-action-btn" onclick="doChildAction()">💸 Withdraw Cash</button>
         <div class="section-block">
           <h3>🎯 Savings Goals</h3>
           <div id="child-goals-list"></div>
@@ -360,37 +377,15 @@
           </div>
         </div>
         <div class="section-block">
-          <h3>💰 Make a Deposit</h3>
-          <div class="info-box">Got birthday money or cash from a job? Ask to deposit it into your bank!</div>
-          <label class="field-label">Amount $</label>
-          <input type="number" id="deposit-amt" placeholder="$0.00" step="0.01" min="0.01">
-          <div class="field-msg" id="deposit-amt-msg"></div>
-          <label class="field-label">Where did this money come from?</label>
-          <input type="text" id="deposit-source" placeholder="e.g. Birthday money from Grandma">
-          <div class="field-msg" id="deposit-source-msg"></div>
-          <label class="field-label">Payout Split</label>
-          <div class="split-display">
-            <span class="chk-pct">💵 Checking: <strong><span id="dep-split-chk-label">100</span>%</strong></span>
-            <span class="sav-pct">🏦 Savings: <strong><span id="dep-split-sav-label">0</span>%</strong></span>
-          </div>
-          <input type="range" id="deposit-split" min="0" max="100" value="100" oninput="updateDepositSplitLabel()">
-          <div style="display:flex;justify-content:space-between;font-size:.65rem;color:var(--muted);margin-top:2px;margin-bottom:8px;"><span>← All Savings</span><span>50/50</span><span>All Checking →</span></div>
-          <div id="deposit-pending-list"></div>
-          <button class="btn btn-secondary" onclick="submitDeposit()">📥 Request Deposit</button>
-        </div>
-        <div class="section-block">
           <button class="btn-full-ghost" onclick="changePinPrompt('child')">🔑 Change My PIN</button>
         </div>
       </div>
 
       <!-- Chores tab — Mark's checklist design -->
-      <!-- Loans tab panel (child placeholder) -->
+      <!-- Loans tab panel (child) -->
       <div class="tab-panel" id="child-tab-loans">
-        <div class="section-block" style="text-align:center;padding:40px 20px;">
-          <div style="font-size:3rem;margin-bottom:12px;">🏦</div>
-          <h3 style="margin-bottom:8px;">Loans</h3>
-          <p style="color:var(--muted);font-size:.85rem;line-height:1.6;">Loan information will appear here.</p>
-        </div>
+        <h3>My Loans</h3>
+        <div id="child-loans-list"></div>
       </div>
 
       <div class="tab-panel" id="child-tab-chores">
@@ -428,17 +423,6 @@
           <button class="btn btn-purple" onclick="confirmInterest()">📈 Apply 1 Month of Interest</button>
         </div>
         <div class="section-block">
-          <h3>🎯 Savings Goals</h3>
-          <div id="child-goals-list"></div>
-          <div style="margin-top:10px;">
-            <label class="field-label">Goal Name</label>
-            <input type="text" id="new-goal-name" placeholder="e.g. New game, bike...">
-            <label class="field-label">Target Amount $</label>
-            <input type="number" id="new-goal-amount" step="0.01" min="0.01" placeholder="50.00">
-            <button class="btn btn-secondary" onclick="addSavingsGoal()">➕ Add Goal</button>
-          </div>
-        </div>
-        <div class="section-block">
           <h3>🎯 Savings Goals for <span id="goals-child-name">Child</span></h3>
           <div id="parent-goals-list"></div>
           <div style="margin-top:10px;">
@@ -455,12 +439,24 @@
           <button class="btn-full-ghost" onclick="confirmResetChildPin()">🔄 Reset Child PIN to 0000</button>
         </div>
       </div>
-      <!-- Loans tab (placeholder — full feature in v29) -->
+      <!-- Loans tab (parent) -->
       <div class="tab-panel" id="parent-tab-loans">
-        <div class="section-block" style="text-align:center;padding:40px 20px;">
-          <div style="font-size:3rem;margin-bottom:12px;">🏦</div>
-          <h3 style="margin-bottom:8px;">Loans</h3>
-          <p style="color:var(--muted);font-size:.85rem;line-height:1.6;">The Loans feature is coming in v29.<br>Enable it per child in Admin → Tab Visibility.</p>
+        <h3>💳 Loans for <span id="loans-child-name">Child</span></h3>
+        <div id="parent-loans-list"></div>
+        <div class="section-block">
+          <h3>Create New Loan</h3>
+          <label class="field-label">Loan Name</label>
+          <input type="text" id="loan-name" placeholder="e.g. Bicycle loan">
+          <div class="row">
+            <div class="col"><label class="field-label">Principal $</label><input type="number" id="loan-principal" step="0.01" min="0.01" placeholder="0.00" oninput="updateLoanPaymentPreview()"></div>
+            <div class="col"><label class="field-label">Annual Interest %</label><input type="number" id="loan-rate" step="0.01" min="0" placeholder="0.00" oninput="updateLoanPaymentPreview()"></div>
+          </div>
+          <div class="row">
+            <div class="col"><label class="field-label">Term (months)</label><input type="number" id="loan-term" step="1" min="1" placeholder="12" oninput="updateLoanPaymentPreview()"></div>
+            <div class="col"><label class="field-label">Monthly Payment</label><div id="loan-payment-preview" style="padding:11px 13px;background:var(--bg);border-radius:10px;font-weight:700;color:var(--primary);font-size:.95rem;margin-bottom:10px;">$0.00/mo</div></div>
+          </div>
+          <div class="field-msg" id="loan-form-msg"></div>
+          <button class="btn btn-primary" onclick="createLoan()">➕ Create Loan</button>
         </div>
       </div>
 
@@ -668,6 +664,8 @@
     <div><span class="field-label">Sort</span><select id="f-sort" onchange="renderHistory()"><option value="new">Newest First</option><option value="old">Oldest First</option></select></div>
     <div><span class="field-label">Account</span><select id="f-acct" onchange="renderHistory()"><option value="all">All Accounts</option><option value="chk">Checking</option><option value="sav">Savings</option></select></div>
     <div><span class="field-label">Type</span><select id="f-type" onchange="renderHistory()"><option value="all">All Types</option><option value="pos">Deposits</option><option value="neg">Withdrawals</option></select></div>
+    <div><span class="field-label">Month</span><select id="f-month" onchange="renderHistory()"></select></div>
+    <div><span class="field-label">Year</span><select id="f-year" onchange="renderHistory()"></select></div>
   </div>
   <div id="ledger-list"></div>
 </div>
@@ -719,20 +717,48 @@
       </select>
     </div>
     <div class="section-block">
-      <h3>🔔 Notifications Per Child</h3>
-      <div class="info-box">Set each child's email address and choose how they receive chore notifications. Calendar integration requires a shared Google Calendar — see setup instructions below.</div>
-      <div id="admin-notify-fields"></div>
-      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;font-size:.75rem;color:#92400e;margin-top:12px;line-height:1.7;">
-        <strong>📅 Calendar Setup (one-time per child):</strong><br>
-        1. In Google Calendar create a new calendar — name it "[Child]'s Chores"<br>
-        2. Share it with the child's email — "See all event details"<br>
-        3. Go to Settings → find Calendar ID (ends in @group.calendar.google.com)<br>
-        4. Paste the Calendar ID above and save
-      </div>
-    </div>
-    <div class="section-block">
       <h3>👥 User Management</h3>
+      <div class="info-box">Tap Edit to update a user's settings, email, and notifications.</div>
       <div id="admin-user-list"></div>
+      <!-- Edit user form — hidden until Edit tapped -->
+      <div id="admin-user-edit-wrap" class="hidden" style="background:var(--bg);border-radius:var(--radius);padding:14px;margin-top:12px;border:2px solid var(--primary);">
+        <h3 style="margin-bottom:12px;" id="admin-edit-title">✏️ Edit User</h3>
+        <label class="field-label">Display Name</label>
+        <input type="text" id="edit-user-name" placeholder="Name" readonly style="background:#f8fafc;color:var(--muted);">
+        <label class="field-label">Role</label>
+        <select id="edit-user-role">
+          <option value="child">Child</option>
+          <option value="parent">Parent</option>
+        </select>
+        <label class="field-label">New PIN (leave blank to keep current)</label>
+        <input type="password" id="edit-user-pin" maxlength="4" inputmode="numeric" placeholder="••••">
+        <label class="field-label">Email Address</label>
+        <input type="email" id="edit-user-email" placeholder="their@email.com">
+        <div id="edit-child-fields">
+          <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:10px;">
+            <label style="display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--muted);font-weight:500;cursor:pointer;">
+              <input type="checkbox" id="edit-notify-email" style="width:18px!important;height:18px!important;"> 📧 Email notifications
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--muted);font-weight:500;cursor:pointer;">
+              <input type="checkbox" id="edit-notify-cal" style="width:18px!important;height:18px!important;" onchange="toggleEditCalField()"> 📅 Calendar notifications
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--muted);font-weight:500;cursor:pointer;">
+              <input type="checkbox" id="edit-chore-rewards" style="width:18px!important;height:18px!important;"> 💰 Show chore rewards
+            </label>
+          </div>
+          <div id="edit-cal-wrap" style="display:none;">
+            <label class="field-label">Calendar ID</label>
+            <input type="text" id="edit-cal-id" placeholder="abc123@group.calendar.google.com" style="font-size:13px;">
+          </div>
+          <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 12px;font-size:.72rem;color:#92400e;margin-top:8px;line-height:1.7;">
+            <strong>📅 Calendar Setup:</strong> Create a calendar in Google Calendar → share with child's email → copy Calendar ID from Settings → paste above.
+          </div>
+        </div>
+        <div class="row" style="gap:8px;margin-top:10px;">
+          <button class="btn btn-primary col" onclick="saveUserEdit()">💾 Save Changes</button>
+          <button class="btn btn-ghost col" onclick="cancelUserEdit()">Cancel</button>
+        </div>
+      </div>
       <div style="background:var(--bg);border-radius:var(--radius);padding:14px;margin-top:12px;">
         <h3 style="margin-bottom:12px;">Add New User</h3>
         <label class="field-label">Display Name</label><input type="text" id="new-user-name" placeholder="e.g. Emma">
@@ -812,7 +838,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbwk8cM1mmmHMz2F8Ss5nBBk
 // ║                   FAMILY BANK — index.html                           ║
 // ║              Frontend Configuration & Setup Block                     ║
 // ╠═══════════════════════════════════════════════════════════════════════╣
-// ║  Version: v29.1   |   Paired with Code.gs: v29.0                    ║
+// ║  Version: v29.2   |   Paired with Code.gs: v29.0                    ║
 // ║  Update version numbers on each deployment                           ║
 // ╚═══════════════════════════════════════════════════════════════════════╝
 //
@@ -1213,7 +1239,7 @@ function selectChild(childName){
   document.getElementById("parent-panel").classList.remove("hidden");
   document.getElementById("child-panel").classList.add("hidden");
   renderParentTabBar();
-  renderBalances();renderParentSettings();renderParentChores();renderParentGoals();renderParentDepositApprovals();updateChoreBadges();
+  renderBalances();renderParentSettings();renderParentChores();renderParentGoals();renderParentDepositApprovals();renderParentLoans();updateChoreBadges();
 }
 
 // ================================================================
@@ -1925,17 +1951,35 @@ function showChoreWaitingBanner(){
 // ================================================================
 // HISTORY
 // ================================================================
-function openHistory(){renderHistory();document.getElementById("history-drawer").classList.add("open");}
+function openHistory(){populateHistoryDateFilters();renderHistory();document.getElementById("history-drawer").classList.add("open");}
 function closeHistory(){document.getElementById("history-drawer").classList.remove("open");}
 function renderHistory(){
   const child=activeChild||currentUser;
   const rows=[...(state.history[child]||[])];
   const sort=document.getElementById("f-sort").value,fAcct=document.getElementById("f-acct").value,fType=document.getElementById("f-type").value;
+  // Date filters
+  const monthSel=document.getElementById("f-month");
+  const yearSel=document.getElementById("f-year");
+  const fMonth=monthSel?monthSel.value:"all";
+  const fYear=yearSel?yearSel.value:"all";
+  // Get the year associated with the selected month option
+  const selMonthOpt=monthSel&&monthSel.selectedOptions[0];
+  const fMonthYear=selMonthOpt&&selMonthOpt.dataset.year?parseInt(selMonthOpt.dataset.year):new Date().getFullYear();
+
   const filtered=rows.filter(h=>{
     const n=(h.note||"").toLowerCase();
     const isSav=n.includes("(sav)")||n.includes("to savings")||n.includes("to sav")||n.includes("interest (sav)");
     if(fAcct==="chk"&&isSav)return false;if(fAcct==="sav"&&!isSav)return false;
     if(fType==="pos"&&h.amt<0)return false;if(fType==="neg"&&h.amt>=0)return false;
+    // Date filter
+    if(fMonth!=="all"||fYear!=="all"){
+      let d=null;
+      try{d=new Date(h.date);}catch(e){}
+      if(d&&!isNaN(d)){
+        if(fMonth!=="all"&&(d.getMonth()!==parseInt(fMonth)||d.getFullYear()!==fMonthYear))return false;
+        if(fYear!=="all"&&fMonth==="all"&&d.getFullYear()!==parseInt(fYear))return false;
+      }
+    }
     return true;
   });
   if(sort==="new")filtered.reverse();
@@ -1973,7 +2017,7 @@ function attemptAdminLogin(){
   errEl.className="field-msg";
   document.getElementById("admin-login-section").classList.add("hidden");
   document.getElementById("admin-settings-section").classList.remove("hidden");
-  populateAdminForm();renderAdminUsers();renderAdminEmailFields();renderAdminTabFields();renderAdminParentChildren();
+  populateAdminForm();renderAdminUsers();renderAdminTabFields();renderAdminParentChildren();
 }
 function populateAdminForm(){
   const cfg=state.config;
@@ -2036,7 +2080,7 @@ function renderAdminUsers(){
     const role=state.roles[u]||"child";
     return `<div class="user-row">
       <div style="flex:1;"><strong>${u}</strong><span class="user-role-badge ${role==="parent"?"role-parent":"role-child"}" style="margin-left:8px;">${role.charAt(0).toUpperCase()+role.slice(1)}</span></div>
-      <button class="btn btn-ghost btn-sm" onclick="adminResetUserPin('${u}')">Reset PIN</button>
+      <button class="btn btn-primary btn-sm" onclick="openUserEdit('${u}')">✏️ Edit</button>
       ${state.users.length>1?`<button class="btn btn-danger btn-sm" onclick="adminRemoveUser('${u}')">Remove</button>`:""}
     </div>`;
   }).join("");
@@ -2767,7 +2811,7 @@ function restoreRememberedUser(){
         document.getElementById("child-panel").classList.remove("hidden");
         renderChildTabBar();
         renderBalances();renderChildChores();renderSavingsGoals();renderPendingDeposits();showChoreWaitingBanner();updateChoreBadges();
-        initInactivityTimer();
+        initInactivityTimerV292();
       }
       return;
     }
@@ -2804,6 +2848,7 @@ function attemptLoginV291(){
   currentUser=user;
   currentRole=state.roles[user]||"child";
   document.getElementById("login-screen").classList.add("hidden");
+  updateLogoutButtonLabel();
   if(currentRole==="parent"){
     const children=getAssignedChildren();
     if(children.length===1){document.getElementById("main-screen").classList.remove("hidden");selectChild(children[0]);}
@@ -2815,8 +2860,8 @@ function attemptLoginV291(){
     document.getElementById("welcome-msg").textContent="Hi, "+user+"! 👋";
     document.getElementById("child-panel").classList.remove("hidden");
     renderChildTabBar();
-    renderBalances();renderChildChores();renderSavingsGoals();renderPendingDeposits();showChoreWaitingBanner();updateChoreBadges();
-    initInactivityTimer();
+    renderBalances();renderChildChores();renderSavingsGoals();renderPendingDeposits();renderChildLoans();showChoreWaitingBanner();updateChoreBadges();
+    initInactivityTimerV292();
   }
 }
 
@@ -2885,6 +2930,367 @@ function setAllowanceDayToggles(days){
   });
 }
 
+
+// ================================================================
+// CHILD ACTION — unified withdraw/transfer/deposit
+// ================================================================
+function onChildActionChange(){
+  const action=document.getElementById("child-action").value;
+  const hint=document.getElementById("child-action-hint");
+  const noteLabel=document.getElementById("child-note-label");
+  const splitWrap=document.getElementById("child-deposit-split-wrap");
+  const btn=document.getElementById("child-action-btn");
+  const noteEl=document.getElementById("child-note");
+  if(action==="withdraw"){
+    hint.textContent="Money comes out of checking. Remember to take the same amount from your real bank account.";
+    noteLabel.textContent="What is this for?";
+    noteEl.placeholder="e.g. New shoes, snack money...";
+    splitWrap.classList.add("hidden");
+    btn.textContent="💸 Withdraw Cash";btn.className="btn btn-primary";
+  } else if(action==="transfer"){
+    hint.textContent="Moves money from checking into savings.";
+    noteLabel.textContent="What is this for?";
+    noteEl.placeholder="e.g. Saving up for a bike...";
+    splitWrap.classList.add("hidden");
+    btn.textContent="🏦 Move to Savings";btn.className="btn btn-secondary";
+  } else {
+    hint.textContent="Got cash from a birthday or job? Request to add it to your bank account.";
+    noteLabel.textContent="Where did the money come from?";
+    noteEl.placeholder="e.g. Birthday money from Grandma";
+    splitWrap.classList.remove("hidden");
+    btn.textContent="📥 Request Deposit";btn.className="btn btn-secondary";
+  }
+}
+
+function doChildAction(){
+  const action=document.getElementById("child-action").value;
+  // Re-use child-note as source for deposit
+  if(action==="deposit"){
+    // Map fields for deposit
+    const amtEl=document.getElementById("child-amt");
+    const srcEl=document.getElementById("child-note");
+    const amt=parseFloat(amtEl.value);
+    const source=srcEl.value.trim();
+    const splitChk=parseInt(document.getElementById("deposit-split").value);
+    document.getElementById("child-amt-msg").className="field-msg";
+    document.getElementById("child-note-msg").className="field-msg";
+    let ok=true;
+    if(!amt||amt<=0){document.getElementById("child-amt-msg").className="field-msg error";document.getElementById("child-amt-msg").textContent="Enter a valid amount.";ok=false;}
+    if(!source){document.getElementById("child-note-msg").className="field-msg error";document.getElementById("child-note-msg").textContent="Tell us where the money came from.";ok=false;}
+    if(!ok)return;
+    const child=activeChild||currentUser;
+    const data=getChildData(child);
+    if(!data.deposits)data.deposits=[];
+    data.deposits.push({id:"dep_"+Date.now(),amount:amt,source,splitChk,status:"pending",submittedBy:currentUser,submittedAt:fmtDate(new Date())});
+    amtEl.value="";srcEl.value="";
+    document.getElementById("deposit-split").value=100;updateDepositSplitLabel();
+    syncToCloud("Deposit Submitted");
+    showToast("Deposit request sent! Waiting for approval. 📥","success");
+    renderPendingDeposits();
+  } else if(action==="transfer"){
+    confirmTransfer();
+  } else {
+    confirmWithdraw();
+  }
+}
+
+// ================================================================
+// CONTEXT-AWARE LOGOUT BUTTON
+// ================================================================
+function updateLogoutButtonLabel(){
+  const autoOn=!!(localStorage.getItem("fb_remembered_pin"));
+  const label=autoOn?"Switch User 🔄":"Log Out";
+  ["logout-btn-main","logout-btn-picker"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.textContent=label;
+  });
+}
+
+// ================================================================
+// INACTIVITY TIMER — skip if auto-login enabled
+// ================================================================
+function initInactivityTimerV292(){
+  // If auto-login PIN is stored, skip timer — home button is their "exit"
+  const autoLoginActive=!!(localStorage.getItem("fb_remembered_pin"));
+  if(autoLoginActive){
+    clearTimeout(inactivityTimer);
+    return;
+  }
+  initInactivityTimer();
+}
+
+// ================================================================
+// HISTORY — date filter helpers
+// ================================================================
+function populateHistoryDateFilters(){
+  const monthSel=document.getElementById("f-month");
+  const yearSel=document.getElementById("f-year");
+  if(!monthSel||!yearSel)return;
+
+  const now=new Date();
+  const curMonth=now.getMonth(); // 0-11
+  const curYear=now.getFullYear();
+
+  // Build month options — current month first, going back 12 months
+  const monthNames=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  monthSel.innerHTML="";
+  // "All" option
+  const allOpt=document.createElement("option");
+  allOpt.value="all";allOpt.textContent="All Months";
+  monthSel.appendChild(allOpt);
+  // Last 12 months
+  for(let i=0;i<12;i++){
+    const m=(curMonth-i+12)%12;
+    const y=curYear-(curMonth-i<0?1:0);
+    const o=document.createElement("option");
+    o.value=String(m);
+    o.dataset.year=String(y);
+    o.textContent=monthNames[m]+" "+y;
+    if(i===0)o.selected=true;
+    monthSel.appendChild(o);
+  }
+
+  // Year options — current year and 4 prior
+  yearSel.innerHTML="";
+  const allYear=document.createElement("option");
+  allYear.value="all";allYear.textContent="All Years";
+  yearSel.appendChild(allYear);
+  for(let y=curYear;y>=curYear-4;y--){
+    const o=document.createElement("option");
+    o.value=String(y);o.textContent=String(y);
+    if(y===curYear)o.selected=true;
+    yearSel.appendChild(o);
+  }
+}
+
+// ================================================================
+// ADMIN — User edit functions
+// ================================================================
+let editingUserName=null;
+
+function openUserEdit(username){
+  editingUserName=username;
+  const role=state.roles[username]||"child";
+  const isChild=role==="child";
+  const emails=state.config.emails||{};
+  const notify=(state.config.notify&&state.config.notify[username])||{};
+  const cals=state.config.calendars||{};
+
+  document.getElementById("admin-edit-title").textContent="✏️ Edit: "+username;
+  document.getElementById("edit-user-name").value=username;
+  document.getElementById("edit-user-role").value=role;
+  document.getElementById("edit-user-pin").value="";
+  document.getElementById("edit-user-email").value=emails[username]||"";
+
+  const childFields=document.getElementById("edit-child-fields");
+  if(childFields)childFields.style.display=isChild?"":"none";
+
+  if(isChild){
+    document.getElementById("edit-notify-email").checked=notify.email!==false;
+    document.getElementById("edit-notify-cal").checked=!!notify.calendar;
+    document.getElementById("edit-chore-rewards").checked=notify.choreRewards!==false;
+    document.getElementById("edit-cal-id").value=cals[username]||"";
+    toggleEditCalField();
+  }
+
+  document.getElementById("admin-user-edit-wrap").classList.remove("hidden");
+  document.getElementById("admin-user-edit-wrap").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function toggleEditCalField(){
+  const cb=document.getElementById("edit-notify-cal");
+  const wrap=document.getElementById("edit-cal-wrap");
+  if(wrap)wrap.style.display=cb&&cb.checked?"":"none";
+}
+
+function cancelUserEdit(){
+  editingUserName=null;
+  document.getElementById("admin-user-edit-wrap").classList.add("hidden");
+}
+
+function saveUserEdit(){
+  if(!editingUserName)return;
+  const u=editingUserName;
+  const role=document.getElementById("edit-user-role").value;
+  const pin=document.getElementById("edit-user-pin").value;
+  const email=document.getElementById("edit-user-email").value.trim();
+
+  // Update role
+  state.roles[u]=role;
+
+  // Update PIN if provided
+  if(pin){
+    if(pin.length!==4||!/^\d{4}$/.test(pin)){showToast("PIN must be exactly 4 digits.","error");return;}
+    state.pins[u]=pin;
+  }
+
+  // Update email
+  if(!state.config.emails)state.config.emails={};
+  state.config.emails[u]=email;
+
+  // Update notifications (child only)
+  if(role==="child"){
+    if(!state.config.notify)state.config.notify={};
+    if(!state.config.notify[u])state.config.notify[u]={};
+    state.config.notify[u].email=document.getElementById("edit-notify-email").checked;
+    state.config.notify[u].calendar=document.getElementById("edit-notify-cal").checked;
+    state.config.notify[u].choreRewards=document.getElementById("edit-chore-rewards").checked;
+    const calId=document.getElementById("edit-cal-id").value.trim();
+    if(!state.config.calendars)state.config.calendars={};
+    if(calId)state.config.calendars[u]=calId;
+  }
+
+  syncToCloud("User Updated");
+  showToast(u+" updated! 💾","success");
+  cancelUserEdit();
+  renderAdminUsers();
+}
+
+// ================================================================
+// LOANS — create, render, calculate payment
+// ================================================================
+function calcMonthlyPayment(principal,annualRate,termMonths){
+  if(!principal||!termMonths)return 0;
+  if(!annualRate)return principal/termMonths; // 0% interest
+  const r=annualRate/100/12;
+  return principal*(r*Math.pow(1+r,termMonths))/(Math.pow(1+r,termMonths)-1);
+}
+
+// Live payment preview
+function updateLoanPaymentPreview(){
+  const p=parseFloat(document.getElementById("loan-principal")?.value)||0;
+  const r=parseFloat(document.getElementById("loan-rate")?.value)||0;
+  const t=parseInt(document.getElementById("loan-term")?.value)||0;
+  const payment=calcMonthlyPayment(p,r,t);
+  const el=document.getElementById("loan-payment-preview");
+  if(el)el.textContent=payment>0?fmt(payment)+"/mo":"$0.00";
+}
+
+function createLoan(){
+  const name=document.getElementById("loan-name")?.value.trim();
+  const principal=parseFloat(document.getElementById("loan-principal")?.value)||0;
+  const rate=parseFloat(document.getElementById("loan-rate")?.value)||0;
+  const term=parseInt(document.getElementById("loan-term")?.value)||0;
+  const msgEl=document.getElementById("loan-form-msg");
+  if(msgEl)msgEl.className="field-msg";
+
+  if(!name){if(msgEl){msgEl.className="field-msg error";msgEl.textContent="Loan name is required.";}return;}
+  if(principal<=0){if(msgEl){msgEl.className="field-msg error";msgEl.textContent="Enter a valid principal amount.";}return;}
+  if(term<=0){if(msgEl){msgEl.className="field-msg error";msgEl.textContent="Enter a valid term in months.";}return;}
+
+  const payment=calcMonthlyPayment(principal,rate,term);
+  const data=getChildData(activeChild);
+  if(!data.loans)data.loans=[];
+
+  // Disburse loan amount to checking
+  data.balances.checking+=principal;
+  recordTransaction("Bank","Loan Disbursement: "+name+" (Chk)",principal);
+
+  data.loans.push({
+    id:"loan_"+Date.now(),
+    name,principal,rate,term,
+    monthlyPayment:parseFloat(payment.toFixed(2)),
+    balance:parseFloat(principal.toFixed(2)),
+    status:"active",
+    startDate:todayStr(),
+    paidMonths:0
+  });
+
+  ["loan-name","loan-principal","loan-rate","loan-term"].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value="";
+  });
+  updateLoanPaymentPreview();
+  syncToCloud("Loan Created");
+  showToast("Loan created! $"+principal.toFixed(2)+" added to checking. 💳","success");
+  renderParentLoans();renderChildLoans();renderBalances();
+}
+
+function renderParentLoans(){
+  const el=document.getElementById("parent-loans-list");
+  const nameEl=document.getElementById("loans-child-name");
+  if(nameEl)nameEl.textContent=activeChild||"Child";
+  if(!el)return;
+  const data=getChildData(activeChild);
+  const loans=(data.loans||[]).filter(l=>l.status==="active");
+  if(!loans.length){
+    el.innerHTML='<div class="empty-state"><span class="empty-icon">💳</span>No active loans.</div>';
+    return;
+  }
+  el.innerHTML=loans.map(l=>`
+    <div class="chore-card" style="margin-bottom:10px;">
+      <div class="chore-card-header">
+        <span class="chore-card-name">💳 ${l.name}</span>
+        <span class="chore-card-amount">${fmt(l.balance)} left</span>
+      </div>
+      <div class="chore-card-meta">
+        Original: ${fmt(l.principal)} · ${l.rate}% APR · ${l.term} months<br>
+        Monthly payment: <strong>${fmt(l.monthlyPayment)}</strong> · Paid ${l.paidMonths||0} of ${l.term} months
+      </div>
+      <div class="row" style="gap:8px;margin-top:6px;">
+        <button class="btn btn-warning btn-sm col" onclick="applyLoanPayment(\'${l.id}\')">💸 Apply Payment</button>
+        <button class="btn btn-danger btn-sm" style="width:auto;padding:8px 12px;" onclick="deleteLoan(\'${l.id}\')">🗑️</button>
+      </div>
+    </div>`).join("");
+}
+
+function renderChildLoans(){
+  const el=document.getElementById("child-loans-list");
+  if(!el)return;
+  const child=activeChild||currentUser;
+  const data=getChildData(child);
+  const loans=(data.loans||[]).filter(l=>l.status==="active");
+  if(!loans.length){
+    el.innerHTML='<div class="empty-state"><span class="empty-icon">💳</span>No loans right now.</div>';
+    return;
+  }
+  el.innerHTML=loans.map(l=>{
+    const pct=Math.min(100,Math.round(((l.principal-l.balance)/l.principal)*100));
+    return `<div class="chore-card" style="margin-bottom:10px;">
+      <div class="chore-card-header">
+        <span class="chore-card-name">💳 ${l.name}</span>
+        <span class="chore-card-amount">${fmt(l.balance)} left</span>
+      </div>
+      <div style="background:var(--bg);border-radius:6px;height:8px;margin:8px 0;overflow:hidden;">
+        <div style="background:var(--primary);height:100%;width:${pct}%;border-radius:6px;transition:width .3s;"></div>
+      </div>
+      <div class="chore-card-meta">${pct}% paid off · ${fmt(l.monthlyPayment)}/month</div>
+    </div>`;
+  }).join("");
+}
+
+function applyLoanPayment(loanId){
+  const data=getChildData(activeChild);
+  const loan=(data.loans||[]).find(l=>l.id===loanId);
+  if(!loan)return;
+  const payment=Math.min(loan.monthlyPayment,loan.balance);
+  openModal({icon:"💸",title:"Apply Loan Payment?",
+    body:"Deducts "+fmt(payment)+" from "+activeChild+"'s checking for "+loan.name+".",
+    detail:{"Payment":fmt(payment),"Remaining After":fmt(Math.max(0,loan.balance-payment)),"Checking After":fmt(data.balances.checking-payment)},
+    confirmText:"Apply Payment",confirmClass:"btn-warning",
+    onConfirm:()=>{
+      data.balances.checking-=payment;
+      loan.balance=parseFloat(Math.max(0,loan.balance-payment).toFixed(2));
+      loan.paidMonths=(loan.paidMonths||0)+1;
+      if(loan.balance<=0){loan.status="paid";showToast(loan.name+" fully paid off! 🎉","success");}
+      recordTransaction("Bank","Loan Payment: "+loan.name+" (Chk)",-payment);
+      syncToCloud("Loan Payment");
+      renderParentLoans();renderChildLoans();renderBalances();
+      showToast("Payment applied. "+fmt(loan.balance)+" remaining.","success");
+    }});
+}
+
+function deleteLoan(loanId){
+  const data=getChildData(activeChild);
+  const loan=(data.loans||[]).find(l=>l.id===loanId);
+  if(!loan)return;
+  openModal({icon:"🗑️",title:"Delete Loan?",body:"Removes "+loan.name+". Balance remaining: "+fmt(loan.balance),confirmText:"Delete",confirmClass:"btn-danger",
+    onConfirm:()=>{
+      data.loans=data.loans.filter(l=>l.id!==loanId);
+      syncToCloud("Loan Deleted");showToast("Loan removed.","info");
+      renderParentLoans();renderChildLoans();
+    }});
+}
+
 // ================================================================
 // INIT
 // ================================================================
@@ -2896,6 +3302,7 @@ onAllowanceScheduleChange(); // Set initial allowance schedule UI
 document.querySelector("#allow-day-toggles .day-toggle[data-day='1']")?.classList.add("selected");
 updateSplitLabel();
 updateDepositSplitLabel();
+onChildActionChange(); // Set initial child action UI
 document.getElementById("username-input").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("pin-input").focus();});
 document.getElementById("pin-input").addEventListener("keydown",e=>{if(e.key==="Enter")attemptLoginV291();});
 document.getElementById("admin-pin-input").addEventListener("keydown",e=>{if(e.key==="Enter")attemptAdminLogin();});
