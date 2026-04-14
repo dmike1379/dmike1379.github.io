@@ -168,6 +168,18 @@
     .toast.success{background:var(--secondary)}
     .toast.error{background:var(--danger)}
     .toast.info{background:var(--primary)}
+    /* Custom multi-select modal picker */
+    .picker-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:600;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+    .picker-overlay.open{opacity:1;pointer-events:all}
+    .picker-sheet{background:var(--surface);width:100%;max-width:460px;border-radius:20px 20px 0 0;padding:20px;max-height:70vh;overflow-y:auto;transform:translateY(100%);transition:transform .25s cubic-bezier(.32,.72,0,1)}
+    .picker-overlay.open .picker-sheet{transform:translateY(0)}
+    .picker-title{font-weight:800;font-size:1rem;margin-bottom:4px}
+    .picker-hint{font-size:.72rem;color:var(--muted);margin-bottom:14px}
+    .picker-item{display:flex;align-items:center;gap:12px;padding:13px 4px;border-bottom:1px solid var(--border);cursor:pointer;font-size:.88rem;font-weight:600}
+    .picker-item:last-child{border-bottom:none}
+    .picker-item-check{width:24px;height:24px;border-radius:6px;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
+    .picker-item-check.checked{background:var(--primary);border-color:var(--primary)}
+    .picker-item-check.checked::after{content:'✓';color:white;font-size:.85rem;font-weight:800}
     /* Pill/chip selector (used in admin edit form) */
     .sel-pill{display:inline-flex;align-items:center;padding:8px 14px;border-radius:20px;border:2px solid var(--border);background:var(--bg);color:var(--muted);font-size:.78rem;font-weight:700;cursor:pointer;transition:all .15s;user-select:none;-webkit-user-select:none;}
     .sel-pill.active{background:var(--primary);border-color:var(--primary);color:white;}
@@ -186,6 +198,7 @@
     .admin-link-wrap{text-align:center;margin-top:16px}
     .admin-link{font-size:.72rem;color:var(--primary);text-decoration:underline;cursor:pointer;background:none;border:none;font-family:var(--font)}
     .admin-drawer{position:fixed;inset:0;background:var(--surface);z-index:400;overflow-y:auto;padding:16px;transform:translateY(100%);transition:transform .32s cubic-bezier(.32,.72,0,1)}
+    .admin-drawer .hidden{display:none!important}
     .admin-drawer.open{transform:translateY(0)}
     .user-row{display:flex;align-items:center;gap:10px;padding:12px;background:var(--bg);border-radius:10px;margin-bottom:8px;flex-wrap:wrap}
     .user-role-badge{font-size:.62rem;font-weight:700;padding:3px 8px;border-radius:20px;text-transform:uppercase}
@@ -690,7 +703,7 @@
     <div><span class="field-label">Sort</span><select id="f-sort" onchange="renderHistory()"><option value="new">Newest First</option><option value="old">Oldest First</option></select></div>
     <div><span class="field-label">Account</span><select id="f-acct" onchange="renderHistory()"><option value="all">All Accounts</option><option value="chk">Checking</option><option value="sav">Savings</option></select></div>
     <div><span class="field-label">Type</span><select id="f-type" onchange="renderHistory()"><option value="all">All Types</option><option value="pos">Deposits</option><option value="neg">Withdrawals</option></select></div>
-    <div style="grid-column:1/-1;"><span class="field-label">Date</span><select id="f-date" onchange="renderHistory()"></select></div>
+    <div><span class="field-label">Date</span><select id="f-date" onchange="renderHistory()"></select></div>
   </div>
   <div id="ledger-list"></div>
 </div>
@@ -750,19 +763,16 @@
         <div id="edit-parent-assignment" style="display:none;">
           <label class="field-label" style="margin-top:10px;">👶 Assigned Children</label>
           <div class="info-box" style="margin-bottom:8px;">Tap to toggle. No selection = sees all children.</div>
-          <select id="edit-child-select" multiple style="height:auto;min-height:80px;padding:6px;font-size:.82rem;"></select>
-          <div style="font-size:.68rem;color:var(--muted);margin-top:4px;">Hold Ctrl/Cmd to select multiple. No selection = parent sees all children.</div>
+          <div id="edit-child-display" style="display:flex;flex-wrap:wrap;gap:6px;min-height:36px;margin-bottom:6px;"></div>
+          <button type="button" class="btn btn-outline btn-sm" style="width:auto;" onclick="openPicker('children')">👤 Select Children →</button>
+          <div style="font-size:.68rem;color:var(--muted);margin-top:4px;">No selection = parent sees all children.</div>
         </div>
         <!-- Child: tab visibility as pill selector -->
         <div id="edit-tab-visibility" style="display:none;">
           <label class="field-label" style="margin-top:10px;">📋 Visible Tabs</label>
           <div class="info-box" style="margin-bottom:8px;">Tap to toggle. Money and Chores are on by default.</div>
-          <select id="edit-tab-select" multiple style="height:auto;min-height:80px;padding:6px;font-size:.82rem;">
-            <option value="money">💵 Money</option>
-            <option value="chores">✅ Chores</option>
-            <option value="loans">💳 Loans</option>
-          </select>
-          <div style="font-size:.68rem;color:var(--muted);margin-top:4px;">Hold Ctrl/Cmd to select multiple.</div>
+          <div id="edit-tab-display" style="display:flex;flex-wrap:wrap;gap:6px;min-height:36px;margin-bottom:6px;"></div>
+          <button type="button" class="btn btn-outline btn-sm" style="width:auto;" onclick="openPicker('tabs')">📋 Select Tabs →</button>
         </div>
         <div class="row" style="gap:8px;margin-top:10px;">
           <button class="btn btn-primary col" onclick="saveUserEdit()">💾 Save Changes</button>
@@ -840,6 +850,16 @@
   </div>
 </div>
 
+<!-- MULTI-SELECT PICKER -->
+<div class="picker-overlay" id="picker-overlay" onclick="pickerOverlayClick(event)">
+  <div class="picker-sheet">
+    <div class="picker-title" id="picker-title">Select</div>
+    <div class="picker-hint" id="picker-hint"></div>
+    <div id="picker-items"></div>
+    <button class="btn btn-primary" style="margin-top:14px;" onclick="closePicker()">Done</button>
+  </div>
+</div>
+
 <!-- MODAL -->
 <div class="modal-overlay" id="modal-overlay" onclick="handleOverlayClick(event)">
   <div class="modal-box" id="modal-box">
@@ -873,7 +893,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbwk8cM1mmmHMz2F8Ss5nBBk
 // ║                   FAMILY BANK — index.html                           ║
 // ║              Frontend Configuration & Setup Block                     ║
 // ╠═══════════════════════════════════════════════════════════════════════╣
-// ║  Version: v29.4   |   Paired with Code.gs: v29.0                    ║
+// ║  Version: v29.5   |   Paired with Code.gs: v29.0                    ║
 // ║  Update version numbers on each deployment                           ║
 // ╚═══════════════════════════════════════════════════════════════════════╝
 //
@@ -2868,7 +2888,6 @@ function setAllowanceDayToggles(days){
 // CHILD ACTION — unified withdraw/transfer/deposit
 // ================================================================
 
-// onChildActionChange — updated version defined below
 
 function doChildAction(){
   const action=document.getElementById("child-action").value;
@@ -3291,12 +3310,15 @@ function openUserEdit(username){
     // Tab visibility multiselect
     const tabWrap=document.getElementById("edit-tab-visibility");
     if(tabWrap) tabWrap.style.display="";
+    // Init picker display for tabs
     const tabCfg=(state.config.tabs&&state.config.tabs[username])||{};
     const activeTabVals=[];
     if(tabCfg.money!==false)activeTabVals.push("money");
     if(tabCfg.chores!==false)activeTabVals.push("chores");
     if(tabCfg.loans===true)activeTabVals.push("loans");
-    setMultiSelectValues("edit-tab-select",activeTabVals);
+    if(!window._pickerSelections)window._pickerSelections={};
+    window._pickerSelections["tabs"]=activeTabVals;
+    updatePickerDisplay("tabs",activeTabVals,PICKER_CONFIG["tabs"]);
   } else {
     const tabWrap=document.getElementById("edit-tab-visibility");
     if(tabWrap) tabWrap.style.display="none";
@@ -3306,7 +3328,11 @@ function openUserEdit(username){
   const assignWrap=document.getElementById("edit-parent-assignment");
   if(assignWrap) assignWrap.style.display=isParent?"":"none";
   if(isParent){
-    populateEditChildAssignSelect(username);
+    // Init picker display for child assignment
+    const assignedChildren=(state.config.parentChildren&&state.config.parentChildren[username])||[];
+    if(!window._pickerSelections)window._pickerSelections={};
+    window._pickerSelections["children"]=assignedChildren;
+    updatePickerDisplay("children",assignedChildren,PICKER_CONFIG["children"]);
   }
 
   document.getElementById("admin-user-edit-wrap").classList.remove("hidden");
@@ -3340,9 +3366,9 @@ function saveUserEdit(){
     const calId=document.getElementById("edit-cal-id").value.trim();
     if(!state.config.calendars)state.config.calendars={};
     if(calId)state.config.calendars[u]=calId;
-    // Tab visibility from multiselect
+    // Tab visibility from picker
     if(!state.config.tabs)state.config.tabs={};
-    const activeTabVals=getMultiSelectValues("edit-tab-select");
+    const activeTabVals=getPickerSelections("tabs");
     state.config.tabs[u]={
       money: activeTabVals.indexOf("money")!==-1,
       chores: activeTabVals.indexOf("chores")!==-1,
@@ -3351,9 +3377,9 @@ function saveUserEdit(){
   }
 
   if(role==="parent"){
-    // Child assignment from multiselect
+    // Child assignment from picker
     if(!state.config.parentChildren)state.config.parentChildren={};
-    state.config.parentChildren[u]=getMultiSelectValues("edit-child-select");
+    state.config.parentChildren[u]=getPickerSelections("children");
   }
 
   syncToCloud("User Updated");
@@ -3484,17 +3510,18 @@ function onChildActionChange(){
     splitWrap.classList.remove("hidden");
     btn.textContent="📥 Request Deposit";btn.className="btn btn-secondary";
   } else if(action==="loanpayment"){
+    noteLabel.textContent="Note (optional)";noteEl.placeholder="e.g. Payment for month 3";
+    const loanWrap=document.getElementById("child-loan-select-wrap");
     if(!activeLoans.length){
       hint.textContent="You don\'t have any active loans right now.";
+      if(loanWrap)loanWrap.classList.add("hidden");
       btn.textContent="💳 No Active Loans";btn.className="btn btn-ghost";btn.disabled=true;
     } else {
-      const loan=activeLoans[0];
-      hint.textContent="Pays "+fmt(loan.monthlyPayment)+" toward your "+loan.name+". Next payment: "+fmtNextPayment(loan);
-      btn.textContent="💳 Pay "+fmt(loan.monthlyPayment);btn.className="btn btn-warning";btn.disabled=false;
+      hint.textContent="Select a loan below to make a payment.";
+      if(loanWrap)loanWrap.classList.remove("hidden");
+      populateChildLoanSelect();
+      btn.textContent="💳 Select a Loan";btn.className="btn btn-warning";btn.disabled=true;
     }
-    noteLabel.textContent="Loan";
-    noteEl.placeholder="";
-    splitWrap.classList.add("hidden");
   }
 }
 
@@ -3625,6 +3652,118 @@ function populateEditChildAssignSelect(username){
     o.textContent="No children added yet";o.disabled=true;
     sel.appendChild(o);
   }
+}
+
+
+// ================================================================
+// CUSTOM MULTI-SELECT PICKER (bottom sheet modal)
+// ================================================================
+let pickerMode = null;       // 'children' | 'tabs'
+let pickerSelected = [];     // current selections
+
+const PICKER_CONFIG = {
+  children: {
+    title: "Assigned Children",
+    hint: "Tap to select. No selection = parent sees all children.",
+    getItems: () => getChildNames().map(c => ({value: c, label: "👤 " + c})),
+    getSelected: (username) => {
+      const a = state.config.parentChildren && state.config.parentChildren[username];
+      return a || [];
+    },
+    displayId: "edit-child-display",
+    noItemsText: "No children added yet."
+  },
+  tabs: {
+    title: "Visible Tabs",
+    hint: "Select which tabs this child can see.",
+    getItems: () => [
+      {value: "money",  label: "💵 Money"},
+      {value: "chores", label: "✅ Chores"},
+      {value: "loans",  label: "💳 Loans"}
+    ],
+    getSelected: (username) => {
+      const t = state.config.tabs && state.config.tabs[username];
+      if(!t) return ["money","chores"]; // defaults
+      const sel = [];
+      if(t.money!==false)  sel.push("money");
+      if(t.chores!==false) sel.push("chores");
+      if(t.loans===true)   sel.push("loans");
+      return sel;
+    },
+    displayId: "edit-tab-display",
+    noItemsText: ""
+  }
+};
+
+function openPicker(mode){
+  if(!editingUserName) return;
+  pickerMode = mode;
+  const cfg = PICKER_CONFIG[mode];
+  const items = cfg.getItems();
+  pickerSelected = [...cfg.getSelected(editingUserName)];
+
+  document.getElementById("picker-title").textContent = cfg.title;
+  document.getElementById("picker-hint").textContent = cfg.hint;
+
+  const listEl = document.getElementById("picker-items");
+
+  if(!items.length){
+    listEl.innerHTML = `<p style="color:var(--muted);font-size:.82rem;text-align:center;padding:20px 0;">${cfg.noItemsText}</p>`;
+  } else {
+    listEl.innerHTML = items.map(item => `
+      <div class="picker-item" onclick="togglePickerItem('${item.value}',this)">
+        <div class="picker-item-check ${pickerSelected.indexOf(item.value)!==-1?'checked':''}" id="pck-${item.value}"></div>
+        <span>${item.label}</span>
+      </div>`).join("");
+  }
+
+  document.getElementById("picker-overlay").classList.add("open");
+}
+
+function togglePickerItem(value, row){
+  const checkEl = document.getElementById("pck-"+value);
+  const idx = pickerSelected.indexOf(value);
+  if(idx === -1){
+    pickerSelected.push(value);
+    if(checkEl) checkEl.classList.add("checked");
+  } else {
+    pickerSelected.splice(idx, 1);
+    if(checkEl) checkEl.classList.remove("checked");
+  }
+}
+
+function closePicker(){
+  if(!pickerMode) return;
+  const cfg = PICKER_CONFIG[pickerMode];
+  // Save selections back to a hidden state store on the editing user
+  if(!window._pickerSelections) window._pickerSelections = {};
+  window._pickerSelections[pickerMode] = [...pickerSelected];
+  // Update display chips
+  updatePickerDisplay(pickerMode, pickerSelected, cfg);
+  document.getElementById("picker-overlay").classList.remove("open");
+  pickerMode = null;
+}
+
+function pickerOverlayClick(e){
+  if(e.target === document.getElementById("picker-overlay")) closePicker();
+}
+
+function updatePickerDisplay(mode, selected, cfg){
+  const displayEl = document.getElementById(cfg.displayId);
+  if(!displayEl) return;
+  if(!selected.length){
+    displayEl.innerHTML = `<span style="font-size:.75rem;color:var(--muted);font-style:italic;">None selected</span>`;
+    return;
+  }
+  const items = cfg.getItems();
+  displayEl.innerHTML = selected.map(v => {
+    const item = items.find(i => i.value===v);
+    return item ? `<span style="background:var(--primary);color:white;border-radius:20px;padding:4px 12px;font-size:.75rem;font-weight:700;">${item.label}</span>` : "";
+  }).join("");
+}
+
+function getPickerSelections(mode){
+  return (window._pickerSelections && window._pickerSelections[mode]) || [];
 }
 
 // ================================================================
