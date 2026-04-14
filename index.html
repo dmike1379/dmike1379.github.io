@@ -589,7 +589,7 @@
           <label for="chore-child-chooses" style="font-size:.8rem;color:var(--muted);font-weight:500;margin:0;cursor:pointer;">Let child choose their own split</label>
         </div>
         <!-- Per-chore streak settings -->
-        <div class="section-block" style="padding-top:14px;">
+        <div class="section-block" id="chore-streak-section" style="padding-top:14px;">
           <h3 style="font-size:.82rem;margin-bottom:10px;">🔥 Streak Settings (optional)</h3>
           <div class="row">
             <div class="col">
@@ -893,7 +893,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbwk8cM1mmmHMz2F8Ss5nBBk
 // ║                   FAMILY BANK — index.html                           ║
 // ║              Frontend Configuration & Setup Block                     ║
 // ╠═══════════════════════════════════════════════════════════════════════╣
-// ║  Version: v29.5   |   Paired with Code.gs: v29.0                    ║
+// ║  Version: v29.6   |   Paired with Code.gs: v29.0                    ║
 // ║  Update version numbers on each deployment                           ║
 // ╚═══════════════════════════════════════════════════════════════════════╝
 //
@@ -1338,15 +1338,16 @@ function renderParentSettings(){
   document.getElementById("allow-chk").value=(data.autoDeposit.checking||0).toFixed(2);
   document.getElementById("allow-sav").value=(data.autoDeposit.savings||0).toFixed(2);
   // Populate allowance schedule
-  const schedule=data.autoDeposit.schedule||"weekly";
+  const schedule=data.autoDeposit&&data.autoDeposit.schedule?data.autoDeposit.schedule:"weekly";
   const schedEl=document.getElementById("allow-schedule");
   if(schedEl) schedEl.value=schedule;
   onAllowanceScheduleChange();
   if(schedule==="monthly"){
     const mdEl=document.getElementById("allow-monthly-day");
-    if(mdEl) mdEl.value=data.autoDeposit.monthlyDay||"1";
+    if(mdEl) mdEl.value=(data.autoDeposit&&data.autoDeposit.monthlyDay)||"1";
   } else {
-    setAllowanceDayToggles(data.autoDeposit.days&&data.autoDeposit.days.length?data.autoDeposit.days:[1]); // default Monday
+    const savedDays=data.autoDeposit&&data.autoDeposit.days&&data.autoDeposit.days.length?data.autoDeposit.days:[1];
+    setAllowanceDayToggles(savedDays); // default Monday
   }
 }
 function confirmAdjust(){
@@ -1644,15 +1645,8 @@ function dismissChoreNotif(choreId){
 // ================================================================
 // Day toggle helpers
 function toggleDayBtn(btn){
-  const schedule=document.getElementById("chore-schedule").value;
-  if(schedule==="weekly"){
-    // Weekly — single select only
-    document.querySelectorAll(".day-toggle").forEach(b=>b.classList.remove("selected"));
-    btn.classList.add("selected");
-  } else {
-    // Biweekly — multi select
-    btn.classList.toggle("selected");
-  }
+  // Both weekly and biweekly support multi-day selection
+  btn.classList.toggle("selected");
   document.getElementById("weekday-none-msg").classList.add("hidden");
 }
 
@@ -1698,6 +1692,9 @@ function onScheduleChange(){
   // For biweekly — allow multiple; visual difference handled by label
   // For one-time: end-date is controlled by toggleOnceDateField
   // For other schedules: show end-date normally (except daily)
+  // Hide streak settings for one-time chores (streaks don't apply)
+  const streakWrap=document.getElementById("chore-streak-section");
+  if(streakWrap)streakWrap.classList.toggle("hidden",s==="once");
   if(s==="once"){
     toggleOnceDateField(); // let date type dropdown control end-date visibility
   } else {
@@ -1950,6 +1947,20 @@ function approveChore(choreId){
         data.chores=data.chores.filter(c=>c.id!==choreId);
       } else {
         Object.assign(chore,{status:"available",completedBy:null,completedAt:null,denialNote:null,lastCompleted:todayStr()});
+        // Streak milestone — increment count and check for bonus
+        if(chore.streakMilestone&&chore.streakReward){
+          chore.streakCount=(parseInt(chore.streakCount)||0)+1;
+          const effective=chore.streakCount+(parseInt(chore.streakStart)||0);
+          const milestone=parseInt(chore.streakMilestone)||0;
+          if(milestone>0&&effective%milestone===0){
+            const bonus=parseFloat(chore.streakReward)||0;
+            if(bonus>0){
+              data.balances.checking+=bonus;
+              recordTransaction("Bank","🔥 Streak Bonus: "+chore.name+" ("+effective+" in a row!) (Chk)",bonus);
+              showToast("🔥 Streak milestone! +"+fmt(bonus)+" bonus deposited!","success",4000);
+            }
+          }
+        }
       }
       state._approvedChoreId=chore.id;
       state._approvedChoreTitle=buildCalEventTitle(chore); // legacy fallback
@@ -2064,15 +2075,15 @@ function renderHistory(){
 // ================================================================
 // ADMIN
 // ================================================================
-function openAdmin(){document.getElementById("admin-login-section").classList.remove("hidden");document.getElementById("admin-settings-section").classList.add("hidden");document.getElementById("admin-pin-input").value="";document.getElementById("admin-pin-error").className="field-msg";document.getElementById("admin-drawer").classList.add("open");}
+function openAdmin(){const ls=document.getElementById("admin-login-section");const ss=document.getElementById("admin-settings-section");if(ls)ls.style.display="";if(ss)ss.style.display="none";document.getElementById("admin-pin-input").value="";document.getElementById("admin-pin-error").className="field-msg";document.getElementById("admin-drawer").classList.add("open");}
 function closeAdmin(){document.getElementById("admin-drawer").classList.remove("open");}
 function attemptAdminLogin(){
   const pin=document.getElementById("admin-pin-input").value;
   const errEl=document.getElementById("admin-pin-error");
   if(pin!==(state.config.adminPin||DEFAULT_CONFIG.adminPin)){errEl.className="field-msg error";return;}
   errEl.className="field-msg";
-  document.getElementById("admin-login-section").classList.add("hidden");
-  document.getElementById("admin-settings-section").classList.remove("hidden");
+  const _ls=document.getElementById("admin-login-section");const _ss=document.getElementById("admin-settings-section");
+  if(_ls)_ls.style.display="none";if(_ss)_ss.style.display="";
   populateAdminForm();renderAdminUsers();
 }
 function populateAdminForm(){
@@ -2134,8 +2145,9 @@ function saveAdminSettings(){
   state.config.imgLogo=document.getElementById("admin-img-logo").value.trim()||CFG_IMG_LOGO;
   state.config.timezone=document.getElementById("admin-timezone").value;
   state.config.autoLogout=parseInt(document.getElementById("admin-autologout").value)||0;
-  // Tab visibility and parent assignments now managed via user edit form pills
-  // No standalone fields to save here
+  // Tab/assignment selections are saved per-user via saveUserEdit — no standalone fields here
+  // But ensure picker state is cleared so next edit opens fresh
+  if(window._pickerSelections) window._pickerSelections={};
   // Save per-user emails + notification prefs + calendar IDs
   if(!state.config.emails)state.config.emails={};
   if(!state.config.calendars)state.config.calendars={};
@@ -2744,6 +2756,7 @@ function restoreRememberedUser(){
       currentUser=valid;
       currentRole=state.roles[valid]||"child";
       document.getElementById("login-screen").classList.add("hidden");
+      updateLogoutButtonLabel();
       if(currentRole==="parent"){
         const children=getAssignedChildren();
         if(children.length===1){
@@ -2802,6 +2815,7 @@ function attemptLoginV291(){
   currentRole=state.roles[user]||"child";
   document.getElementById("login-screen").classList.add("hidden");
   updateLogoutButtonLabel();
+  // Already called — no duplicate needed
   if(currentRole==="parent"){
     const children=getAssignedChildren();
     if(children.length===1){document.getElementById("main-screen").classList.remove("hidden");selectChild(children[0]);}
@@ -3023,34 +3037,8 @@ function populateHistoryDateFilters(){
 // ================================================================
 let editingUserName=null;
 
-function openUserEdit(username){
-  editingUserName=username;
-  const role=state.roles[username]||"child";
-  const isChild=role==="child";
-  const emails=state.config.emails||{};
-  const notify=(state.config.notify&&state.config.notify[username])||{};
-  const cals=state.config.calendars||{};
+// openUserEdit — see updated version below
 
-  document.getElementById("admin-edit-title").textContent="✏️ Edit: "+username;
-  document.getElementById("edit-user-name").value=username;
-  document.getElementById("edit-user-role").value=role;
-  document.getElementById("edit-user-pin").value="";
-  document.getElementById("edit-user-email").value=emails[username]||"";
-
-  const childFields=document.getElementById("edit-child-fields");
-  if(childFields)childFields.style.display=isChild?"":"none";
-
-  if(isChild){
-    document.getElementById("edit-notify-email").checked=notify.email!==false;
-    document.getElementById("edit-notify-cal").checked=!!notify.calendar;
-    document.getElementById("edit-chore-rewards").checked=notify.choreRewards!==false;
-    document.getElementById("edit-cal-id").value=cals[username]||"";
-    toggleEditCalField();
-  }
-
-  document.getElementById("admin-user-edit-wrap").classList.remove("hidden");
-  document.getElementById("admin-user-edit-wrap").scrollIntoView({behavior:"smooth",block:"start"});
-}
 
 function toggleEditCalField(){
   const cb=document.getElementById("edit-notify-cal");
@@ -3317,8 +3305,9 @@ function openUserEdit(username){
     if(tabCfg.chores!==false)activeTabVals.push("chores");
     if(tabCfg.loans===true)activeTabVals.push("loans");
     if(!window._pickerSelections)window._pickerSelections={};
-    window._pickerSelections["tabs"]=activeTabVals;
-    updatePickerDisplay("tabs",activeTabVals,PICKER_CONFIG["tabs"]);
+    window._pickerSelections["tabs"]=[...activeTabVals];
+    if(typeof updatePickerDisplay==="function"&&typeof PICKER_CONFIG!=="undefined")
+      updatePickerDisplay("tabs",activeTabVals,PICKER_CONFIG["tabs"]);
   } else {
     const tabWrap=document.getElementById("edit-tab-visibility");
     if(tabWrap) tabWrap.style.display="none";
@@ -3331,8 +3320,9 @@ function openUserEdit(username){
     // Init picker display for child assignment
     const assignedChildren=(state.config.parentChildren&&state.config.parentChildren[username])||[];
     if(!window._pickerSelections)window._pickerSelections={};
-    window._pickerSelections["children"]=assignedChildren;
-    updatePickerDisplay("children",assignedChildren,PICKER_CONFIG["children"]);
+    window._pickerSelections["children"]=[...assignedChildren];
+    if(typeof updatePickerDisplay==="function"&&typeof PICKER_CONFIG!=="undefined")
+      updatePickerDisplay("children",assignedChildren,PICKER_CONFIG["children"]);
   }
 
   document.getElementById("admin-user-edit-wrap").classList.remove("hidden");
