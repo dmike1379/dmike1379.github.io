@@ -58,7 +58,7 @@ const CFG_IMG_LOGO   = "images/logo.png";
 const CFG_IMG_ICON   = "images/icon.png";
 
 // ── Version ──
-const APP_VERSION = "31.1";
+const APP_VERSION = "31.2";
 
 // ╔═══════════════════════════════════════════════════════════════════╗
 // ║         END OF CONFIGURATION — DO NOT EDIT BELOW THIS LINE       ║
@@ -641,6 +641,7 @@ function updateChoreBadges(){
   if(pb){
     if(pendingCount>0){ pb.textContent=pendingCount; pb.classList.remove("hidden"); }
     else              { pb.classList.add("hidden"); }
+    bindLongPressApprove();  // v31.2: long-press → quick approve
   }
 }
 
@@ -887,7 +888,7 @@ function selectChild(childName){
   document.getElementById("parent-panel").classList.remove("hidden");
   document.getElementById("child-panel").classList.add("hidden");
   renderParentTabBar();
-  renderBalances(); renderParentChores(); renderParentLoans(); renderParentGoals(); renderPendingDeposits(); renderParentDepositApprovals(); renderParentSettings();
+  renderBalances(); renderParentChores(); renderParentLoans(); renderParentGoals(); renderPendingDeposits(); renderParentDepositApprovals(); renderParentSettings(); renderWeekAtGlance();
   document.getElementById("goals-child-name").textContent=childName;
   document.getElementById("loans-child-name").textContent=childName;
   updateChoreBadges();
@@ -1860,6 +1861,7 @@ function isDueThisWeek(chore){
 }
 
 function renderChildChores(){
+  renderWeeklyStreakBanner();  // v31.2
   const listEl=document.getElementById("child-chore-list");
   const notifEl=document.getElementById("child-chore-notifications");
   // Streaks
@@ -1990,8 +1992,10 @@ function toggleChoreCheck(choreId){
     });
     setTimeout(()=>{
       const de=document.getElementById("modal-detail");
-      const p=chore.splitChk||50;
-      de.innerHTML=`<div class="split-display"><span class="chk-pct">Checking: <span id="msc-chk">${p}</span>%</span><span class="sav-pct">Savings: <span id="msc-sav">${100-p}</span>%</span></div><input type="range" id="modal-split-slider" min="0" max="100" value="${p}" oninput="document.getElementById('msc-chk').textContent=this.value;document.getElementById('msc-sav').textContent=100-parseInt(this.value);"><p style="font-size:.73rem;color:var(--muted);margin:6px 0 0;text-align:center;">Drag to set your split</p>`;
+      // v31.2: if child has an active (unmet) goal, default split toward savings
+      const hasActiveGoal = hasUnmetGoal(activeChild||currentUser);
+      const p = chore.splitChk ?? (hasActiveGoal ? 50 : 100);
+      de.innerHTML=`<div class="split-display"><span class="chk-pct">Checking: <span id="msc-chk">${p}</span>%</span><span class="sav-pct">Savings: <span id="msc-sav">${100-p}</span>%</span></div><input type="range" id="modal-split-slider" min="0" max="100" value="${p}" oninput="document.getElementById('msc-chk').textContent=this.value;document.getElementById('msc-sav').textContent=100-parseInt(this.value);"><p style="font-size:.73rem;color:var(--muted);margin:6px 0 0;text-align:center;">${hasActiveGoal?"💡 Defaulted to 50/50 — you're saving for a goal!":"Drag to set your split"}</p>`;
       de.classList.remove("hidden");
     },60);
   } else {
@@ -2459,14 +2463,19 @@ function renderHistory(){
     listEl.innerHTML=emptyState("history","No transactions match these filters.");
     return;
   }
+  // v31.2: compute goal-hit signatures once per render
+  const childForLedger = activeChild || currentUser;
+  const goalSigs = computeGoalHitSignatures(childForLedger);
   listEl.innerHTML=filtered.map(h=>{
     const n=(h.note||"").toLowerCase();
     const isSav=n.includes("(sav)")||n.includes("to savings")||n.includes("to sav")||n.includes("interest (sav)");
     const isChore=n.includes("chore:");
     const pillCls = isChore ? "acct-pill chore" : isSav ? "acct-pill sav" : "acct-pill";
-    return `<div class="ledger-row">
+    const goalName = goalHitForRow(childForLedger, h, goalSigs);
+    const goalBadge = goalName ? `<span class="goal-hit-badge" title="Goal reached: ${goalName}"><svg class='icon' aria-hidden='true'><use href='vendor/phosphor-sprite.svg#ph-target'/></svg> Goal: ${goalName}</span>` : "";
+    return `<div class="ledger-row${goalName?' ledger-row-goal':''}">
       <div class="${pillCls}">${isChore?"CHORE":isSav?"SAV":"CHK"}</div>
-      <div><span class="ledger-date">${h.date}</span><span class="ledger-who-wrap">${renderAvatar(h.user,"xs")}<span class="ledger-who">${h.user}</span></span><span class="ledger-note"> — ${h.note}</span></div>
+      <div><span class="ledger-date">${h.date}</span><span class="ledger-who-wrap">${renderAvatar(h.user,"xs")}<span class="ledger-who">${h.user}</span></span><span class="ledger-note"> — ${h.note}</span>${goalBadge}</div>
       <div class="ledger-amt ${h.amt>=0?"pos":"neg"}">${h.amt>=0?"+":""}${fmt(h.amt)}</div>
     </div>`;
   }).join("");
@@ -3216,8 +3225,421 @@ function initInactivityTimer(){
 }
 
 // ════════════════════════════════════════════════════════════════════
-// 22. INIT
+// 21b. v31.2 — USABILITY FEATURES
+//   • Goal-aware split default (helper)
+//   • Weekly stats + child streak banner + parent "this week at a glance"
+//   • Goal-hit badges in ledger
+//   • In-app help drawer
+//   • Long-press quick-approve from chore badge
+//   • Monthly statement PDF (jsPDF — vendor/jspdf.umd.min.js must exist)
 // ════════════════════════════════════════════════════════════════════
+
+// ── Goal awareness ──────────────────────────────────────────────────
+function hasUnmetGoal(childName){
+  if(!childName) return false;
+  const goals = (getChildData(childName).goals) || [];
+  const sav   = (getChildData(childName).balances?.savings) || 0;
+  return goals.some(g => (parseFloat(g.target)||0) > sav);
+}
+
+// ── Week stats (derived from existing history; no schema change) ────
+/* Returns {choresDone, earned, pending, weekStart, weekEnd} for the
+   child's last 7 days (rolling, not ISO week). */
+function computeWeekStats(childName){
+  if(!childName) return {choresDone:0, earned:0, pending:0};
+  const data = getChildData(childName);
+  const hist = (state.history && state.history[childName]) || [];
+  const now  = new Date();
+  const start = new Date(now); start.setDate(start.getDate()-6); start.setHours(0,0,0,0);
+  const inWindow = d => {
+    // history dates are stored via fmtDate — try to parse, fall back to false
+    const dt = new Date(d);
+    return !isNaN(dt) && dt >= start && dt <= now;
+  };
+  const choreRows = hist.filter(h => inWindow(h.date) && /chore:/i.test(h.note||""));
+  // Dedup chore credits: a chore can hit ledger twice (chk+sav), count the name+date pair once
+  const seen = new Set();
+  let choresDone = 0, earned = 0;
+  for(const h of choreRows){
+    const key = (h.date||"") + "|" + (h.note||"").replace(/\(chk\)|\(sav\)/ig,"").trim();
+    if(!seen.has(key)) { seen.add(key); choresDone++; }
+    earned += (parseFloat(h.amt)||0);
+  }
+  const pending = ((data.chores)||[]).filter(c=>c.status==="pending").length;
+  return {choresDone, earned, pending, weekStart:start, weekEnd:now};
+}
+
+// ── Child: weekly streak banner (chore tab top) ─────────────────────
+function renderWeeklyStreakBanner(){
+  const el = document.getElementById("child-weekly-summary");
+  if(!el) return;
+  const child = activeChild || currentUser;
+  if(!child || currentRole!=="child"){ el.innerHTML=""; return; }
+  const s = computeWeekStats(child);
+  if(s.choresDone<=0){ el.innerHTML=""; return; }
+  const showEarn = choreRewardsEnabled(child);
+  el.innerHTML = `<div class="weekly-streak-banner">
+    <svg class="icon icon-lg" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-fire"/></svg>
+    <div class="wsb-text">
+      <div class="wsb-title">${s.choresDone} chore${s.choresDone===1?"":"s"} done this week!</div>
+      ${showEarn?`<div class="wsb-sub">Earned ${fmt(s.earned)} — keep it up!</div>`:`<div class="wsb-sub">Great job — keep it up!</div>`}
+    </div>
+  </div>`;
+}
+
+// ── Parent: "this week at a glance" card ────────────────────────────
+function renderWeekAtGlance(){
+  const el = document.getElementById("parent-week-glance");
+  if(!el) return;
+  if(currentRole!=="parent" || !activeChild){ el.innerHTML=""; return; }
+  const s = computeWeekStats(activeChild);
+  // Only show if there's something to show OR there are no deposits pending
+  const depEl = document.getElementById("parent-deposit-approvals");
+  const hasDep = depEl && depEl.innerHTML.trim().length > 0;
+  if(hasDep && s.choresDone===0 && s.pending===0){ el.innerHTML=""; return; }
+  el.innerHTML = `<div class="week-glance-card">
+    <div class="wgc-header">
+      <svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-chart-bar"/></svg>
+      <span>This week for ${activeChild}</span>
+    </div>
+    <div class="wgc-stats">
+      <div class="wgc-stat"><div class="wgc-num">${s.choresDone}</div><div class="wgc-lbl">chores done</div></div>
+      <div class="wgc-stat"><div class="wgc-num">${fmt(s.earned)}</div><div class="wgc-lbl">earned</div></div>
+      <div class="wgc-stat ${s.pending?'wgc-alert':''}"><div class="wgc-num">${s.pending}</div><div class="wgc-lbl">pending</div></div>
+    </div>
+  </div>`;
+}
+
+// ── Goal-hit badges in ledger ────────────────────────────────────────
+/* Returns a Set of ledger-row signatures ("date|note") that represent
+   the first time the child's running savings balance met/exceeded
+   a goal target. Run against the full history each render. */
+function computeGoalHitSignatures(childName){
+  const sigs = new Set();
+  if(!childName) return sigs;
+  const goals = (getChildData(childName).goals) || [];
+  if(!goals.length) return sigs;
+  const hist = (state.history && state.history[childName]) || [];
+  // Sort chronologically
+  const sorted = [...hist].filter(h => h.date).sort((a,b) => new Date(a.date) - new Date(b.date));
+  // Running savings: start at zero (history covers the whole lifetime in this app)
+  let runSav = 0;
+  const hitTargets = new Set(); // each goal target hit only once, at first crossing
+  for(const h of sorted){
+    const n = (h.note||"").toLowerCase();
+    const isSav = n.includes("(sav)") || n.includes("to savings") || n.includes("to sav") || n.includes("interest (sav)");
+    if(isSav) runSav += (parseFloat(h.amt)||0);
+    // Check each goal target
+    for(const g of goals){
+      const target = parseFloat(g.target)||0;
+      if(target<=0) continue;
+      if(hitTargets.has(target)) continue;
+      if(runSav >= target){
+        sigs.add((h.date||"")+"|"+(h.note||"")+"|"+target);
+        hitTargets.add(target);
+      }
+    }
+  }
+  return sigs;
+}
+
+/* Looks up whether a given ledger row is a goal-hit row. Returns the goal
+   name that was met on that row, or null. */
+function goalHitForRow(childName, h, goalSigs){
+  const goals = (getChildData(childName).goals) || [];
+  for(const g of goals){
+    const target = parseFloat(g.target)||0;
+    if(target<=0) continue;
+    const sig = (h.date||"")+"|"+(h.note||"")+"|"+target;
+    if(goalSigs.has(sig)) return g.name || ("$"+target.toFixed(0));
+  }
+  return null;
+}
+
+// ── Help drawer ──────────────────────────────────────────────────────
+const HELP_CONTENT = {
+  login: {
+    title: "Logging In",
+    body: `<p>Enter your name and 4-digit PIN, then tap <strong>Log In</strong>.</p>
+      <p><strong>Remember my username</strong> saves your name on this device so you don't re-type it.</p>
+      <p><strong>Auto-login</strong> skips the PIN entirely. Only turn this on for your own personal device — anyone who picks it up will be logged in as you.</p>
+      <p>Forgot your PIN? Ask a parent to reset it from Admin.</p>`
+  },
+  picker: {
+    title: "Choosing an Account",
+    body: `<p>You're a parent with more than one child. Pick whose account you want to manage.</p>
+      <p>Tap a child's name to go to their account. You can switch later using the <strong>Switch</strong> button at the top.</p>`
+  },
+  main: {
+    title: "Using Family Bank",
+    body: `<p><strong>Checking &amp; Savings cards</strong> show your balances and monthly interest.</p>
+      <p><strong>Transaction History</strong> lists every deposit, withdrawal, and chore payment. Goals you've met show a 🎯 badge.</p>
+      <p><strong>Net Worth Chart</strong> plots your total balance over time with a 3-month projection.</p>
+      <hr>
+      <p><strong>For kids:</strong> the Money tab is where you withdraw, transfer between accounts, or deposit cash. The Chores tab shows what's due and lets you mark completed chores.</p>
+      <p><strong>For parents:</strong> Adjust lets you add or remove money directly. Chores is where you approve submissions. Settings handles allowance, rates, and PDF statements.</p>
+      <hr>
+      <p><strong>Tip:</strong> long-press the red badge on the Chores tab to quick-approve without navigating.</p>`
+  },
+  admin: {
+    title: "Admin Panel",
+    body: `<p>The Admin PIN gates this panel. Change it from <strong>Admin PIN</strong> below.</p>
+      <p><strong>User Management</strong> — add kids, edit avatars, reset PINs, change emails/notifications, choose which tabs each child sees.</p>
+      <p><strong>Bank Branding</strong> — customize the name, tagline, and colors.</p>
+      <p><strong>Auto-Logout</strong> — returns to the login screen after inactivity. Set to 5 minutes on shared devices.</p>
+      <p><strong>Celebration Sound</strong> — plays a short chime when kids submit chores. Off by default.</p>`
+  }
+};
+
+function openHelp(screen){
+  const data = HELP_CONTENT[screen] || HELP_CONTENT.main;
+  document.getElementById("help-drawer-title").textContent = data.title;
+  document.getElementById("help-drawer-body").innerHTML = data.body;
+  document.getElementById("help-drawer").classList.add("open");
+}
+function closeHelp(){ document.getElementById("help-drawer").classList.remove("open"); }
+
+// ── Long-press quick-approve ─────────────────────────────────────────
+let _lpTimer = null, _lpTarget = null;
+function bindLongPressApprove(){
+  const badge = document.getElementById("parent-chore-badge");
+  if(!badge || badge._lpBound) return;
+  badge._lpBound = true;
+  const start = (ev)=>{
+    if(badge.classList.contains("hidden")) return;
+    _lpTarget = badge;
+    badge.classList.add("lp-active");
+    _lpTimer = setTimeout(()=>{
+      badge.classList.remove("lp-active");
+      if(navigator.vibrate) try{ navigator.vibrate(30); }catch(e){}
+      openQuickApprove();
+    }, 500);
+  };
+  const cancel = ()=>{
+    clearTimeout(_lpTimer); _lpTimer=null;
+    if(_lpTarget){ _lpTarget.classList.remove("lp-active"); _lpTarget=null; }
+  };
+  badge.addEventListener("touchstart", start, {passive:true});
+  badge.addEventListener("mousedown",  start);
+  ["touchend","touchcancel","mouseup","mouseleave"].forEach(ev=>badge.addEventListener(ev,cancel));
+}
+
+function openQuickApprove(){
+  if(currentRole!=="parent" || !activeChild) return;
+  const data = getChildData(activeChild);
+  const pending = (data.chores||[]).filter(c=>c.status==="pending");
+  if(!pending.length){ showToast("No pending chores.","info"); return; }
+  const sheet = document.getElementById("quick-approve-sheet");
+  const list  = document.getElementById("quick-approve-list");
+  list.innerHTML = pending.map(c=>`
+    <div class="qa-row">
+      <div class="qa-info">
+        <div class="qa-name">${c.name}</div>
+        <div class="qa-meta">${renderAvatar(c.completedBy,"xs")} ${c.completedBy} · ${fmt(c.amount)}</div>
+      </div>
+      <div class="qa-btns">
+        <button class="btn btn-secondary btn-sm" onclick="quickApproveOne('${c.id}')"><svg class='icon' aria-hidden='true'><use href='vendor/phosphor-sprite.svg#ph-check-circle'/></svg></button>
+        <button class="btn btn-danger btn-sm" onclick="quickDenyOne('${c.id}')"><svg class='icon' aria-hidden='true'><use href='vendor/phosphor-sprite.svg#ph-x-circle'/></svg></button>
+      </div>
+    </div>`).join("");
+  sheet.classList.add("open");
+}
+function closeQuickApprove(){ document.getElementById("quick-approve-sheet").classList.remove("open"); }
+
+function quickApproveOne(choreId){
+  // Reuse existing approveChore flow but skip its confirmation modal
+  const data = getChildData(activeChild);
+  const chore = data.chores.find(c=>c.id===choreId);
+  if(!chore) return;
+  const ck = chore.amount * (chore.splitChk/100);
+  const sv = chore.amount * ((100-chore.splitChk)/100);
+  data.balances.checking += ck;
+  data.balances.savings  += sv;
+  if(ck>0) recordTransaction("Bank","Chore: "+chore.name+" (Chk)",ck);
+  if(sv>0) recordTransaction("Bank","Chore: "+chore.name+" (Sav)",sv);
+  if(chore.schedule==="once"){
+    data.chores = data.chores.filter(c=>c.id!==choreId);
+  } else {
+    Object.assign(chore,{status:"available",completedBy:null,completedAt:null,denialNote:null,lastCompleted:todayStr()});
+    if(chore.streakMilestone && chore.streakReward){
+      chore.streakCount = (parseInt(chore.streakCount)||0) + 1;
+      const effective = chore.streakCount + (parseInt(chore.streakStart)||0);
+      const milestone = parseInt(chore.streakMilestone)||0;
+      if(milestone>0 && effective%milestone===0){
+        const bonus = parseFloat(chore.streakReward)||0;
+        if(bonus>0){
+          data.balances.checking += bonus;
+          recordTransaction("Bank","🔥 Streak Bonus: "+chore.name+" ("+effective+" in a row!) (Chk)",bonus);
+          showToast("🔥 Streak milestone! +"+fmt(bonus)+" bonus deposited!","success",4000);
+        }
+      }
+    }
+  }
+  state._approvedChoreId = chore.id;
+  state._approvedChoreTitle = buildCalEventTitle(chore);
+  state._approvedChoreSchedule = chore.schedule;
+  syncToCloud("Chore Approved (Quick)");
+  delete state._approvedChoreId; delete state._approvedChoreTitle; delete state._approvedChoreSchedule;
+  showToast("Approved! "+fmt(chore.amount)+" deposited.","success");
+  renderParentChores(); renderChildChores(); updateChoreBadges(); renderWeekAtGlance();
+  // Refresh the quick-approve sheet
+  const remaining = (data.chores||[]).filter(c=>c.status==="pending");
+  if(remaining.length) openQuickApprove();
+  else closeQuickApprove();
+}
+
+function quickDenyOne(choreId){
+  // Quick deny — no reason prompt; use normal deny for reasons
+  const data = getChildData(activeChild);
+  const chore = data.chores.find(c=>c.id===choreId);
+  if(!chore) return;
+  if(chore.schedule==="once"){
+    data.chores = data.chores.filter(c=>c.id!==choreId);
+  } else {
+    Object.assign(chore,{status:"available",completedBy:null,completedAt:null,denialNote:null,lastCompleted:null});
+  }
+  syncToCloud("Chore Denied (Quick)");
+  showToast("Chore denied.","error");
+  renderParentChores(); renderChildChores(); updateChoreBadges(); renderWeekAtGlance();
+  const remaining = (data.chores||[]).filter(c=>c.status==="pending");
+  if(remaining.length) openQuickApprove();
+  else closeQuickApprove();
+}
+
+// ── PDF monthly statement ────────────────────────────────────────────
+function generateMonthlyStatementPDF(){
+  if(currentRole!=="parent" || !activeChild){ showToast("Pick a child first.","error"); return; }
+  if(typeof window.jspdf === "undefined" || !window.jspdf.jsPDF){
+    showToast("PDF library missing — download vendor/jspdf.umd.min.js (see vendor/README.txt)","error",5000);
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:"pt", format:"letter"});
+  const child = activeChild;
+  const data  = getChildData(child);
+  const hist  = (state.history && state.history[child]) || [];
+
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthEnd   = new Date(now.getFullYear(), now.getMonth()+1, 0);
+  const monthLabel = monthStart.toLocaleString("default",{month:"long",year:"numeric"});
+  const inMonth = d => {
+    const dt = new Date(d);
+    return !isNaN(dt) && dt>=monthStart && dt<=monthEnd;
+  };
+  const rows = hist.filter(h => inMonth(h.date));
+  const totalIn  = rows.filter(r=>r.amt>0).reduce((s,r)=>s+r.amt,0);
+  const totalOut = rows.filter(r=>r.amt<0).reduce((s,r)=>s+r.amt,0);
+  const net = totalIn + totalOut;
+
+  // Header
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(20);
+  doc.text(state.config.bankName || "Family Bank", 40, 60);
+  doc.setFontSize(11);
+  doc.setFont("helvetica","normal");
+  doc.text(state.config.tagline || "Monthly Statement", 40, 78);
+
+  doc.setFontSize(14); doc.setFont("helvetica","bold");
+  doc.text(`Statement for ${child}`, 40, 120);
+  doc.setFontSize(11); doc.setFont("helvetica","normal");
+  doc.text(`Period: ${monthLabel}`, 40, 138);
+  doc.text(`Generated: ${now.toLocaleDateString()}`, 40, 154);
+
+  // Balance summary box
+  doc.setDrawColor(200); doc.setLineWidth(0.5);
+  doc.roundedRect(40, 175, 535, 72, 6, 6);
+  doc.setFont("helvetica","bold"); doc.setFontSize(10);
+  doc.text("CURRENT BALANCES", 52, 195);
+  doc.setFontSize(14);
+  doc.text(`Checking: ${fmt(data.balances.checking||0)}`, 52, 218);
+  doc.text(`Savings:  ${fmt(data.balances.savings||0)}`,  52, 238);
+  doc.setFont("helvetica","normal"); doc.setFontSize(10);
+  doc.text(`Checking APY: ${data.rates?.checking||0}%`, 320, 218);
+  doc.text(`Savings  APY: ${data.rates?.savings ||0}%`, 320, 238);
+
+  // Month activity summary
+  doc.setFont("helvetica","bold"); doc.setFontSize(10);
+  doc.text("THIS MONTH", 40, 278);
+  doc.setFont("helvetica","normal"); doc.setFontSize(11);
+  doc.text(`Deposits:    ${fmt(totalIn)}`,  40, 296);
+  doc.text(`Withdrawals: ${fmt(totalOut)}`, 200, 296);
+  doc.text(`Net change:  ${(net>=0?"+":"")+fmt(net)}`, 380, 296);
+
+  // Transactions table
+  doc.setFont("helvetica","bold"); doc.setFontSize(10);
+  doc.text("TRANSACTIONS", 40, 330);
+  doc.setDrawColor(220); doc.line(40, 335, 575, 335);
+
+  let y = 352;
+  doc.setFont("helvetica","normal"); doc.setFontSize(9);
+  if(!rows.length){
+    doc.setFont("helvetica","italic");
+    doc.text("No transactions this month.", 40, y);
+  } else {
+    // Table header
+    doc.setFont("helvetica","bold");
+    doc.text("Date",     40,  y);
+    doc.text("By",       115, y);
+    doc.text("Note",     185, y);
+    doc.text("Amount",   530, y, {align:"right"});
+    y += 14;
+    doc.setFont("helvetica","normal");
+    const sorted = [...rows].sort((a,b)=>new Date(b.date)-new Date(a.date));
+    for(const h of sorted){
+      if(y > 740){
+        doc.addPage();
+        y = 60;
+      }
+      const dateStr = (h.date||"").split(",")[0] || h.date || "";
+      doc.text(dateStr,           40,  y);
+      doc.text((h.user||"").slice(0,12), 115, y);
+      const note = (h.note||"").slice(0,60);
+      doc.text(note,              185, y);
+      const amt = (h.amt>=0?"+":"") + fmt(h.amt||0);
+      doc.setTextColor(h.amt>=0 ? 16 : 180, h.amt>=0 ? 130 : 50, h.amt>=0 ? 80 : 50);
+      doc.text(amt,               530, y, {align:"right"});
+      doc.setTextColor(0,0,0);
+      y += 14;
+    }
+  }
+
+  // Chore summary
+  const choreRows = rows.filter(r => /chore:/i.test(r.note||""));
+  if(choreRows.length){
+    const seen = new Set();
+    const unique = choreRows.filter(h => {
+      const key = (h.date||"") + "|" + (h.note||"").replace(/\(chk\)|\(sav\)/ig,"").trim();
+      if(seen.has(key)) return false;
+      seen.add(key); return true;
+    });
+    if(y > 680){ doc.addPage(); y = 60; }
+    y += 20;
+    doc.setFont("helvetica","bold"); doc.setFontSize(10);
+    doc.text("CHORES COMPLETED", 40, y);
+    doc.setDrawColor(220); doc.line(40, y+5, 575, y+5);
+    y += 22;
+    doc.setFont("helvetica","normal"); doc.setFontSize(9);
+    doc.text(`${unique.length} chore${unique.length===1?"":"s"} completed this month`, 40, y);
+  }
+
+  // Footer
+  const pageCount = doc.internal.getNumberOfPages();
+  for(let i=1;i<=pageCount;i++){
+    doc.setPage(i);
+    doc.setFont("helvetica","normal"); doc.setFontSize(8);
+    doc.setTextColor(130);
+    doc.text(`Page ${i} of ${pageCount}`, 575, 770, {align:"right"});
+    doc.text(`${state.config.bankName || "Family Bank"} — ${child} — ${monthLabel}`, 40, 770);
+    doc.setTextColor(0);
+  }
+
+  const fname = `${child}_statement_${monthStart.getFullYear()}-${String(monthStart.getMonth()+1).padStart(2,"0")}.pdf`;
+  doc.save(fname);
+  showToast("Statement downloaded.","success");
+}
+
+
 populateMonthlyDays();
 populateAllowanceMonthlyDays();
 populateLoanDueDayPicker();

@@ -15,7 +15,7 @@
    ║  script.google.com is always bypassed — never cached.            ║
    ╚═══════════════════════════════════════════════════════════════════╝ */
 
-const SW_VERSION  = 'v31.0';
+const SW_VERSION  = 'v31.2';
 const CACHE_NAME  = 'family-bank-' + SW_VERSION;
 const CORE_ASSETS = [
   './',
@@ -24,7 +24,8 @@ const CORE_ASSETS = [
   './app.js',
   './manifest.json',
   './vendor/chart.umd.min.js',
-  './vendor/phosphor-sprite.svg'
+  './vendor/phosphor-sprite.svg',
+  './vendor/jspdf.umd.min.js'
 ];
 
 // ── Install: pre-cache the shell ──────────────────────────────────

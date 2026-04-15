@@ -720,3 +720,97 @@ h3 .icon,label .icon,.field-label .icon{margin-right:4px;opacity:.85}
 }
 .avatar-photo-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .avatar-photo-btns button{width:auto;margin:0;flex:1;min-width:120px}
+
+/* ── v31.2 ADDITIONS ───────────────────────────────────────────────── */
+
+/* Help button — compact ⓘ circle in top-bars */
+.help-btn{
+  all:unset;cursor:pointer;
+  width:32px;height:32px;border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;
+  color:var(--muted);background:var(--bg);
+  transition:background .15s, color .15s;
+  margin:0 6px;
+}
+.help-btn:hover,.help-btn:active{background:var(--border);color:var(--primary)}
+.help-btn .icon{width:18px;height:18px}
+
+/* Help drawer — slides in like the other drawers */
+.help-drawer .help-body{padding:20px 22px 40px;font-size:.88rem;line-height:1.65;color:var(--text)}
+.help-drawer .help-body p{margin:0 0 12px}
+.help-drawer .help-body hr{border:none;border-top:1px solid var(--border);margin:14px 0}
+.help-drawer .help-body strong{color:var(--primary)}
+
+/* Weekly streak banner (child chores tab) */
+.weekly-streak-banner{
+  display:flex;align-items:center;gap:12px;
+  background:linear-gradient(135deg,#fef3c7,#fde68a);
+  border:1px solid #fcd34d;border-radius:var(--radius);
+  padding:12px 16px;margin-bottom:12px;
+  color:#78350f;
+}
+.weekly-streak-banner .icon{color:#d97706;flex-shrink:0}
+.weekly-streak-banner .wsb-title{font-weight:800;font-size:.92rem}
+.weekly-streak-banner .wsb-sub{font-size:.75rem;opacity:.85;margin-top:2px;font-weight:500}
+
+/* Parent "this week at a glance" card */
+.week-glance-card{
+  background:linear-gradient(135deg,#eff6ff,#dbeafe);
+  border:1px solid #bfdbfe;border-radius:var(--radius);
+  padding:14px 16px;margin:10px 0 16px;
+}
+.wgc-header{display:flex;align-items:center;gap:8px;font-weight:800;font-size:.82rem;color:#1e40af;margin-bottom:10px}
+.wgc-header .icon{color:#2563eb}
+.wgc-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.wgc-stat{text-align:center;background:rgba(255,255,255,.65);border-radius:10px;padding:10px 4px}
+.wgc-num{font-family:var(--mono);font-weight:800;font-size:1.15rem;color:var(--text);line-height:1}
+.wgc-lbl{font-size:.64rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+.wgc-stat.wgc-alert{background:#fee2e2;color:#991b1b}
+.wgc-stat.wgc-alert .wgc-num,.wgc-stat.wgc-alert .wgc-lbl{color:#991b1b}
+
+/* Goal-hit badge in ledger rows */
+.ledger-row.ledger-row-goal{background:linear-gradient(90deg,rgba(16,185,129,.05),transparent)}
+.goal-hit-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  background:var(--secondary);color:white;
+  font-size:.62rem;font-weight:800;
+  padding:2px 8px 2px 6px;border-radius:999px;
+  margin-left:6px;vertical-align:middle;
+  letter-spacing:.3px;
+}
+.goal-hit-badge .icon{width:.9em;height:.9em}
+
+/* Long-press feedback on chore badge */
+.notif-badge{transition:transform .2s, box-shadow .2s}
+.notif-badge.lp-active{transform:scale(1.25);box-shadow:0 0 0 6px rgba(239,68,68,.25)}
+
+/* Quick-approve bottom sheet */
+.quick-approve-sheet{
+  position:fixed;inset:0;background:rgba(0,0,0,.35);
+  z-index:700;opacity:0;pointer-events:none;
+  transition:opacity .2s;
+  display:flex;align-items:flex-end;justify-content:center;
+}
+.quick-approve-sheet.open{opacity:1;pointer-events:auto}
+.quick-approve-sheet .qa-inner{
+  background:var(--surface);
+  width:100%;max-width:460px;
+  border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+  padding:18px 18px 28px;
+  transform:translateY(100%);
+  transition:transform .25s cubic-bezier(.17,.89,.32,1.1);
+  max-height:75vh;overflow-y:auto;
+}
+.quick-approve-sheet.open .qa-inner{transform:translateY(0)}
+.qa-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.qa-row{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  margin-bottom:8px;
+}
+.qa-info{flex:1;min-width:0}
+.qa-name{font-weight:700;font-size:.88rem;color:var(--text)}
+.qa-meta{font-size:.72rem;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:6px}
+.qa-btns{display:flex;gap:6px;flex-shrink:0}
+.qa-btns .btn{width:42px;padding:8px 0;margin:0}
+.qa-btns .btn .icon{margin:0}

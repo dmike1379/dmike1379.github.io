@@ -104,6 +104,7 @@
 
       <div class="admin-link-wrap">
         <button class="admin-link" onclick="openAdmin()">Admin Login</button>
+        <button class="admin-link" onclick="openHelp('login')" style="margin-left:12px;">Help</button>
       </div>
     </div>
   </div>
@@ -112,6 +113,7 @@
   <div class="screen hidden" id="child-picker-screen">
     <div class="top-bar">
       <span class="welcome-text" id="picker-welcome">Hi Dad! 👋</span>
+      <button class="help-btn" title="Help" onclick="openHelp('picker')" aria-label="Help"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-info"/></svg></button>
       <button class="btn-logout" onclick="logout()">Log Out</button>
     </div>
     <p class="page-subtitle" style="text-align:left;margin-bottom:20px;">Which account would you like to manage?</p>
@@ -122,6 +124,7 @@
   <div class="screen hidden" id="main-screen">
     <div class="top-bar">
       <span class="welcome-text" id="welcome-msg">Hello!</span>
+      <button class="help-btn" title="Help" onclick="openHelp('main')" aria-label="Help"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-info"/></svg></button>
       <button class="btn-logout" id="logout-btn-main" onclick="logout()">Log Out</button>
     </div>
 
@@ -255,6 +258,7 @@
       <!-- Chores tab (child) -->
       <div class="tab-panel" id="child-tab-chores">
         <div id="child-chore-notifications"></div>
+        <div id="child-weekly-summary"></div>
         <div id="chore-streaks-wrap"></div>
         <h3>My Chores</h3>
         <div id="child-chore-list"></div>
@@ -282,6 +286,7 @@
         <div class="field-msg" id="adj-msg"></div>
         <button class="btn btn-warning" onclick="confirmAdjust()"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-lightning"/></svg> Apply Adjustment</button>
         <div id="parent-deposit-approvals"></div>
+        <div id="parent-week-glance"></div>
 
         <div class="section-block">
           <h3><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-target"/></svg> Savings Goals for <span id="goals-child-name">Child</span></h3>
@@ -528,6 +533,13 @@
           <button class="btn btn-primary" onclick="saveRates()"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-floppy-disk"/></svg> Save Rates</button>
         </div>
 
+        <!-- v31.2: Monthly statement PDF -->
+        <div class="section-block">
+          <h3><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-receipt"/></svg> Monthly Statement</h3>
+          <div class="info-box">Downloads a PDF statement for the current month — balances, transactions, chore summary.</div>
+          <button class="btn btn-outline" onclick="generateMonthlyStatementPDF()"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-receipt"/></svg> Generate PDF Statement</button>
+        </div>
+
         <!-- v30.1: Parent-editable child profile — email, calendar, notifications, tabs -->
         <div class="section-block">
           <h3 id="profile-section-title">Child Profile</h3>
@@ -619,6 +631,7 @@
 <div class="admin-drawer" id="admin-drawer">
   <div class="drawer-header">
     <h3 style="margin:0;"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-gear"/></svg>️ Admin Panel</h3>
+    <button class="help-btn" title="Help" onclick="openHelp('admin')" aria-label="Help"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-info"/></svg></button>
     <button class="btn btn-sm btn-ghost" onclick="closeAdmin()">✕ Close</button>
   </div>
 
@@ -830,6 +843,26 @@
   </div>
 </div>
 
+<!-- ═══════════════════════ HELP DRAWER (v31.2) ═══════════════════════ -->
+<div class="history-drawer help-drawer" id="help-drawer">
+  <div class="drawer-header">
+    <h3 id="help-drawer-title" style="margin:0;"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-info"/></svg> Help</h3>
+    <button class="btn btn-sm btn-ghost" onclick="closeHelp()">✕ Close</button>
+  </div>
+  <div id="help-drawer-body" class="help-body"></div>
+</div>
+
+<!-- ═══════════════════════ QUICK-APPROVE SHEET (v31.2) ═══════════════════════ -->
+<div class="quick-approve-sheet" id="quick-approve-sheet" onclick="if(event.target===this) closeQuickApprove()">
+  <div class="qa-inner">
+    <div class="qa-header">
+      <h3 style="margin:0;"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-lightning"/></svg> Quick Approve</h3>
+      <button class="btn btn-sm btn-ghost" onclick="closeQuickApprove()">✕</button>
+    </div>
+    <div id="quick-approve-list"></div>
+  </div>
+</div>
+
 <!-- ═══════════════════════ PWA INSTALL BANNER ═══════════════════════ -->
 <div id="install-banner" class="hidden">
   <span style="font-size:1.4rem;"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-bank"/></svg></span>
@@ -848,6 +881,8 @@
 <!-- ═══════════════════════ SCRIPTS ═══════════════════════ -->
 <!-- Chart.js — vendored locally for offline-from-first-load PWA -->
 <script src="vendor/chart.umd.min.js"></script>
+<!-- jsPDF — v31.2, vendored. If missing the PDF button shows a helpful error toast. -->
+<script src="vendor/jspdf.umd.min.js" onerror="window.__jspdf_failed=true"></script>
 <!-- App logic -->
 <script src="app.js"></script>
 

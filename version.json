@@ -1,5 +1,5 @@
 {
-  "version": "31.1",
+  "version": "31.2",
   "released": "2026-04-14",
-  "notes": "Fix: child-switch bar hidden from children on login • Children can now change their own avatar from the Money tab (self-scope only, no admin PIN required)"
+  "notes": "Goal-aware split default • Weekly chore streak banner • Parent 'this week at a glance' • Goal-hit badges in ledger • In-app help drawer • Long-press badge to quick-approve • Monthly PDF statements"
 }
