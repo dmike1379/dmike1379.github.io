@@ -814,3 +814,24 @@ h3 .icon,label .icon,.field-label .icon{margin-right:4px;opacity:.85}
 .qa-btns{display:flex;gap:6px;flex-shrink:0}
 .qa-btns .btn{width:42px;padding:8px 0;margin:0}
 .qa-btns .btn .icon{margin:0}
+
+/* ── v31.3 ADDITIONS ─────────────────────────────────────────────── */
+/* Version badges on splash + login */
+.splash-version{
+  position:absolute;bottom:20px;left:0;right:0;
+  text-align:center;
+  font-family:var(--mono);font-size:.68rem;
+  color:var(--muted);opacity:.6;letter-spacing:.5px;
+}
+.login-version{
+  text-align:center;
+  font-family:var(--mono);font-size:.68rem;
+  color:var(--muted);opacity:.55;letter-spacing:.5px;
+  margin-top:10px;
+}
+/* Admin user row — stacked info + stats subline */
+.user-row-info{display:flex;flex-direction:column;gap:2px}
+.user-row-substats{
+  font-size:.64rem;color:var(--muted);font-weight:500;
+  line-height:1.4;
+}

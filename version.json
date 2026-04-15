@@ -1,5 +1,5 @@
 {
-  "version": "31.2",
+  "version": "31.3",
   "released": "2026-04-14",
-  "notes": "Goal-aware split default • Weekly chore streak banner • Parent 'this week at a glance' • Goal-hit badges in ledger • In-app help drawer • Long-press badge to quick-approve • Monthly PDF statements"
+  "notes": "Version badge on splash + login screens • Last-login timestamp + login counter on admin user rows • PDF statement formatting: clean dates, consolidated chore rows with chk/sav split subline, signed amounts (-$0.25), boxed monthly summary stats, row dividers"
 }

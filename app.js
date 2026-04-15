@@ -58,7 +58,7 @@ const CFG_IMG_LOGO   = "images/logo.png";
 const CFG_IMG_ICON   = "images/icon.png";
 
 // ── Version ──
-const APP_VERSION = "31.2";
+const APP_VERSION = "31.3";
 
 // ╔═══════════════════════════════════════════════════════════════════╗
 // ║         END OF CONFIGURATION — DO NOT EDIT BELOW THIS LINE       ║
@@ -246,7 +246,8 @@ const DEFAULT_CONFIG = {
   timezone:       CFG_TIMEZONE,
   adminPin:       CFG_ADMIN_PIN,
   emails:         {},
-  avatars:        {}
+  avatars:        {},
+  loginStats:     {}
 };
 
 // ════════════════════════════════════════════════════════════════════
@@ -478,6 +479,7 @@ async function loadFromCloud(){
       }
       if(!state.config.emails) state.config.emails={};
       if(!state.config.avatars) state.config.avatars={};
+      if(!state.config.loginStats) state.config.loginStats={};
       migrateIfNeeded();
       pendingTransactions=[];
       applyBranding();
@@ -710,6 +712,14 @@ function attemptLogin(){
 // Shared landing logic used by both attemptLogin and auto-login restore
 function enterApp(user){
   currentUser=user;
+  // v31.3: record login stats (count + last seen). Syncs via cloud like other config.
+  if(!state.config.loginStats) state.config.loginStats = {};
+  const stats = state.config.loginStats[user] || {count:0, lastAt:null};
+  stats.count = (parseInt(stats.count)||0) + 1;
+  stats.lastAt = new Date().toISOString();
+  state.config.loginStats[user] = stats;
+  // Sync in the background — non-blocking, we don't want to delay the UI
+  setTimeout(()=>{ try { syncToCloud("Login"); } catch(e){} }, 500);
   currentRole=state.roles[user]||"child";
   document.getElementById("login-screen").classList.add("hidden");
   updateLogoutButtonLabel();
@@ -2701,12 +2711,20 @@ function renderAdminUsers(){
   if(!el) return;
   el.innerHTML=state.users.map(u=>{
     const role=state.roles[u]||"child";
+    const stats=(state.config.loginStats && state.config.loginStats[u]) || null;
+    const lastSeen = stats && stats.lastAt
+      ? new Date(stats.lastAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) + " " + new Date(stats.lastAt).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})
+      : "never";
+    const count = stats ? (parseInt(stats.count)||0) : 0;
     return `<div class="user-row">
       <div style="flex:1;display:flex;align-items:center;gap:8px;">
         ${renderAvatar(u,"sm")}
-        <div>
-          <strong>${u}</strong>
-          <span class="user-role-badge ${role==="parent"?"role-parent":"role-child"}" style="margin-left:4px;">${role.charAt(0).toUpperCase()+role.slice(1)}</span>
+        <div class="user-row-info">
+          <div>
+            <strong>${u}</strong>
+            <span class="user-role-badge ${role==="parent"?"role-parent":"role-child"}" style="margin-left:4px;">${role.charAt(0).toUpperCase()+role.slice(1)}</span>
+          </div>
+          <div class="user-row-substats">Last seen: ${lastSeen} · ${count} login${count===1?"":"s"}</div>
         </div>
       </div>
       <button class="btn btn-primary btn-sm" onclick="openUserEdit('${u}')"><svg class='icon' aria-hidden='true'><use href='vendor/phosphor-sprite.svg#ph-pencil'/></svg> Edit</button>
@@ -3521,116 +3539,223 @@ function generateMonthlyStatementPDF(){
 
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthEnd   = new Date(now.getFullYear(), now.getMonth()+1, 0);
+  const monthEnd   = new Date(now.getFullYear(), now.getMonth()+1, 0, 23, 59, 59);
   const monthLabel = monthStart.toLocaleString("default",{month:"long",year:"numeric"});
   const inMonth = d => {
     const dt = new Date(d);
     return !isNaN(dt) && dt>=monthStart && dt<=monthEnd;
   };
-  const rows = hist.filter(h => inMonth(h.date));
-  const totalIn  = rows.filter(r=>r.amt>0).reduce((s,r)=>s+r.amt,0);
-  const totalOut = rows.filter(r=>r.amt<0).reduce((s,r)=>s+r.amt,0);
+
+  // Helpers -----------------------------------------------------
+  const fmtShortDate = d => {
+    const dt = new Date(d);
+    if(isNaN(dt)) return "";
+    return dt.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+  };
+  // Signed currency: "+$5.00" or "-$0.25" (not "$-0.25")
+  const fmtSignedAmt = n => {
+    const v = parseFloat(n) || 0;
+    const abs = Math.abs(v);
+    return (v>=0 ? "+" : "-") + fmt(abs);
+  };
+  // Strip (Chk)/(Sav) suffix for grouping
+  const baseNote = s => (s||"").replace(/\s*\((chk|sav)\)\s*$/i,"").trim();
+
+  // Consolidate chk+sav split rows into single logical entries ----
+  // Key: date + baseNote + user. Multiple physical rows → one display row
+  // with a split subline showing "-> $x chk + $y sav" (if both present).
+  const rawRows = hist.filter(h => inMonth(h.date));
+  const groups = new Map();  // key → {date, user, note, amtChk, amtSav, amtOther, rawCount}
+  for(const h of rawRows){
+    const key = (h.date||"") + "|" + baseNote(h.note) + "|" + (h.user||"");
+    let g = groups.get(key);
+    if(!g){
+      g = {date:h.date, user:h.user||"", note:baseNote(h.note), amtChk:0, amtSav:0, amtOther:0, rawCount:0};
+      groups.set(key, g);
+    }
+    g.rawCount++;
+    const tail = /(chk|sav)\)\s*$/i.exec(h.note||"");
+    const amt  = parseFloat(h.amt)||0;
+    if(tail && tail[1].toLowerCase()==="chk")      g.amtChk   += amt;
+    else if(tail && tail[1].toLowerCase()==="sav") g.amtSav   += amt;
+    else                                           g.amtOther += amt;
+  }
+  const consolidated = [...groups.values()].map(g => ({
+    date: g.date,
+    user: g.user,
+    note: g.note,
+    total: g.amtChk + g.amtSav + g.amtOther,
+    amtChk: g.amtChk,
+    amtSav: g.amtSav,
+    isSplit: (g.amtChk !== 0 && g.amtSav !== 0),
+    isChore: /^chore:/i.test(g.note)
+  }));
+  consolidated.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+  // Totals ------------------------------------------------------
+  const totalIn  = rawRows.filter(r=>r.amt>0).reduce((s,r)=>s+r.amt,0);
+  const totalOut = rawRows.filter(r=>r.amt<0).reduce((s,r)=>s+r.amt,0);
   const net = totalIn + totalOut;
 
-  // Header
-  doc.setFont("helvetica","bold");
-  doc.setFontSize(20);
-  doc.text(state.config.bankName || "Family Bank", 40, 60);
-  doc.setFontSize(11);
-  doc.setFont("helvetica","normal");
-  doc.text(state.config.tagline || "Monthly Statement", 40, 78);
+  // Layout constants --------------------------------------------
+  const PAGE_W = 612, MARGIN = 40, RIGHT = PAGE_W - MARGIN;  // 572
+  const COL_DATE   = MARGIN;        // 40
+  const COL_USER   = MARGIN + 70;   // 110
+  const COL_NOTE   = MARGIN + 140;  // 180
+  const COL_AMT_R  = RIGHT;         // 572 (right-aligned)
 
-  doc.setFontSize(14); doc.setFont("helvetica","bold");
-  doc.text(`Statement for ${child}`, 40, 120);
-  doc.setFontSize(11); doc.setFont("helvetica","normal");
-  doc.text(`Period: ${monthLabel}`, 40, 138);
-  doc.text(`Generated: ${now.toLocaleDateString()}`, 40, 154);
-
-  // Balance summary box
-  doc.setDrawColor(200); doc.setLineWidth(0.5);
-  doc.roundedRect(40, 175, 535, 72, 6, 6);
-  doc.setFont("helvetica","bold"); doc.setFontSize(10);
-  doc.text("CURRENT BALANCES", 52, 195);
-  doc.setFontSize(14);
-  doc.text(`Checking: ${fmt(data.balances.checking||0)}`, 52, 218);
-  doc.text(`Savings:  ${fmt(data.balances.savings||0)}`,  52, 238);
+  // ── HEADER ───────────────────────────────────────────────────
+  doc.setFont("helvetica","bold"); doc.setFontSize(20);
+  doc.text(state.config.bankName || "Family Bank", MARGIN, 60);
   doc.setFont("helvetica","normal"); doc.setFontSize(10);
-  doc.text(`Checking APY: ${data.rates?.checking||0}%`, 320, 218);
-  doc.text(`Savings  APY: ${data.rates?.savings ||0}%`, 320, 238);
+  doc.setTextColor(110);
+  doc.text(state.config.tagline || "Monthly Statement", MARGIN, 76);
+  doc.setTextColor(0);
 
-  // Month activity summary
+  doc.setFont("helvetica","bold"); doc.setFontSize(14);
+  doc.text(`Statement for ${child}`, MARGIN, 110);
+  doc.setFont("helvetica","normal"); doc.setFontSize(10);
+  doc.setTextColor(110);
+  doc.text(`${monthLabel} · Generated ${fmtShortDate(now)}`, MARGIN, 126);
+  doc.setTextColor(0);
+
+  // ── CURRENT BALANCES ─────────────────────────────────────────
+  const balY = 148;
+  doc.setDrawColor(220); doc.setLineWidth(0.5);
+  doc.roundedRect(MARGIN, balY, RIGHT-MARGIN, 64, 6, 6);
+  doc.setFont("helvetica","bold"); doc.setFontSize(8);
+  doc.setTextColor(110);
+  doc.text("CURRENT BALANCES", MARGIN+14, balY+17);
+  doc.setTextColor(0);
+  doc.setFontSize(12);
+  doc.text("Checking", MARGIN+14, balY+38);
+  doc.text("Savings",  MARGIN+14, balY+54);
+  doc.setFont("helvetica","normal");
+  doc.text(fmt(data.balances.checking||0), MARGIN+110, balY+38);
+  doc.text(fmt(data.balances.savings||0),  MARGIN+110, balY+54);
+  doc.setFontSize(9); doc.setTextColor(110);
+  doc.text(`APY ${data.rates?.checking||0}%`, MARGIN+210, balY+38);
+  doc.text(`APY ${data.rates?.savings ||0}%`, MARGIN+210, balY+54);
+  doc.setTextColor(0);
+
+  // ── THIS MONTH (boxed 3-stat row) ────────────────────────────
+  const smY = 230;
+  const smH = 56;
+  const statW = (RIGHT-MARGIN)/3;
+  doc.setDrawColor(220); doc.setLineWidth(0.5);
+  doc.roundedRect(MARGIN, smY, RIGHT-MARGIN, smH, 6, 6);
+  // vertical dividers
+  doc.line(MARGIN+statW,   smY+10, MARGIN+statW,   smY+smH-10);
+  doc.line(MARGIN+statW*2, smY+10, MARGIN+statW*2, smY+smH-10);
+  const stats = [
+    {label:"DEPOSITS",    val:fmtSignedAmt(totalIn),  color:[22,130,80]},
+    {label:"WITHDRAWALS", val:fmtSignedAmt(totalOut), color:[180,50,50]},
+    {label:"NET CHANGE",  val:fmtSignedAmt(net),      color: net>=0 ? [22,130,80] : [180,50,50]}
+  ];
+  stats.forEach((s,i) => {
+    const cx = MARGIN + statW*i + statW/2;
+    doc.setFont("helvetica","bold"); doc.setFontSize(7);
+    doc.setTextColor(110);
+    doc.text(s.label, cx, smY+18, {align:"center"});
+    doc.setFontSize(15);
+    doc.setTextColor(s.color[0], s.color[1], s.color[2]);
+    doc.text(s.val, cx, smY+42, {align:"center"});
+  });
+  doc.setTextColor(0);
+
+  // ── TRANSACTIONS TABLE ───────────────────────────────────────
+  let y = 316;
   doc.setFont("helvetica","bold"); doc.setFontSize(10);
-  doc.text("THIS MONTH", 40, 278);
-  doc.setFont("helvetica","normal"); doc.setFontSize(11);
-  doc.text(`Deposits:    ${fmt(totalIn)}`,  40, 296);
-  doc.text(`Withdrawals: ${fmt(totalOut)}`, 200, 296);
-  doc.text(`Net change:  ${(net>=0?"+":"")+fmt(net)}`, 380, 296);
+  doc.text("TRANSACTIONS", MARGIN, y);
+  doc.setDrawColor(180); doc.setLineWidth(0.8);
+  doc.line(MARGIN, y+4, RIGHT, y+4);
+  y += 20;
 
-  // Transactions table
-  doc.setFont("helvetica","bold"); doc.setFontSize(10);
-  doc.text("TRANSACTIONS", 40, 330);
-  doc.setDrawColor(220); doc.line(40, 335, 575, 335);
-
-  let y = 352;
-  doc.setFont("helvetica","normal"); doc.setFontSize(9);
-  if(!rows.length){
-    doc.setFont("helvetica","italic");
-    doc.text("No transactions this month.", 40, y);
+  if(!consolidated.length){
+    doc.setFont("helvetica","italic"); doc.setFontSize(10); doc.setTextColor(130);
+    doc.text("No transactions this month.", MARGIN, y);
+    doc.setTextColor(0);
   } else {
-    // Table header
-    doc.setFont("helvetica","bold");
-    doc.text("Date",     40,  y);
-    doc.text("By",       115, y);
-    doc.text("Note",     185, y);
-    doc.text("Amount",   530, y, {align:"right"});
-    y += 14;
-    doc.setFont("helvetica","normal");
-    const sorted = [...rows].sort((a,b)=>new Date(b.date)-new Date(a.date));
-    for(const h of sorted){
-      if(y > 740){
-        doc.addPage();
-        y = 60;
+    // Column headers
+    doc.setFont("helvetica","bold"); doc.setFontSize(8);
+    doc.setTextColor(110);
+    doc.text("DATE",   COL_DATE,  y);
+    doc.text("BY",     COL_USER,  y);
+    doc.text("NOTE",   COL_NOTE,  y);
+    doc.text("AMOUNT", COL_AMT_R, y, {align:"right"});
+    doc.setTextColor(0);
+    y += 4;
+    doc.setDrawColor(220); doc.setLineWidth(0.3);
+    doc.line(MARGIN, y, RIGHT, y);
+    y += 12;
+
+    doc.setFont("helvetica","normal"); doc.setFontSize(9);
+    for(const r of consolidated){
+      // How tall is this row? split row = 2 lines (22pt), regular = 1 line (14pt)
+      const rowH = r.isSplit ? 22 : 14;
+      // Page break
+      if(y + rowH > 740){
+        doc.addPage(); y = 60;
       }
-      const dateStr = (h.date||"").split(",")[0] || h.date || "";
-      doc.text(dateStr,           40,  y);
-      doc.text((h.user||"").slice(0,12), 115, y);
-      const note = (h.note||"").slice(0,60);
-      doc.text(note,              185, y);
-      const amt = (h.amt>=0?"+":"") + fmt(h.amt||0);
-      doc.setTextColor(h.amt>=0 ? 16 : 180, h.amt>=0 ? 130 : 50, h.amt>=0 ? 80 : 50);
-      doc.text(amt,               530, y, {align:"right"});
-      doc.setTextColor(0,0,0);
-      y += 14;
+
+      const dateTxt = fmtShortDate(r.date);
+      const userTxt = (r.user||"").slice(0,14);
+      // Note max width: from COL_NOTE to (COL_AMT_R - 70) ≈ 322pt wide
+      const noteMaxChars = 55;
+      const noteTxt = (r.note||"").length > noteMaxChars
+        ? (r.note||"").slice(0,noteMaxChars-1) + "…"
+        : (r.note||"");
+
+      doc.text(dateTxt, COL_DATE, y);
+      doc.text(userTxt, COL_USER, y);
+      doc.text(noteTxt, COL_NOTE, y);
+
+      // Amount: color-coded, right-aligned, sign-before-dollar
+      const amtTxt = fmtSignedAmt(r.total);
+      if(r.total >= 0) doc.setTextColor(22,130,80);
+      else             doc.setTextColor(180,50,50);
+      doc.setFont("helvetica","bold");
+      doc.text(amtTxt, COL_AMT_R, y, {align:"right"});
+      doc.setFont("helvetica","normal"); doc.setTextColor(0);
+
+      // Split subline for consolidated chore rows
+      if(r.isSplit){
+        y += 11;
+        doc.setFontSize(7.5); doc.setTextColor(130);
+        const subTxt = `→ ${fmt(r.amtChk)} checking + ${fmt(r.amtSav)} savings`;
+        doc.text(subTxt, COL_NOTE, y);
+        doc.setFontSize(9); doc.setTextColor(0);
+      }
+      y += 11;
+      // Thin divider
+      doc.setDrawColor(238); doc.setLineWidth(0.3);
+      doc.line(MARGIN, y-5, RIGHT, y-5);
     }
   }
 
-  // Chore summary
-  const choreRows = rows.filter(r => /chore:/i.test(r.note||""));
-  if(choreRows.length){
-    const seen = new Set();
-    const unique = choreRows.filter(h => {
-      const key = (h.date||"") + "|" + (h.note||"").replace(/\(chk\)|\(sav\)/ig,"").trim();
-      if(seen.has(key)) return false;
-      seen.add(key); return true;
-    });
+  // ── CHORES COMPLETED ─────────────────────────────────────────
+  const choreGroups = consolidated.filter(r => r.isChore);
+  if(choreGroups.length){
     if(y > 680){ doc.addPage(); y = 60; }
-    y += 20;
+    y += 18;
     doc.setFont("helvetica","bold"); doc.setFontSize(10);
-    doc.text("CHORES COMPLETED", 40, y);
-    doc.setDrawColor(220); doc.line(40, y+5, 575, y+5);
-    y += 22;
-    doc.setFont("helvetica","normal"); doc.setFontSize(9);
-    doc.text(`${unique.length} chore${unique.length===1?"":"s"} completed this month`, 40, y);
+    doc.text("CHORES COMPLETED", MARGIN, y);
+    doc.setDrawColor(180); doc.setLineWidth(0.8);
+    doc.line(MARGIN, y+4, RIGHT, y+4);
+    y += 20;
+    const totalChorePay = choreGroups.reduce((s,r)=>s+r.total,0);
+    doc.setFont("helvetica","normal"); doc.setFontSize(10);
+    doc.text(`${choreGroups.length} chore${choreGroups.length===1?"":"s"} completed — totaling ${fmtSignedAmt(totalChorePay)}`, MARGIN, y);
   }
 
-  // Footer
+  // ── FOOTER ───────────────────────────────────────────────────
   const pageCount = doc.internal.getNumberOfPages();
   for(let i=1;i<=pageCount;i++){
     doc.setPage(i);
     doc.setFont("helvetica","normal"); doc.setFontSize(8);
-    doc.setTextColor(130);
-    doc.text(`Page ${i} of ${pageCount}`, 575, 770, {align:"right"});
-    doc.text(`${state.config.bankName || "Family Bank"} — ${child} — ${monthLabel}`, 40, 770);
+    doc.setTextColor(140);
+    doc.text(`${state.config.bankName || "Family Bank"} · ${child} · ${monthLabel}`, MARGIN, 770);
+    doc.text(`Page ${i} of ${pageCount} · v${APP_VERSION}`, RIGHT, 770, {align:"right"});
     doc.setTextColor(0);
   }
 
@@ -3639,6 +3764,15 @@ function generateMonthlyStatementPDF(){
   showToast("Statement downloaded.","success");
 }
 
+
+// v31.3: stamp version on splash + login (runs before loadFromCloud)
+(function stampVersion(){
+  const tag = "v" + APP_VERSION;
+  const sv = document.getElementById("splash-version");
+  const lv = document.getElementById("login-version");
+  if(sv) sv.textContent = tag;
+  if(lv) lv.textContent = tag;
+})();
 
 populateMonthlyDays();
 populateAllowanceMonthlyDays();
