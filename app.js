@@ -1670,8 +1670,8 @@ function editChore(choreId){
   document.getElementById("chore-skip-first-week").checked = !!chore.skipFirstWeek;
   updateSplitLabel(); populateStreakForm(chore);
   setChoreFormMode("edit",chore.name);
-  switchTab("parent","chores");
-  document.getElementById("chore-form-title").scrollIntoView({behavior:"smooth",block:"start"});
+  // v32.1: Reuse the chore creator bottom sheet for editing (was: scroll to inline form)
+  openSheet("sheet-chore-creator");
   showToast('Editing "'+chore.name+'" — make changes and tap Save.',"info",4000);
 }
 
@@ -2291,7 +2291,8 @@ function editLoan(loanId){
   const newPayment=calcMonthlyPayment(loan.balance,loan.rate,loan.termMonths);
   document.getElementById("loan-payment-preview").textContent=fmt(newPayment)+"/mo";
   setLoanFormMode("edit",loan.name);
-  document.getElementById("loan-form-title").scrollIntoView({behavior:"smooth",block:"start"});
+  // v32.1: Reuse the loan creator bottom sheet for editing
+  openSheet("sheet-loan-creator");
   showToast('Editing "'+loan.name+'" — principal locked; adjust terms and save.',"info",4000);
 }
 
@@ -2789,31 +2790,9 @@ function adminRemoveUser(u){
   });
 }
 
-function addUser(){
-  const name=document.getElementById("new-user-name").value.trim();
-  const role=document.getElementById("new-user-role").value;
-  const pin=document.getElementById("new-user-pin").value;
-  const email=document.getElementById("new-user-email").value.trim();
-  const msgEl=document.getElementById("new-user-msg"); msgEl.className="field-msg";
-  if(!name){ msgEl.className="field-msg error"; msgEl.textContent="Name is required."; return; }
-  if(state.users.includes(name)){ msgEl.className="field-msg error"; msgEl.textContent='"'+name+'" already exists.'; return; }
-  if(!pin||pin.length!==4||!/^\d{4}$/.test(pin)){ msgEl.className="field-msg error"; msgEl.textContent="PIN must be exactly 4 digits."; return; }
-  state.users.push(name);
-  state.pins[name]=pin;
-  state.roles[name]=role;
-  if(!state.config.emails)    state.config.emails={};
-  if(email) state.config.emails[name]=email;
-  if(!state.config.notify)    state.config.notify={};
-  state.config.notify[name]={email:true,calendar:false};
-  if(!state.config.calendars) state.config.calendars={};
-  if(role==="child") getChildData(name);
-  renderAdminUsers();
-  syncToCloud("User Added");
-  showToast('"'+name+'" added!',"success");
-  document.getElementById("new-user-name").value="";
-  document.getElementById("new-user-pin").value="";
-  document.getElementById("new-user-email").value="";
-}
+// v32.1: addUser is now unified with saveUserEdit via the sheet-user-edit sheet.
+// Preserved as a stub in case legacy callers exist.
+function addUser(){ openUserSheetForAdd(); }
 
 function saveAdminSettings(){
   state.config.bankName       = document.getElementById("admin-bank-name").value.trim()    || CFG_BANK_NAME;
@@ -2847,14 +2826,64 @@ function changeAdminPin(){
 }
 
 // ── User edit form ─────────────────────────────────────────────────
+// v32.1: Add and Edit share a single bottom sheet (#sheet-user-edit).
+// editingUserName === null means we're in "add new user" mode.
 let editingUserName = null;
+
+/** v32.1: Open the unified user sheet in ADD mode (blank form). */
+function openUserSheetForAdd(){
+  editingUserName=null;
+  // Title + button label for Add mode
+  const title = document.getElementById("admin-edit-title");
+  if(title) title.innerHTML = "<svg class='icon' aria-hidden='true'><use href='vendor/phosphor-sprite.svg#ph-user-plus'/></svg> Add New User";
+  const saveBtn = document.getElementById("user-edit-save-btn");
+  if(saveBtn) saveBtn.innerHTML = "<svg class='icon' aria-hidden='true'><use href='vendor/phosphor-sprite.svg#ph-plus-circle'/></svg> Add User";
+  const pinLabel = document.getElementById("edit-user-pin-label");
+  if(pinLabel) pinLabel.textContent = "PIN (4 digits)";
+  // Clear form
+  const nameEl = document.getElementById("edit-user-name");
+  if(nameEl){ nameEl.value=""; nameEl.readOnly=false; nameEl.style.background=""; nameEl.style.color=""; nameEl.placeholder="e.g. Emma"; }
+  document.getElementById("edit-user-role").value = "child";
+  document.getElementById("edit-user-pin").value = "";
+  document.getElementById("edit-user-email").value = "";
+  document.getElementById("edit-cal-id") && (document.getElementById("edit-cal-id").value = "");
+  ["edit-notify-email","edit-notify-cal","edit-chore-rewards","edit-celebration-sound"].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.checked = (id==="edit-notify-email" || id==="edit-chore-rewards" || id==="edit-celebration-sound");
+  });
+  document.getElementById("new-user-msg").className="field-msg";
+  document.getElementById("new-user-msg").textContent="";
+  // Default to child — show child fields, hide parent assignment + avatar (until created)
+  document.getElementById("edit-child-fields").style.display = "";
+  document.getElementById("edit-parent-assignment").style.display = "none";
+  document.getElementById("edit-tab-visibility").style.display = "";
+  const avatarWrap = document.getElementById("edit-avatar-wrap");
+  if(avatarWrap) avatarWrap.style.display = "none"; // avatar picker needs an existing user
+  toggleEditCalField();
+  openSheet("sheet-user-edit");
+}
+
+/** Role switcher (during Add). During Edit, role is locked to current. */
+function onUserEditRoleChange(){
+  const role = document.getElementById("edit-user-role").value;
+  document.getElementById("edit-child-fields").style.display      = role==="child"  ? "" : "none";
+  document.getElementById("edit-parent-assignment").style.display = role==="parent" ? "" : "none";
+  document.getElementById("edit-tab-visibility").style.display    = role==="child"  ? "" : "none";
+}
 
 function openUserEdit(username){
   editingUserName=username;
   const role=state.roles[username]||"child";
   const cfg=state.config;
-  document.getElementById("admin-edit-title").innerHTML="<svg class='icon' aria-hidden='true'><use href='vendor/phosphor-sprite.svg#ph-pencil'/></svg> Edit "+username;
-  document.getElementById("edit-user-name").value=username;
+  // Title + button label for Edit mode
+  const title = document.getElementById("admin-edit-title");
+  if(title) title.innerHTML = "<svg class='icon' aria-hidden='true'><use href='vendor/phosphor-sprite.svg#ph-pencil'/></svg> Edit "+username;
+  const saveBtn = document.getElementById("user-edit-save-btn");
+  if(saveBtn) saveBtn.innerHTML = "<svg class='icon' aria-hidden='true'><use href='vendor/phosphor-sprite.svg#ph-floppy-disk'/></svg> Save Changes";
+  const pinLabel = document.getElementById("edit-user-pin-label");
+  if(pinLabel) pinLabel.textContent = "New PIN (leave blank to keep current)";
+  // Lock name field in edit mode
+  const nameEl = document.getElementById("edit-user-name");
+  if(nameEl){ nameEl.value=username; nameEl.readOnly=true; nameEl.style.background="#f8fafc"; nameEl.style.color="var(--muted)"; }
   document.getElementById("edit-user-role").value=role;
   document.getElementById("edit-user-pin").value="";
   document.getElementById("edit-user-email").value=(cfg.emails&&cfg.emails[username])||"";
@@ -2862,16 +2891,13 @@ function openUserEdit(username){
   document.getElementById("edit-notify-email").checked   = notify.email   !== false;
   document.getElementById("edit-notify-cal").checked     = !!notify.calendar;
   document.getElementById("edit-chore-rewards").checked  = notify.choreRewards !== false;
-  // v32: per-user celebration sound (default true)
   const ud = (state.usersData && state.usersData[username]) || {};
   const csEdit = document.getElementById("edit-celebration-sound");
   if(csEdit) csEdit.checked = (ud.celebrationSound !== false);
   document.getElementById("edit-cal-id").value=(cfg.calendars&&cfg.calendars[username])||"";
   toggleEditCalField();
   // Show role-specific sections
-  document.getElementById("edit-child-fields").style.display      = role==="child"  ? "" : "none";
-  document.getElementById("edit-parent-assignment").style.display = role==="parent" ? "" : "none";
-  document.getElementById("edit-tab-visibility").style.display    = role==="child"  ? "" : "none";
+  onUserEditRoleChange();
   // Populate picker displays
   if(role==="parent"){
     const assigned=(cfg.parentChildren && cfg.parentChildren[username]) || [];
@@ -2889,10 +2915,11 @@ function openUserEdit(username){
     window._pickerSelections.tabs=[...selected];
     updatePickerDisplay("tabs", selected, PICKER_CONFIG.tabs);
   }
-  document.getElementById("admin-user-edit-wrap").classList.remove("hidden");
-  document.getElementById("admin-user-edit-wrap").scrollIntoView({behavior:"smooth",block:"start"});
-  // v31: render avatar picker
+  // Show avatar picker (only available for existing users)
+  const avatarWrap = document.getElementById("edit-avatar-wrap");
+  if(avatarWrap) avatarWrap.style.display = "";
   renderAvatarPicker(username);
+  openSheet("sheet-user-edit");
 }
 
 // v31: avatar picker (emoji grid + photo upload)
@@ -3037,11 +3064,66 @@ function toggleEditCalField(){
 
 function cancelUserEdit(){
   editingUserName=null;
-  document.getElementById("admin-user-edit-wrap").classList.add("hidden");
+  closeSheet("sheet-user-edit");
 }
 
 function saveUserEdit(){
-  if(!editingUserName) return;
+  const msgEl = document.getElementById("new-user-msg");
+  if(msgEl) msgEl.className = "field-msg";
+
+  // v32.1: If editingUserName is null we're in ADD mode — create the user
+  if(!editingUserName){
+    const name = document.getElementById("edit-user-name").value.trim();
+    const role = document.getElementById("edit-user-role").value;
+    const pin  = document.getElementById("edit-user-pin").value;
+    const email= document.getElementById("edit-user-email").value.trim();
+    if(!name){ if(msgEl){msgEl.className="field-msg error"; msgEl.textContent="Name is required.";} return; }
+    if(state.users.includes(name)){ if(msgEl){msgEl.className="field-msg error"; msgEl.textContent='"'+name+'" already exists.';} return; }
+    if(!pin||pin.length!==4||!/^\d{4}$/.test(pin)){ if(msgEl){msgEl.className="field-msg error"; msgEl.textContent="PIN must be exactly 4 digits.";} return; }
+    state.users.push(name);
+    state.pins[name] = pin;
+    state.roles[name] = role;
+    if(!state.config.emails) state.config.emails = {};
+    if(email) state.config.emails[name] = email;
+    if(!state.config.notify) state.config.notify = {};
+    state.config.notify[name] = {
+      email:        document.getElementById("edit-notify-email").checked,
+      calendar:     document.getElementById("edit-notify-cal").checked,
+      choreRewards: document.getElementById("edit-chore-rewards").checked
+    };
+    if(!state.config.calendars) state.config.calendars = {};
+    const calId = document.getElementById("edit-cal-id")?.value.trim();
+    if(calId) state.config.calendars[name] = calId;
+    // v32: per-user celebration sound (default true)
+    if(!state.usersData) state.usersData = {};
+    state.usersData[name] = state.usersData[name] || {};
+    const csEdit = document.getElementById("edit-celebration-sound");
+    state.usersData[name].celebrationSound = csEdit ? !!csEdit.checked : true;
+    // Parent: assigned children
+    if(role==="parent"){
+      if(!state.config.parentChildren) state.config.parentChildren = {};
+      state.config.parentChildren[name] = getPickerSelections("children");
+    }
+    // Child: visible tabs + seed data
+    if(role==="child"){
+      if(!state.config.tabs) state.config.tabs = {};
+      const sel = getPickerSelections("tabs");
+      // Default: money+chores ON if user didn't pick any; otherwise their selection
+      state.config.tabs[name] = sel.length ? {
+        money:  sel.indexOf("money")!==-1,
+        chores: sel.indexOf("chores")!==-1,
+        loans:  sel.indexOf("loans")!==-1
+      } : {money:true,chores:true,loans:false};
+      getChildData(name); // seed balances/chores
+    }
+    renderAdminUsers();
+    syncToCloud("User Added");
+    showToast('"'+name+'" added!',"success");
+    closeSheet("sheet-user-edit");
+    return;
+  }
+
+  // EDIT mode — existing flow
   const u=editingUserName;
   const role=document.getElementById("edit-user-role").value;
   const pin=document.getElementById("edit-user-pin").value;
@@ -3085,8 +3167,9 @@ function saveUserEdit(){
   }
   syncToCloud("User Edited");
   showToast(u+" updated.","success");
-  cancelUserEdit();
+  closeSheet("sheet-user-edit");
   renderAdminUsers();
+  editingUserName=null;
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -3573,244 +3656,6 @@ function quickDenyOne(choreId){
 }
 
 // ── PDF monthly statement ────────────────────────────────────────────
-function generateMonthlyStatementPDF(){
-  if(currentRole!=="parent" || !activeChild){ showToast("Pick a child first.","error"); return; }
-  if(typeof window.jspdf === "undefined" || !window.jspdf.jsPDF){
-    showToast("PDF library missing — download vendor/jspdf.umd.min.js (see vendor/README.txt)","error",5000);
-    return;
-  }
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({unit:"pt", format:"letter"});
-  const child = activeChild;
-  const data  = getChildData(child);
-  const hist  = (state.history && state.history[child]) || [];
-
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthEnd   = new Date(now.getFullYear(), now.getMonth()+1, 0, 23, 59, 59);
-  const monthLabel = monthStart.toLocaleString("default",{month:"long",year:"numeric"});
-  const inMonth = d => {
-    const dt = new Date(d);
-    return !isNaN(dt) && dt>=monthStart && dt<=monthEnd;
-  };
-
-  // Helpers -----------------------------------------------------
-  const fmtShortDate = d => {
-    const dt = new Date(d);
-    if(isNaN(dt)) return "";
-    return dt.toLocaleDateString("en-US",{month:"short",day:"numeric"});
-  };
-  // Signed currency: "+$5.00" or "-$0.25" (not "$-0.25")
-  const fmtSignedAmt = n => {
-    const v = parseFloat(n) || 0;
-    const abs = Math.abs(v);
-    return (v>=0 ? "+" : "-") + fmt(abs);
-  };
-  // Strip (Chk)/(Sav) suffix for grouping
-  const baseNote = s => (s||"").replace(/\s*\((chk|sav)\)\s*$/i,"").trim();
-
-  // Consolidate chk+sav split rows into single logical entries ----
-  // Key: date + baseNote + user. Multiple physical rows → one display row
-  // with a split subline showing "-> $x chk + $y sav" (if both present).
-  const rawRows = hist.filter(h => inMonth(h.date));
-  const groups = new Map();  // key → {date, user, note, amtChk, amtSav, amtOther, rawCount}
-  for(const h of rawRows){
-    const key = (h.date||"") + "|" + baseNote(h.note) + "|" + (h.user||"");
-    let g = groups.get(key);
-    if(!g){
-      g = {date:h.date, user:h.user||"", note:baseNote(h.note), amtChk:0, amtSav:0, amtOther:0, rawCount:0};
-      groups.set(key, g);
-    }
-    g.rawCount++;
-    const tail = /(chk|sav)\)\s*$/i.exec(h.note||"");
-    const amt  = parseFloat(h.amt)||0;
-    if(tail && tail[1].toLowerCase()==="chk")      g.amtChk   += amt;
-    else if(tail && tail[1].toLowerCase()==="sav") g.amtSav   += amt;
-    else                                           g.amtOther += amt;
-  }
-  const consolidated = [...groups.values()].map(g => ({
-    date: g.date,
-    user: g.user,
-    note: g.note,
-    total: g.amtChk + g.amtSav + g.amtOther,
-    amtChk: g.amtChk,
-    amtSav: g.amtSav,
-    isSplit: (g.amtChk !== 0 && g.amtSav !== 0),
-    isChore: /^chore:/i.test(g.note)
-  }));
-  consolidated.sort((a,b) => new Date(b.date) - new Date(a.date));
-
-  // Totals ------------------------------------------------------
-  const totalIn  = rawRows.filter(r=>r.amt>0).reduce((s,r)=>s+r.amt,0);
-  const totalOut = rawRows.filter(r=>r.amt<0).reduce((s,r)=>s+r.amt,0);
-  const net = totalIn + totalOut;
-
-  // Layout constants --------------------------------------------
-  const PAGE_W = 612, MARGIN = 40, RIGHT = PAGE_W - MARGIN;  // 572
-  const COL_DATE   = MARGIN;        // 40
-  const COL_USER   = MARGIN + 70;   // 110
-  const COL_NOTE   = MARGIN + 140;  // 180
-  const COL_AMT_R  = RIGHT;         // 572 (right-aligned)
-
-  // ── HEADER ───────────────────────────────────────────────────
-  doc.setFont("helvetica","bold"); doc.setFontSize(20);
-  doc.text(state.config.bankName || "Family Bank", MARGIN, 60);
-  doc.setFont("helvetica","normal"); doc.setFontSize(10);
-  doc.setTextColor(110);
-  doc.text(state.config.tagline || "Monthly Statement", MARGIN, 76);
-  doc.setTextColor(0);
-
-  doc.setFont("helvetica","bold"); doc.setFontSize(14);
-  doc.text(`Statement for ${child}`, MARGIN, 110);
-  doc.setFont("helvetica","normal"); doc.setFontSize(10);
-  doc.setTextColor(110);
-  doc.text(`${monthLabel} · Generated ${fmtShortDate(now)}`, MARGIN, 126);
-  doc.setTextColor(0);
-
-  // ── CURRENT BALANCES ─────────────────────────────────────────
-  const balY = 148;
-  doc.setDrawColor(220); doc.setLineWidth(0.5);
-  doc.roundedRect(MARGIN, balY, RIGHT-MARGIN, 64, 6, 6);
-  doc.setFont("helvetica","bold"); doc.setFontSize(8);
-  doc.setTextColor(110);
-  doc.text("CURRENT BALANCES", MARGIN+14, balY+17);
-  doc.setTextColor(0);
-  doc.setFontSize(12);
-  doc.text("Checking", MARGIN+14, balY+38);
-  doc.text("Savings",  MARGIN+14, balY+54);
-  doc.setFont("helvetica","normal");
-  doc.text(fmt(data.balances.checking||0), MARGIN+110, balY+38);
-  doc.text(fmt(data.balances.savings||0),  MARGIN+110, balY+54);
-  doc.setFontSize(9); doc.setTextColor(110);
-  doc.text(`APY ${data.rates?.checking||0}%`, MARGIN+210, balY+38);
-  doc.text(`APY ${data.rates?.savings ||0}%`, MARGIN+210, balY+54);
-  doc.setTextColor(0);
-
-  // ── THIS MONTH (boxed 3-stat row) ────────────────────────────
-  const smY = 230;
-  const smH = 56;
-  const statW = (RIGHT-MARGIN)/3;
-  doc.setDrawColor(220); doc.setLineWidth(0.5);
-  doc.roundedRect(MARGIN, smY, RIGHT-MARGIN, smH, 6, 6);
-  // vertical dividers
-  doc.line(MARGIN+statW,   smY+10, MARGIN+statW,   smY+smH-10);
-  doc.line(MARGIN+statW*2, smY+10, MARGIN+statW*2, smY+smH-10);
-  const stats = [
-    {label:"DEPOSITS",    val:fmtSignedAmt(totalIn),  color:[22,130,80]},
-    {label:"WITHDRAWALS", val:fmtSignedAmt(totalOut), color:[180,50,50]},
-    {label:"NET CHANGE",  val:fmtSignedAmt(net),      color: net>=0 ? [22,130,80] : [180,50,50]}
-  ];
-  stats.forEach((s,i) => {
-    const cx = MARGIN + statW*i + statW/2;
-    doc.setFont("helvetica","bold"); doc.setFontSize(7);
-    doc.setTextColor(110);
-    doc.text(s.label, cx, smY+18, {align:"center"});
-    doc.setFontSize(15);
-    doc.setTextColor(s.color[0], s.color[1], s.color[2]);
-    doc.text(s.val, cx, smY+42, {align:"center"});
-  });
-  doc.setTextColor(0);
-
-  // ── TRANSACTIONS TABLE ───────────────────────────────────────
-  let y = 316;
-  doc.setFont("helvetica","bold"); doc.setFontSize(10);
-  doc.text("TRANSACTIONS", MARGIN, y);
-  doc.setDrawColor(180); doc.setLineWidth(0.8);
-  doc.line(MARGIN, y+4, RIGHT, y+4);
-  y += 20;
-
-  if(!consolidated.length){
-    doc.setFont("helvetica","italic"); doc.setFontSize(10); doc.setTextColor(130);
-    doc.text("No transactions this month.", MARGIN, y);
-    doc.setTextColor(0);
-  } else {
-    // Column headers
-    doc.setFont("helvetica","bold"); doc.setFontSize(8);
-    doc.setTextColor(110);
-    doc.text("DATE",   COL_DATE,  y);
-    doc.text("BY",     COL_USER,  y);
-    doc.text("NOTE",   COL_NOTE,  y);
-    doc.text("AMOUNT", COL_AMT_R, y, {align:"right"});
-    doc.setTextColor(0);
-    y += 4;
-    doc.setDrawColor(220); doc.setLineWidth(0.3);
-    doc.line(MARGIN, y, RIGHT, y);
-    y += 12;
-
-    doc.setFont("helvetica","normal"); doc.setFontSize(9);
-    for(const r of consolidated){
-      // How tall is this row? split row = 2 lines (22pt), regular = 1 line (14pt)
-      const rowH = r.isSplit ? 22 : 14;
-      // Page break
-      if(y + rowH > 740){
-        doc.addPage(); y = 60;
-      }
-
-      const dateTxt = fmtShortDate(r.date);
-      const userTxt = (r.user||"").slice(0,14);
-      // Note max width: from COL_NOTE to (COL_AMT_R - 70) ≈ 322pt wide
-      const noteMaxChars = 55;
-      const noteTxt = (r.note||"").length > noteMaxChars
-        ? (r.note||"").slice(0,noteMaxChars-1) + "…"
-        : (r.note||"");
-
-      doc.text(dateTxt, COL_DATE, y);
-      doc.text(userTxt, COL_USER, y);
-      doc.text(noteTxt, COL_NOTE, y);
-
-      // Amount: color-coded, right-aligned, sign-before-dollar
-      const amtTxt = fmtSignedAmt(r.total);
-      if(r.total >= 0) doc.setTextColor(22,130,80);
-      else             doc.setTextColor(180,50,50);
-      doc.setFont("helvetica","bold");
-      doc.text(amtTxt, COL_AMT_R, y, {align:"right"});
-      doc.setFont("helvetica","normal"); doc.setTextColor(0);
-
-      // Split subline for consolidated chore rows
-      if(r.isSplit){
-        y += 11;
-        doc.setFontSize(7.5); doc.setTextColor(130);
-        const subTxt = `→ ${fmt(r.amtChk)} checking + ${fmt(r.amtSav)} savings`;
-        doc.text(subTxt, COL_NOTE, y);
-        doc.setFontSize(9); doc.setTextColor(0);
-      }
-      y += 11;
-      // Thin divider
-      doc.setDrawColor(238); doc.setLineWidth(0.3);
-      doc.line(MARGIN, y-5, RIGHT, y-5);
-    }
-  }
-
-  // ── CHORES COMPLETED ─────────────────────────────────────────
-  const choreGroups = consolidated.filter(r => r.isChore);
-  if(choreGroups.length){
-    if(y > 680){ doc.addPage(); y = 60; }
-    y += 18;
-    doc.setFont("helvetica","bold"); doc.setFontSize(10);
-    doc.text("CHORES COMPLETED", MARGIN, y);
-    doc.setDrawColor(180); doc.setLineWidth(0.8);
-    doc.line(MARGIN, y+4, RIGHT, y+4);
-    y += 20;
-    const totalChorePay = choreGroups.reduce((s,r)=>s+r.total,0);
-    doc.setFont("helvetica","normal"); doc.setFontSize(10);
-    doc.text(`${choreGroups.length} chore${choreGroups.length===1?"":"s"} completed — totaling ${fmtSignedAmt(totalChorePay)}`, MARGIN, y);
-  }
-
-  // ── FOOTER ───────────────────────────────────────────────────
-  const pageCount = doc.internal.getNumberOfPages();
-  for(let i=1;i<=pageCount;i++){
-    doc.setPage(i);
-    doc.setFont("helvetica","normal"); doc.setFontSize(8);
-    doc.setTextColor(140);
-    doc.text(`${state.config.bankName || "Family Bank"} · ${child} · ${monthLabel}`, MARGIN, 770);
-    doc.text(`Page ${i} of ${pageCount} · v${APP_VERSION}`, RIGHT, 770, {align:"right"});
-    doc.setTextColor(0);
-  }
-
-  const fname = `${child}_statement_${monthStart.getFullYear()}-${String(monthStart.getMonth()+1).padStart(2,"0")}.pdf`;
-  doc.save(fname);
-  showToast("Statement downloaded.","success");
-}
 
 
 // v31.3: stamp version on splash + login (runs before loadFromCloud)
@@ -3911,4 +3756,107 @@ function openChildProfileSheet(){
     closeAllSheets();
     return origSelectChild(name);
   };
+})();
+
+// ════════════════════════════════════════════════════════════════════
+// 21. v32.1 — SWIPE NAVIGATION BETWEEN TABS
+// ════════════════════════════════════════════════════════════════════
+/**
+ * Horizontal swipe on the active tab panel advances to the adjacent tab.
+ * Design:
+ *   - Threshold: 60px horizontal distance
+ *   - Dominance: dx must be at least 1.5x |dy| (so vertical scrolls pass through)
+ *   - Guards: ignore if swipe starts inside a bottom sheet, drawer, picker
+ *     overlay, range slider, day-toggle row, chart canvas, or any input
+ *   - Panel container: #child-panel for child view, #parent-panel for parent
+ *   - Direction: left-swipe → next tab, right-swipe → previous tab
+ */
+(function installSwipeNavigation(){
+  const TAB_ORDER = {
+    child:  ["money","chores","loans"],
+    parent: ["adjust","chores","settings"]
+  };
+  const THRESHOLD = 60;      // px
+  const DOMINANCE = 1.5;     // dx/|dy| ratio minimum
+  const MAX_MS    = 600;     // swipe must complete within this
+
+  function getActiveTab(panelKey){
+    const bar = document.getElementById(panelKey+"-tab-bar");
+    if(!bar) return null;
+    const active = bar.querySelector(".tab-btn.active");
+    if(!active) return null;
+    const match = (active.getAttribute("onclick")||"").match(/'([^']+)'\s*\)\s*$/);
+    return match ? match[1] : null;
+  }
+
+  function getVisibleTabs(panelKey){
+    const full = TAB_ORDER[panelKey] || [];
+    // Child panel hides tabs the admin has disabled — read from DOM
+    const bar = document.getElementById(panelKey+"-tab-bar");
+    if(!bar) return full;
+    const btns = Array.from(bar.querySelectorAll(".tab-btn"));
+    const names = btns.map(b=>{
+      const m = (b.getAttribute("onclick")||"").match(/'([^']+)'\s*\)\s*$/);
+      return m ? m[1] : null;
+    }).filter(Boolean);
+    return names.length ? names : full;
+  }
+
+  function shouldIgnore(target){
+    if(!target || !target.closest) return true;
+    // Never intercept swipes inside bottom sheets, drawers, overlays, or modals
+    if(target.closest(".bottom-sheet, .history-drawer, .admin-drawer, .help-drawer, .picker-overlay, .modal-overlay, .quick-approve-sheet")) return true;
+    // Never intercept on interactive controls that use horizontal gestures
+    if(target.closest("input[type=range], .day-toggles, .nw-chart-wrap, .avatar-picker-grid, canvas, select, textarea")) return true;
+    // Let typing in text/number inputs pass through normally (no swipe)
+    if(target.closest("input[type=text], input[type=number], input[type=email], input[type=password], input[type=date], input[type=url], input[type=color]")) return true;
+    return false;
+  }
+
+  function attach(panelKey){
+    const panel = document.getElementById(panelKey+"-panel");
+    if(!panel) return;
+    let startX=0, startY=0, startT=0, active=false;
+
+    panel.addEventListener("touchstart", e=>{
+      if(e.touches.length !== 1){ active=false; return; }
+      if(shouldIgnore(e.target)){ active=false; return; }
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      startT = Date.now();
+      active = true;
+    }, {passive:true});
+
+    panel.addEventListener("touchend", e=>{
+      if(!active) return;
+      active = false;
+      const touch = e.changedTouches[0];
+      if(!touch) return;
+      const dx = touch.clientX - startX;
+      const dy = touch.clientY - startY;
+      const dt = Date.now() - startT;
+      if(dt > MAX_MS) return;
+      if(Math.abs(dx) < THRESHOLD) return;
+      if(Math.abs(dx) < DOMINANCE * Math.abs(dy)) return;
+
+      const tabs = getVisibleTabs(panelKey);
+      const current = getActiveTab(panelKey);
+      if(!tabs.length || !current) return;
+      const idx = tabs.indexOf(current);
+      if(idx < 0) return;
+
+      // dx negative → swiped left → advance to next tab
+      // dx positive → swiped right → go back to previous tab
+      let target = null;
+      if(dx < 0 && idx < tabs.length - 1) target = tabs[idx + 1];
+      if(dx > 0 && idx > 0)               target = tabs[idx - 1];
+      if(target && typeof switchTab === "function"){
+        switchTab(panelKey, target);
+      }
+    }, {passive:true});
+  }
+
+  // Install on both panels once DOM is ready (they exist at script load)
+  attach("child");
+  attach("parent");
 })();
