@@ -1,5 +1,5 @@
 {
-  "version": "32.2",
+  "version": "32.3",
   "released": "2026-04-16",
-  "notes": "v32.2 • Fix Couldn't Connect false error (null-guard branding) • Fix Add/Edit User sheet popping under admin drawer • Fix weekly multi-day chore selection • Chore/Loan sheets auto-close after save • Admin picker buttons above pills • Remove chore-list streak pills (streak now shown inline within each chore card)"
+  "notes": "v32.3 • Exit-without-saving warnings on sheets • Fix 50/50 default for new chores • Child loan payment: Select Loan moved to top • Admin: Add New User above user list • Required field asterisks throughout • Parent-owned children (add/share/remove from Settings, max 6, UID for parent-created kids, PIN uniqueness per display name)"
 }

@@ -319,6 +319,16 @@
           <span class="st-chevron">›</span>
         </button>
 
+        <!-- v32.3: My Children — parent-owned children management -->
+        <div class="reports-divider" style="margin-top:22px;">My Children</div>
+        <div class="info-box">Children you've added or that have been shared with you. Up to 6 per parent.</div>
+        <div id="my-children-list"></div>
+        <button class="sheet-trigger" onclick="openSheet('sheet-add-child')">
+          <span class="icon"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-user-plus"/></svg></span>
+          <span class="st-label">Add Child</span>
+          <span class="st-chevron">›</span>
+        </button>
+
         <div class="reports-divider" style="margin-top:22px;">Security</div>
         <button class="btn-full-ghost" onclick="changePinPrompt('parent')"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-key"/></svg> Change My PIN</button>
       </div>
@@ -401,15 +411,15 @@
       </div>
       <div class="collapsible-body">
     <div class="info-box">Tap Edit to update a user's settings, email, and notifications.</div>
-    <div id="admin-user-list"></div>
 
-    <!-- v32.1: Add/Edit User share a single bottom sheet (sheet-user-edit).
-         "Add New User" opens it in create mode; row Edit buttons open it in edit mode. -->
-    <button class="sheet-trigger" onclick="openUserSheetForAdd()" style="margin-top:10px;">
+    <!-- v32.3: Add New User button moved ABOVE the list for easier access -->
+    <button class="sheet-trigger" onclick="openUserSheetForAdd()" style="margin-bottom:14px;">
       <span class="icon"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-user-plus"/></svg></span>
       <span class="st-label">Add New User</span>
       <span class="st-chevron">›</span>
     </button>
+
+    <div id="admin-user-list"></div>
       </div><!-- /collapsible-body (User Management) -->
     </div><!-- /collapsible-card -->
 
@@ -573,17 +583,9 @@
     </select>
     <div id="child-action-hint" class="info-box" style="margin-bottom:10px;"></div>
 
-    <label class="field-label">Amount $</label>
-    <input type="number" id="child-amt" placeholder="Enter amount" step="0.01" min="0">
-    <div class="field-msg" id="child-amt-msg"></div>
-
-    <label class="field-label" id="child-note-label">What is this for?</label>
-    <input type="text" id="child-note" placeholder="e.g. New shoes, saving up...">
-    <div class="field-msg" id="child-note-msg"></div>
-
-    <!-- Loan selector -->
+    <!-- v32.3: Loan selector moved to top of Loan payment flow (was between Note and Deposit split) -->
     <div id="child-loan-select-wrap" class="hidden">
-      <label class="field-label">Select Loan</label>
+      <label class="field-label">Select Loan <span class="req-star">*</span></label>
       <select id="child-loan-select" onchange="onChildLoanSelect()">
         <option value="">— Select a loan —</option>
       </select>
@@ -593,6 +595,14 @@
         <div class="detail-row"><span class="detail-label">Next Payment Due</span> <span id="child-loan-due" style="font-weight:700;color:var(--text);">—</span></div>
       </div>
     </div>
+
+    <label class="field-label">Amount $ <span class="req-star">*</span></label>
+    <input type="number" id="child-amt" placeholder="Enter amount" step="0.01" min="0">
+    <div class="field-msg" id="child-amt-msg"></div>
+
+    <label class="field-label" id="child-note-label">What is this for? <span class="req-star">*</span></label>
+    <input type="text" id="child-note" placeholder="e.g. New shoes, saving up...">
+    <div class="field-msg" id="child-note-msg"></div>
 
     <!-- Deposit split — v32: defaults to 50/50 -->
     <div id="child-deposit-split-wrap" class="hidden">
@@ -622,9 +632,9 @@
   <div class="sheet-body">
     <div id="child-goals-list"></div>
     <div style="margin-top:10px;">
-      <label class="field-label">Goal Name</label>
+      <label class="field-label">Goal Name <span class="req-star">*</span></label>
       <input type="text" id="new-goal-name" placeholder="e.g. New game, bike...">
-      <label class="field-label">Target Amount $</label>
+      <label class="field-label">Target Amount $ <span class="req-star">*</span></label>
       <input type="number" id="new-goal-amount" step="0.01" min="0.01" placeholder="Enter target">
       <button class="btn btn-secondary" onclick="addSavingsGoal()"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-plus-circle"/></svg> Add Goal</button>
     </div>
@@ -658,12 +668,13 @@
     <button class="btn btn-sm btn-ghost" onclick="closeSheet('sheet-chore-creator')">✕ Close</button>
   </div>
   <div class="sheet-body">
-    <label class="field-label">Chore Name</label>
+    <div class="req-note"><span class="req-star">*</span> required</div>
+    <label class="field-label">Chore Name <span class="req-star">*</span></label>
     <input type="text" id="chore-name" placeholder="e.g. Vacuum living room">
     <label class="field-label">Description (optional)</label>
     <input type="text" id="chore-desc" placeholder="Any extra details...">
     <div class="row">
-      <div class="col"><label class="field-label">Reward $</label><input type="number" id="chore-amount" step="0.01" min="0" placeholder="Enter amount"></div>
+      <div class="col"><label class="field-label">Reward $ <span class="req-star">*</span></label><input type="number" id="chore-amount" step="0.01" min="0" placeholder="Enter amount"></div>
       <div class="col"><label class="field-label">Schedule</label>
         <select id="chore-schedule" onchange="onScheduleChange()">
           <option value="once">One-time</option>
@@ -794,14 +805,15 @@
   </div>
   <div class="sheet-body">
     <div id="loan-edit-hint" class="info-box hidden">Editing existing loan: principal is locked. Rate/term changes recalculate the monthly payment from current balance.</div>
-    <label class="field-label">Loan Name</label>
+    <div class="req-note"><span class="req-star">*</span> required</div>
+    <label class="field-label">Loan Name <span class="req-star">*</span></label>
     <input type="text" id="loan-name" placeholder="e.g. Bicycle loan">
     <div class="row">
-      <div class="col"><label class="field-label">Principal $</label>      <input type="number" id="loan-principal" step="0.01" min="0.01" placeholder="Enter amount" oninput="updateLoanPaymentPreview()"></div>
+      <div class="col"><label class="field-label">Principal $ <span class="req-star">*</span></label>      <input type="number" id="loan-principal" step="0.01" min="0.01" placeholder="Enter amount" oninput="updateLoanPaymentPreview()"></div>
       <div class="col"><label class="field-label">Annual Interest %</label><input type="number" id="loan-rate"      step="0.01" min="0"    placeholder="e.g. 5" oninput="updateLoanPaymentPreview()"></div>
     </div>
     <div class="row">
-      <div class="col"><label class="field-label">Term (months)</label>   <input type="number" id="loan-term" step="1" min="1" placeholder="12" oninput="updateLoanPaymentPreview()"></div>
+      <div class="col"><label class="field-label">Term (months) <span class="req-star">*</span></label>   <input type="number" id="loan-term" step="1" min="1" placeholder="12" oninput="updateLoanPaymentPreview()"></div>
       <div class="col"><label class="field-label">Payment Due Day</label> <select id="loan-due-day"></select></div>
     </div>
     <div style="background:var(--bg);border-radius:10px;padding:10px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
@@ -875,11 +887,12 @@
   </div>
   <div class="sheet-body">
     <div class="info-box">Positive adds money, negative (e.g. −10) removes it.</div>
+    <div class="req-note"><span class="req-star">*</span> required</div>
     <div class="row">
       <div class="col"><label class="field-label">Checking $</label><input type="number" id="adj-chk" step="0.01"></div>
       <div class="col"><label class="field-label">Savings $</label> <input type="number" id="adj-sav" step="0.01"></div>
     </div>
-    <label class="field-label">Reason (required)</label>
+    <label class="field-label">Reason <span class="req-star">*</span></label>
     <input type="text" id="adj-note" placeholder="e.g. Birthday gift, chore bonus...">
     <div class="field-msg" id="adj-msg"></div>
     <button class="btn btn-warning" onclick="confirmAdjust()"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-lightning"/></svg> Apply Adjustment</button>
@@ -896,9 +909,9 @@
   <div class="sheet-body">
     <div id="parent-goals-list"></div>
     <div style="margin-top:10px;">
-      <label class="field-label">Goal Name</label>
+      <label class="field-label">Goal Name <span class="req-star">*</span></label>
       <input type="text" id="parent-new-goal-name" placeholder="e.g. New game, bike...">
-      <label class="field-label">Target Amount $</label>
+      <label class="field-label">Target Amount $ <span class="req-star">*</span></label>
       <input type="number" id="parent-new-goal-amount" step="0.01" min="0.01" placeholder="Enter target">
       <button class="btn btn-secondary" onclick="addParentSavingsGoal()"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-plus-circle"/></svg> Add Goal</button>
     </div>
@@ -972,14 +985,15 @@
     <button class="btn btn-sm btn-ghost" onclick="closeSheet('sheet-user-edit')">✕ Close</button>
   </div>
   <div class="sheet-body">
-    <label class="field-label">Display Name</label>
+    <div class="req-note"><span class="req-star">*</span> required</div>
+    <label class="field-label">Display Name <span class="req-star">*</span></label>
     <input type="text" id="edit-user-name" placeholder="e.g. Emma">
-    <label class="field-label">Role</label>
+    <label class="field-label">Role <span class="req-star">*</span></label>
     <select id="edit-user-role" onchange="onUserEditRoleChange()">
       <option value="child">Child</option>
       <option value="parent">Parent</option>
     </select>
-    <label class="field-label" id="edit-user-pin-label">PIN (4 digits)</label>
+    <label class="field-label" id="edit-user-pin-label">PIN (4 digits) <span class="req-star">*</span></label>
     <input type="password" id="edit-user-pin" maxlength="4" inputmode="numeric" placeholder="••••">
     <label class="field-label">Email Address</label>
     <input type="email" id="edit-user-email" placeholder="their@email.com">
@@ -1035,6 +1049,41 @@
       <button class="btn btn-primary col" id="user-edit-save-btn" onclick="saveUserEdit()"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-floppy-disk"/></svg> Save</button>
       <button class="btn btn-ghost col" onclick="closeSheet('sheet-user-edit')">Cancel</button>
     </div>
+  </div>
+</div>
+
+<!-- ── Sheet: Add Child (parent Settings, v32.3) ────────────────── -->
+<div class="bottom-sheet" id="sheet-add-child">
+  <span class="sheet-grab"></span>
+  <div class="sheet-header">
+    <h3><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-user-plus"/></svg> Add Child</h3>
+    <button class="btn btn-sm btn-ghost" onclick="closeSheet('sheet-add-child')">✕ Close</button>
+  </div>
+  <div class="sheet-body">
+    <div class="req-note"><span class="req-star">*</span> required</div>
+    <label class="field-label">Display Name <span class="req-star">*</span></label>
+    <input type="text" id="add-child-name" placeholder="e.g. Emma">
+    <label class="field-label">PIN (4 digits) <span class="req-star">*</span></label>
+    <input type="password" id="add-child-pin" maxlength="4" inputmode="numeric" placeholder="••••">
+    <div class="info-box" style="margin-top:4px;">If another child already uses this name, the PIN must be different so they can each log in.</div>
+    <div class="field-msg" id="add-child-msg"></div>
+    <button class="btn btn-primary" onclick="submitAddChild()"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-plus-circle"/></svg> Create Child</button>
+  </div>
+</div>
+
+<!-- ── Sheet: Share Child (parent Settings, v32.3) ──────────────── -->
+<div class="bottom-sheet" id="sheet-share-child">
+  <span class="sheet-grab"></span>
+  <div class="sheet-header">
+    <h3><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-share-network"/></svg> Share <span id="share-child-name">Child</span></h3>
+    <button class="btn btn-sm btn-ghost" onclick="closeSheet('sheet-share-child')">✕ Close</button>
+  </div>
+  <div class="sheet-body">
+    <div class="info-box">Type one or more parent usernames to grant them full access. Separate with commas.</div>
+    <label class="field-label">Parent Username(s) <span class="req-star">*</span></label>
+    <input type="text" id="share-child-usernames" placeholder="e.g. Mom, GrandpaJoe">
+    <div class="field-msg" id="share-child-msg"></div>
+    <button class="btn btn-primary" onclick="submitShareChild()"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-share-network"/></svg> Share</button>
   </div>
 </div>
 

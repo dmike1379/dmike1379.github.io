@@ -1003,3 +1003,14 @@ h3 .icon,label .icon,.field-label .icon{margin-right:4px;opacity:.85}
 
 /* Child (non-parent) top bar stays as-is but needs a little breathing room */
 .top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px}
+
+/* v32.3 — Required field indicator */
+.req-star{
+  color:var(--danger);font-weight:700;margin-left:2px;
+  font-size:1em;
+}
+.req-note{
+  font-size:.68rem;color:var(--muted);font-style:italic;
+  margin:-4px 0 10px;
+}
+.req-note .req-star{margin:0 2px 0 0;}

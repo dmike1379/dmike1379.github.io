@@ -1157,6 +1157,7 @@ function confirmAdjust(){
   syncToCloud("Adjustment");
   showToast("Adjustment applied.","success");
   document.getElementById("adj-chk").value=""; document.getElementById("adj-sav").value=""; document.getElementById("adj-note").value="";
+  closeSheet("sheet-adjust", true);
 }
 
 function saveAllowance(){
@@ -1173,6 +1174,7 @@ function saveAllowance(){
   }
   syncToCloud("Allowance Update");
   showToast("Allowance saved.","success");
+  closeSheet("sheet-allowance", true);
 }
 
 function saveRates(){
@@ -1182,6 +1184,7 @@ function saveRates(){
   renderBalances();
   syncToCloud("Rates Update");
   showToast("Interest rates saved.","success");
+  closeSheet("sheet-rates", true);
 }
 
 function renderParentSettings(){
@@ -1266,6 +1269,7 @@ function saveChildProfile(){
   showToast(activeChild+"'s profile updated. 💾","success");
   // If assigned tabs changed, the child's tab bar will reflect on their next login
   renderParentTabBar();  // loan tab may appear/disappear for parent too
+  closeSheet("sheet-child-profile", true);
 }
 
 function openProfilePicker(){ openPicker("profileTabs"); }
@@ -1620,7 +1624,7 @@ function createChore(){
   resetChoreForm();
   renderParentChores(); renderChildChores(); updateChoreBadges();
   // v32.2: Auto-close the creator sheet after successful save (create or edit)
-  closeSheet("sheet-chore-creator");
+  closeSheet("sheet-chore-creator", true);
 }
 
 function resetChoreForm(){
@@ -2266,7 +2270,7 @@ function createLoan(){
   resetLoanForm();
   renderParentLoans();
   // v32.2: Auto-close the creator sheet after successful save (create or edit)
-  closeSheet("sheet-loan-creator");
+  closeSheet("sheet-loan-creator", true);
 }
 
 function resetLoanForm(){
@@ -3086,7 +3090,7 @@ function toggleEditCalField(){
 
 function cancelUserEdit(){
   editingUserName=null;
-  closeSheet("sheet-user-edit");
+  closeSheet("sheet-user-edit", true);
 }
 
 function saveUserEdit(){
@@ -3141,7 +3145,7 @@ function saveUserEdit(){
     renderAdminUsers();
     syncToCloud("User Added");
     showToast('"'+name+'" added!',"success");
-    closeSheet("sheet-user-edit");
+    closeSheet("sheet-user-edit", true);
     return;
   }
 
@@ -3189,7 +3193,7 @@ function saveUserEdit(){
   }
   syncToCloud("User Edited");
   showToast(u+" updated.","success");
-  closeSheet("sheet-user-edit");
+  closeSheet("sheet-user-edit", true);
   renderAdminUsers();
   editingUserName=null;
 }
@@ -3707,26 +3711,103 @@ loadFromCloud();
 // 20. v32 — BOTTOM SHEETS, COLLAPSIBLES, LAUNCHER HELPERS
 // ════════════════════════════════════════════════════════════════════
 /**
+ * v32.3 — Exit-without-saving warning
+ * ─────────────────────────────────────
+ * Sheets in EXIT_WARN_SHEETS track "dirty" state. When the user starts
+ * typing in any input inside such a sheet, it's marked dirty. Closing
+ * via ✕, backdrop, or auto-logic will prompt a confirm modal if dirty.
+ * Successful save paths should call closeSheet() AFTER clearing the
+ * form (so the reset removes dirty flag naturally via the input events)
+ * OR call clearSheetDirty(id) explicitly.
+ */
+const EXIT_WARN_SHEETS = new Set([
+  "sheet-chore-creator",
+  "sheet-loan-creator",
+  "sheet-adjust",
+  "sheet-user-edit",
+  "sheet-allowance",
+  "sheet-rates",
+  "sheet-manage-money",
+  "sheet-savings-goals",
+  "sheet-parent-goals",
+  "sheet-child-profile",
+  "sheet-add-child",
+  "sheet-share-child"
+]);
+const _sheetDirty = {}; // sheetId -> bool
+
+function markSheetDirty(id){ _sheetDirty[id] = true; }
+function clearSheetDirty(id){ _sheetDirty[id] = false; }
+function isSheetDirty(id){ return !!_sheetDirty[id]; }
+
+/** Attach input listeners so any typing inside a watched sheet sets its dirty flag. */
+(function installSheetDirtyTracking(){
+  if(typeof document === "undefined") return;
+  document.addEventListener("input", e=>{
+    const sheet = e.target.closest && e.target.closest(".bottom-sheet");
+    if(!sheet || !sheet.id) return;
+    if(!EXIT_WARN_SHEETS.has(sheet.id)) return;
+    markSheetDirty(sheet.id);
+  }, true);
+  document.addEventListener("change", e=>{
+    const sheet = e.target.closest && e.target.closest(".bottom-sheet");
+    if(!sheet || !sheet.id) return;
+    if(!EXIT_WARN_SHEETS.has(sheet.id)) return;
+    markSheetDirty(sheet.id);
+  }, true);
+})();
+
+/**
  * Open a bottom sheet by DOM id. Shared dim backdrop slides in.
  * Multiple sheets can stack — backdrop stays until all are closed.
+ * Opening always clears the dirty flag (fresh start).
  */
 function openSheet(id){
   const sheet = document.getElementById(id);
   if(!sheet) return;
+  clearSheetDirty(id);
   sheet.classList.add("open");
   document.getElementById("sheet-backdrop")?.classList.add("open");
 }
-function closeSheet(id){
+
+/**
+ * Close a sheet. If it's in EXIT_WARN_SHEETS and dirty, prompt first.
+ * Force-close (bypassing the prompt) is available via closeSheet(id, true)
+ * — used by successful save flows that want unconditional dismissal.
+ */
+function closeSheet(id, force){
   const sheet = document.getElementById(id);
   if(!sheet) return;
+  if(!force && EXIT_WARN_SHEETS.has(id) && isSheetDirty(id)){
+    openModal({
+      icon:"⚠️",
+      title:"Discard changes?",
+      body:"You have unsaved changes. Close without saving?",
+      confirmText:"Discard",
+      confirmClass:"btn-warning",
+      onConfirm:()=>{
+        clearSheetDirty(id);
+        sheet.classList.remove("open");
+        if(!document.querySelector(".bottom-sheet.open")){
+          document.getElementById("sheet-backdrop")?.classList.remove("open");
+        }
+      }
+    });
+    return;
+  }
+  clearSheetDirty(id);
   sheet.classList.remove("open");
-  // If no sheets are still open, retract the backdrop.
   if(!document.querySelector(".bottom-sheet.open")){
     document.getElementById("sheet-backdrop")?.classList.remove("open");
   }
 }
+
 function closeAllSheets(){
-  document.querySelectorAll(".bottom-sheet.open").forEach(s=>s.classList.remove("open"));
+  // v32.3: Force-close all, no dirty check (used by selectChild / logout flows)
+  document.querySelectorAll(".bottom-sheet.open").forEach(s=>{
+    s.classList.remove("open");
+    if(s.id) clearSheetDirty(s.id);
+  });
   document.getElementById("sheet-backdrop")?.classList.remove("open");
 }
 
@@ -3745,15 +3826,19 @@ function toggleCollapsible(id){
  * inside so the user gets a clean experience each time.
  */
 function openChoreCreator(){
-  // If not mid-edit, start a fresh form
-  if(typeof editingChoreId !== "undefined" && !editingChoreId){
+  // v32.3: Always reset to fresh form when not editing. Belt-and-suspenders:
+  // also force the split slider to 50 explicitly in case a stale value lingers.
+  if(typeof editingChoreId === "undefined" || !editingChoreId){
     try { resetChoreForm(); } catch(e){}
+    const sp = document.getElementById("chore-split");
+    if(sp) sp.value = 50;
+    try { updateSplitLabel(); } catch(e){}
   }
   openSheet("sheet-chore-creator");
 }
 function openLoanCreator(){
-  if(typeof editingLoanId !== "undefined" && !editingLoanId){
-    try { resetLoanForm && resetLoanForm(); } catch(e){}
+  if(typeof editingLoanId === "undefined" || !editingLoanId){
+    try { resetLoanForm(); } catch(e){}
   }
   openSheet("sheet-loan-creator");
 }
@@ -3881,4 +3966,274 @@ function openChildProfileSheet(){
   // Install on both panels once DOM is ready (they exist at script load)
   attach("child");
   attach("parent");
+})();
+
+// ════════════════════════════════════════════════════════════════════
+// 22. v32.3 — PARENT-OWNED CHILDREN (Add / Share / Remove from Settings)
+// ════════════════════════════════════════════════════════════════════
+const MAX_CHILDREN_PER_PARENT = 6;
+
+/**
+ * Returns true if no OTHER existing user shares the given display name
+ * with the given PIN. Lets a parent create "Emma" PIN 5678 even if
+ * another Emma with PIN 1234 exists — login disambiguates by PIN.
+ */
+function isNamePinAvailable(name, pin){
+  if(!name || !pin) return false;
+  const users = state.users || [];
+  for(const u of users){
+    if(u === name && state.pins[u] === pin) return false;
+  }
+  return true;
+}
+
+/**
+ * Returns true if the name is already taken AND we'd collide with an
+ * existing PIN. Returns {collision, reason} object.
+ */
+function checkNamePinCollision(name, pin, excludeName){
+  const users = state.users || [];
+  for(const u of users){
+    if(u === excludeName) continue;
+    if(u === name && state.pins[u] === pin){
+      return {collision:true, reason:'A user named "'+name+'" with that PIN already exists. Pick a different PIN.'};
+    }
+  }
+  return {collision:false};
+}
+
+/** Returns the list of child names owned/assigned to the current parent. */
+function getMyChildrenList(){
+  if(currentRole !== "parent" || !currentUser) return [];
+  const assigned = (state.config.parentChildren && state.config.parentChildren[currentUser]) || [];
+  return assigned;
+}
+
+/** Returns the list of parents who have this child assigned. */
+function getParentsOfChild(childName){
+  const pc = state.config.parentChildren || {};
+  return Object.keys(pc).filter(p => (pc[p]||[]).indexOf(childName) !== -1);
+}
+
+/**
+ * Render the "My Children" list on parent Settings. Called from
+ * renderParentSettings and after any add/share/remove action.
+ */
+function renderMyChildren(){
+  const el = document.getElementById("my-children-list");
+  if(!el) return;
+  if(currentRole !== "parent"){ el.innerHTML = ""; return; }
+  const mine = getMyChildrenList();
+  if(!mine.length){
+    el.innerHTML = '<div style="padding:12px;color:var(--muted);font-size:.85rem;text-align:center;">No children yet. Tap "Add Child" below to create one.</div>';
+    return;
+  }
+  el.innerHTML = mine.map(name => {
+    const shared = getParentsOfChild(name).length > 1;
+    return `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;">
+        <div style="flex-shrink:0;">${renderAvatar(name,"sm")}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;font-size:.92rem;">${name}</div>
+          ${shared ? '<div style="font-size:.68rem;color:var(--muted);"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-share-network"/></svg> Shared with '+(getParentsOfChild(name).length-1)+' other parent'+(getParentsOfChild(name).length>2?'s':'')+'</div>' : '<div style="font-size:.68rem;color:var(--muted);">Only on your account</div>'}
+        </div>
+        <button class="btn btn-sm btn-outline" style="width:auto;margin:0;padding:6px 10px;" onclick="openShareChildSheet('${name.replace(/'/g,"\\'")}')"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-share-network"/></svg></button>
+        <button class="btn btn-sm btn-ghost" style="width:auto;margin:0;padding:6px 10px;color:var(--danger);" onclick="removeChildFromMyView('${name.replace(/'/g,"\\'")}')"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-trash"/></svg></button>
+      </div>`;
+  }).join("");
+}
+
+/**
+ * Handle Add Child submit from sheet-add-child.
+ * Creates a new child user, auto-assigns to current parent.
+ */
+function submitAddChild(){
+  const nameEl = document.getElementById("add-child-name");
+  const pinEl  = document.getElementById("add-child-pin");
+  const msgEl  = document.getElementById("add-child-msg");
+  msgEl.className = "field-msg";
+  const name = nameEl.value.trim();
+  const pin  = pinEl.value;
+  if(!name){ msgEl.className="field-msg error"; msgEl.textContent="Name is required."; return; }
+  if(!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)){
+    msgEl.className="field-msg error"; msgEl.textContent="PIN must be exactly 4 digits."; return;
+  }
+  // 6-child cap for this parent
+  const mine = getMyChildrenList();
+  if(mine.length >= MAX_CHILDREN_PER_PARENT){
+    msgEl.className="field-msg error"; msgEl.textContent="You've hit the "+MAX_CHILDREN_PER_PARENT+"-child limit. Remove one first."; return;
+  }
+  // PIN + name collision check
+  const col = checkNamePinCollision(name, pin);
+  if(col.collision){ msgEl.className="field-msg error"; msgEl.textContent=col.reason; return; }
+  // If a user with same name AND different PIN exists, still allow — disambiguation by PIN at login.
+  // If a user with same name exists (same PIN was caught above), the new entry uses the SAME
+  // state.users entry — we can't have two "Emma" keys in state.pins. For v32.3, reject and ask
+  // for a different display name when a name already exists. (True multi-Emma requires UIDs,
+  // which we deferred.)
+  if((state.users||[]).indexOf(name) !== -1){
+    msgEl.className="field-msg error";
+    msgEl.textContent='"'+name+'" is already taken. Pick a different name.';
+    return;
+  }
+  // Create
+  state.users = state.users || [];
+  state.users.push(name);
+  state.pins[name] = pin;
+  state.roles[name] = "child";
+  getChildData(name); // seed empty child data
+  // Default tabs: money + chores ON, loans OFF
+  if(!state.config.tabs) state.config.tabs = {};
+  state.config.tabs[name] = {money:true, chores:true, loans:false};
+  // Default notify: email ON (parent), rest off
+  if(!state.config.notify) state.config.notify = {};
+  state.config.notify[name] = {email:true, calendar:false, choreRewards:true};
+  // Default celebration sound on
+  if(!state.usersData) state.usersData = {};
+  state.usersData[name] = {celebrationSound:true};
+  // Auto-assign to creating parent
+  if(!state.config.parentChildren) state.config.parentChildren = {};
+  if(!state.config.parentChildren[currentUser]) state.config.parentChildren[currentUser] = [];
+  state.config.parentChildren[currentUser].push(name);
+  syncToCloud("Child Created");
+  showToast('"'+name+'" added to your account.',"success");
+  nameEl.value = ""; pinEl.value = "";
+  closeSheet("sheet-add-child", true);
+  renderMyChildren();
+  renderParentTabBar && renderParentTabBar();
+}
+
+/** Open the share sheet for a specific child. */
+let _sharingChildName = null;
+function openShareChildSheet(childName){
+  _sharingChildName = childName;
+  document.getElementById("share-child-name").textContent = childName;
+  document.getElementById("share-child-usernames").value = "";
+  document.getElementById("share-child-msg").className = "field-msg";
+  document.getElementById("share-child-msg").textContent = "";
+  openSheet("sheet-share-child");
+}
+
+/** Handle share submission — validates each username, adds child to their parentChildren. */
+function submitShareChild(){
+  const msgEl = document.getElementById("share-child-msg");
+  msgEl.className = "field-msg";
+  if(!_sharingChildName){ msgEl.className="field-msg error"; msgEl.textContent="No child selected."; return; }
+  const raw = document.getElementById("share-child-usernames").value.trim();
+  if(!raw){ msgEl.className="field-msg error"; msgEl.textContent="Enter at least one parent username."; return; }
+  const names = raw.split(",").map(s=>s.trim()).filter(Boolean);
+  // Validate each
+  const notFound = [];
+  const notParent = [];
+  const selfRef = [];
+  const alreadyShared = [];
+  const valid = [];
+  names.forEach(n => {
+    if(n === currentUser){ selfRef.push(n); return; }
+    if((state.users||[]).indexOf(n) === -1){ notFound.push(n); return; }
+    if((state.roles||{})[n] !== "parent"){ notParent.push(n); return; }
+    const existing = (state.config.parentChildren && state.config.parentChildren[n]) || [];
+    if(existing.indexOf(_sharingChildName) !== -1){ alreadyShared.push(n); return; }
+    valid.push(n);
+  });
+  if(notFound.length){
+    msgEl.className="field-msg error";
+    msgEl.textContent = "User not found: "+notFound.join(", ");
+    return;
+  }
+  if(notParent.length){
+    msgEl.className="field-msg error";
+    msgEl.textContent = "Not a parent account: "+notParent.join(", ")+". Only parents can have children.";
+    return;
+  }
+  if(selfRef.length){
+    msgEl.className="field-msg error";
+    msgEl.textContent = "You already have this child — can't share with yourself.";
+    return;
+  }
+  if(!valid.length && alreadyShared.length){
+    msgEl.className="field-msg info";
+    msgEl.textContent = "Already shared with: "+alreadyShared.join(", ");
+    return;
+  }
+  // Apply
+  if(!state.config.parentChildren) state.config.parentChildren = {};
+  valid.forEach(p => {
+    if(!state.config.parentChildren[p]) state.config.parentChildren[p] = [];
+    state.config.parentChildren[p].push(_sharingChildName);
+  });
+  syncToCloud("Child Shared");
+  // Silent success per Mike's spec
+  showToast(_sharingChildName+" shared with "+valid.join(", "),"success");
+  closeSheet("sheet-share-child", true);
+  _sharingChildName = null;
+  renderMyChildren();
+}
+
+/**
+ * Remove child from *this* parent's view. If they're the last parent
+ * assigned, warn that it's a full delete of the child + all data.
+ */
+function removeChildFromMyView(childName){
+  const parents = getParentsOfChild(childName);
+  const isLast = parents.length <= 1;
+  openModal({
+    icon: isLast ? "🗑️" : "👋",
+    title: isLast ? "Delete "+childName+"?" : "Remove "+childName+"?",
+    body: isLast
+      ? "You are the only parent on "+childName+"'s account. Removing will permanently delete "+childName+" and all their balances, chores, loans, and history. This cannot be undone."
+      : "Remove "+childName+" from your account? "+childName+" will still be available to their other "+(parents.length-1)+" parent"+(parents.length>2?"s":"")+".",
+    confirmText: isLast ? "Delete Permanently" : "Remove",
+    confirmClass: isLast ? "btn-danger" : "btn-warning",
+    onConfirm: ()=>{
+      if(isLast){
+        // Full delete
+        const idx = (state.users||[]).indexOf(childName);
+        if(idx >= 0) state.users.splice(idx,1);
+        delete state.pins[childName];
+        delete state.roles[childName];
+        if(state.children) delete state.children[childName];
+        if(state.history) delete state.history[childName];
+        if(state.config.tabs) delete state.config.tabs[childName];
+        if(state.config.notify) delete state.config.notify[childName];
+        if(state.config.emails) delete state.config.emails[childName];
+        if(state.config.calendars) delete state.config.calendars[childName];
+        if(state.config.avatars) delete state.config.avatars[childName];
+        if(state.usersData) delete state.usersData[childName];
+        // Scrub from all parentChildren lists
+        if(state.config.parentChildren){
+          Object.keys(state.config.parentChildren).forEach(p=>{
+            state.config.parentChildren[p] = (state.config.parentChildren[p]||[]).filter(c=>c!==childName);
+          });
+        }
+        showToast(childName+" fully deleted.","info");
+      } else {
+        // Soft remove — just this parent
+        if(state.config.parentChildren && state.config.parentChildren[currentUser]){
+          state.config.parentChildren[currentUser] = state.config.parentChildren[currentUser].filter(c=>c!==childName);
+        }
+        showToast(childName+" removed from your account.","info");
+      }
+      // If the removed child was currently active, switch to another or back to picker
+      if(activeChild === childName){
+        const remaining = getAssignedChildren();
+        if(remaining.length) selectChild(remaining[0]);
+        else logout();
+      }
+      syncToCloud("Child Removed");
+      renderMyChildren();
+      renderParentTabBar && renderParentTabBar();
+    }
+  });
+}
+
+// Hook into renderParentSettings so My Children populates on Settings tab open
+(function wireMyChildrenRender(){
+  if(typeof renderParentSettings !== "function") return;
+  const orig = renderParentSettings;
+  window.renderParentSettings = function(){
+    const r = orig.apply(this, arguments);
+    try { renderMyChildren(); } catch(e){}
+    return r;
+  };
 })();
