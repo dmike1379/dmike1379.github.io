@@ -912,6 +912,18 @@ h3 .icon,label .icon,.field-label .icon{margin-right:4px;opacity:.85}
   margin:8px auto 0;display:block;
 }
 
+/* v32.4: On desktop, cap bottom sheets at 460px and center them.
+   Mobile stays full-width (default). */
+@media (min-width: 640px){
+  .bottom-sheet{
+    left:50%;right:auto;
+    max-width:460px;width:100%;
+    transform:translate(-50%, 100%);
+    border-radius:20px 20px 0 0;
+  }
+  .bottom-sheet.open{transform:translate(-50%, 0)}
+}
+
 /* Trigger button that opens a bottom sheet — card-like with right chevron */
 .sheet-trigger{
   display:flex;align-items:center;gap:12px;

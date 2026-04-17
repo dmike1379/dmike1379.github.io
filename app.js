@@ -245,6 +245,7 @@ const DEFAULT_CONFIG = {
   imgIcon:        CFG_IMG_ICON,
   timezone:       CFG_TIMEZONE,
   adminPin:       CFG_ADMIN_PIN,
+  adminEmail:     "",            // v32.4: seeded in migration on first load
   emails:         {},
   avatars:        {},
   loginStats:     {}
@@ -502,6 +503,10 @@ async function loadFromCloud(){
       if(!state.config.emails) state.config.emails={};
       if(!state.config.avatars) state.config.avatars={};
       if(!state.config.loginStats) state.config.loginStats={};
+      // v32.4 item #8: seed admin email on first load if empty.
+      // TODO: STRIP THIS HARDCODED SEED BEFORE PUBLISHING TO INSTRUCTABLES.
+      // Replace with `state.config.adminEmail = state.config.adminEmail || "";`
+      if(!state.config.adminEmail) state.config.adminEmail = "michaelhdeleo@gmail.com";
       migrateIfNeeded();
       pendingTransactions=[];
       applyBranding();
@@ -774,6 +779,16 @@ function enterApp(user){
       // No assigned children — keep parent top bar visible but label generic
       const ptb=document.getElementById("ptb-child-name"); if(ptb) ptb.textContent="—";
       document.getElementById("parent-panel").classList.remove("hidden");
+      // v32.4 item #10: auto-open Add Child sheet on empty-children parent landing.
+      // Non-coercive — close button still works (Option A). Deferred via setTimeout
+      // so the panel paints first.
+      setTimeout(()=>{
+        if(currentRole==="parent" && typeof getMyChildrenList === "function"
+           && getMyChildrenList().length === 0
+           && typeof openSheet === "function"){
+          openSheet("sheet-add-child");
+        }
+      }, 60);
     }
   } else {
     // v32: child uses the original top-bar; parent top-bar stays hidden
@@ -1204,6 +1219,15 @@ function renderParentSettings(){
   }
   // v30.1: populate child profile section
   renderChildProfileSection();
+  // v32.4 item #9: populate parent's own email + clear any prior message
+  const peInput = document.getElementById("parent-email-input");
+  const peMsg   = document.getElementById("parent-email-msg");
+  if(peInput && currentRole === "parent" && currentUser){
+    peInput.value = (state.config.emails && state.config.emails[currentUser]) || "";
+  } else if(peInput){
+    peInput.value = "";
+  }
+  if(peMsg){ peMsg.className="field-msg"; peMsg.textContent=""; }
 }
 
 // v30.1: Child profile — email, calendar, notifications, tabs
@@ -1273,6 +1297,27 @@ function saveChildProfile(){
 }
 
 function openProfilePicker(){ openPicker("profileTabs"); }
+
+// v32.4 item #9: Save parent's own email address (state.config.emails[currentUser]).
+// Parent emails share the same emails map as child notification emails, keyed by
+// display name. User renaming isn't supported so collision isn't a concern.
+function saveParentEmail(){
+  const input = document.getElementById("parent-email-input");
+  const msg   = document.getElementById("parent-email-msg");
+  if(!input || !currentUser || currentRole !== "parent") return;
+  const val = input.value.trim();
+  if(val && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)){
+    if(msg){ msg.className="field-msg error"; msg.textContent="Please enter a valid email address."; }
+    showToast("Invalid email.","error");
+    return;
+  }
+  if(!state.config.emails) state.config.emails = {};
+  if(val) state.config.emails[currentUser] = val;
+  else    delete state.config.emails[currentUser];
+  syncToCloud("Parent Email Updated");
+  if(msg){ msg.className="field-msg success"; msg.textContent = val ? "Email saved." : "Email cleared."; }
+  showToast(val ? "Your email was saved." : "Your email was cleared.","success");
+}
 
 function populateAllowanceMonthlyDays(){
   const sel=document.getElementById("allow-monthly-day");
@@ -2735,14 +2780,15 @@ function renderInlineStreak(c){
 // 18. ADMIN
 // ════════════════════════════════════════════════════════════════════
 function openAdmin(){
-  // Reset to locked state every time
+  // v32.4: Admin is now a bottom sheet (sheet-admin), not a drawer.
+  // Still reset to locked state every open.
   document.getElementById("admin-login-section").classList.remove("hidden");
   document.getElementById("admin-settings-section").classList.add("hidden");
   document.getElementById("admin-pin-input").value="";
   document.getElementById("admin-pin-error").className="field-msg";
-  document.getElementById("admin-drawer").classList.add("open");
+  openSheet("sheet-admin");
 }
-function closeAdmin(){ document.getElementById("admin-drawer").classList.remove("open"); }
+function closeAdmin(){ closeSheet("sheet-admin", true); }
 
 function attemptAdminLogin(){
   const pin=document.getElementById("admin-pin-input").value;
@@ -2768,6 +2814,11 @@ function populateAdminForm(){
   document.getElementById("admin-img-logo").value       = cfg.imgLogo        || "";
   document.getElementById("admin-timezone").value       = cfg.timezone       || CFG_TIMEZONE;
   document.getElementById("admin-autologout").value     = String(cfg.autoLogout||0);
+  // v32.4 item #8: Admin Email
+  const aeEl = document.getElementById("admin-email-input");
+  if(aeEl) aeEl.value = cfg.adminEmail || "";
+  const aeMsg = document.getElementById("admin-email-msg");
+  if(aeMsg) aeMsg.className = "field-msg";
   // v32: admin-celebration-sound removed — celebration sound is now per-user
   // (see user edit form + child profile sheet)
 }
@@ -2821,6 +2872,17 @@ function adminRemoveUser(u){
 function addUser(){ openUserSheetForAdd(); }
 
 function saveAdminSettings(){
+  // v32.4 item #8: validate admin email if present (empty is OK — feature just disabled)
+  const aeInput = document.getElementById("admin-email-input");
+  const aeMsg   = document.getElementById("admin-email-msg");
+  const aeVal   = aeInput ? aeInput.value.trim() : "";
+  if(aeVal && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(aeVal)){
+    if(aeMsg){ aeMsg.className="field-msg error"; aeMsg.textContent="Please enter a valid email address."; }
+    showToast("Invalid admin email.","error");
+    return;
+  }
+  if(aeMsg) aeMsg.className="field-msg";
+  state.config.adminEmail     = aeVal;
   state.config.bankName       = document.getElementById("admin-bank-name").value.trim()    || CFG_BANK_NAME;
   state.config.tagline        = document.getElementById("admin-bank-tagline").value.trim() || "";
   state.config.colorPrimary   = document.getElementById("admin-color-primary").value;
@@ -3814,10 +3876,19 @@ function closeAllSheets(){
 /**
  * Toggle a collapsible card's expanded state (used for admin User Management
  * and Bank Branding sections). Chevron rotation handled via CSS.
+ * v32.4 item #3: Auto-closes sibling collapsibles so only one is open at a time
+ * within the same parent container.
  */
 function toggleCollapsible(id){
   const card = document.getElementById(id);
   if(!card) return;
+  const isExpanding = !card.classList.contains("expanded");
+  if(isExpanding && card.parentElement){
+    // Close every sibling collapsible first
+    card.parentElement.querySelectorAll(":scope > .collapsible-card.expanded").forEach(sib=>{
+      if(sib !== card) sib.classList.remove("expanded");
+    });
+  }
   card.classList.toggle("expanded");
 }
 
@@ -4035,9 +4106,9 @@ function renderMyChildren(){
         <div style="flex-shrink:0;">${renderAvatar(name,"sm")}</div>
         <div style="flex:1;min-width:0;">
           <div style="font-weight:700;font-size:.92rem;">${name}</div>
-          ${shared ? '<div style="font-size:.68rem;color:var(--muted);"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-share-network"/></svg> Shared with '+(getParentsOfChild(name).length-1)+' other parent'+(getParentsOfChild(name).length>2?'s':'')+'</div>' : '<div style="font-size:.68rem;color:var(--muted);">Only on your account</div>'}
+          ${shared ? '<div style="font-size:.68rem;color:var(--muted);">Shared with '+(getParentsOfChild(name).length-1)+' other parent'+(getParentsOfChild(name).length>2?'s':'')+'</div>' : '<div style="font-size:.68rem;color:var(--muted);">Only on your account</div>'}
         </div>
-        <button class="btn btn-sm btn-outline" style="width:auto;margin:0;padding:6px 10px;" onclick="openShareChildSheet('${name.replace(/'/g,"\\'")}')"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-share-network"/></svg></button>
+        <button class="btn btn-sm btn-outline" style="width:auto;margin:0;padding:6px 10px;" onclick="openShareChildSheet('${name.replace(/'/g,"\\'")}')">Share</button>
         <button class="btn btn-sm btn-ghost" style="width:auto;margin:0;padding:6px 10px;color:var(--danger);" onclick="removeChildFromMyView('${name.replace(/'/g,"\\'")}')"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-trash"/></svg></button>
       </div>`;
   }).join("");

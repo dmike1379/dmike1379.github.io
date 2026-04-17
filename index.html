@@ -329,7 +329,11 @@
           <span class="st-chevron">›</span>
         </button>
 
-        <div class="reports-divider" style="margin-top:22px;">Security</div>
+        <div class="reports-divider" style="margin-top:22px;">Your Parent Settings</div>
+        <label class="field-label" for="parent-email-input">Email Address</label>
+        <input type="email" id="parent-email-input" placeholder="you@example.com" autocomplete="email">
+        <div class="field-msg" id="parent-email-msg"></div>
+        <button class="btn-full-ghost" onclick="saveParentEmail()" style="margin-bottom:10px;"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-floppy-disk"/></svg> Save Email</button>
         <button class="btn-full-ghost" onclick="changePinPrompt('parent')"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-key"/></svg> Change My PIN</button>
       </div>
     </div>
@@ -381,15 +385,21 @@
   <div id="ledger-list"></div>
 </div>
 
-<!-- ═══════════════════════ ADMIN DRAWER ═══════════════════════ -->
+<!-- ═══════════════════════ ADMIN SHEET (v32.4: converted from drawer to bottom sheet) ═══════════════════════ -->
 <!-- v30 BUG FIX: All admin sub-sections are now correctly nested INSIDE
-     #admin-settings-section so they hide together when the PIN gate is locked. -->
-<div class="admin-drawer" id="admin-drawer">
-  <div class="drawer-header">
+     #admin-settings-section so they hide together when the PIN gate is locked.
+     v32.4: Container is now .bottom-sheet (was .admin-drawer) so admin matches
+     the uniform popup pattern used everywhere else. openAdmin/closeAdmin
+     retarget this via openSheet/closeSheet. -->
+<div class="bottom-sheet" id="sheet-admin">
+  <div class="sheet-header">
     <h3 style="margin:0;"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-gear"/></svg>️ Admin Panel</h3>
-    <button class="help-btn" title="Help" onclick="openHelp('admin')" aria-label="Help"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-info"/></svg></button>
-    <button class="btn btn-sm btn-ghost" onclick="closeAdmin()">✕ Close</button>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <button class="help-btn" title="Help" onclick="openHelp('admin')" aria-label="Help"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-info"/></svg></button>
+      <button class="btn btn-sm btn-ghost" onclick="closeAdmin()">✕ Close</button>
+    </div>
   </div>
+  <div class="sheet-body">
 
   <!-- LOGIN GATE (visible when locked) -->
   <div id="admin-login-section">
@@ -489,9 +499,12 @@
     <!-- v32: Celebration Sound moved to per-user (user edit form + child profile sheet).
          Global admin toggle removed. -->
 
-    <!-- Admin PIN -->
+    <!-- Admin PIN + Admin Email (v32.4 item #8) -->
     <div class="section-block">
       <h3><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-key"/></svg> Admin PIN</h3>
+      <label class="field-label" for="admin-email-input">Admin Email</label>
+      <input type="email" id="admin-email-input" placeholder="you@example.com" autocomplete="email">
+      <div class="field-msg" id="admin-email-msg"></div>
       <button class="btn-full-ghost" onclick="changeAdminPin()">Change Admin PIN</button>
     </div>
 
@@ -501,7 +514,8 @@
     </div>
 
   </div><!-- /admin-settings-section -->
-</div><!-- /admin-drawer -->
+  </div><!-- /sheet-body -->
+</div><!-- /sheet-admin -->
 
 <!-- ═══════════════════════ MULTI-SELECT PICKER ═══════════════════════ -->
 <div class="picker-overlay" id="picker-overlay" onclick="pickerOverlayClick(event)">
@@ -1075,7 +1089,7 @@
 <div class="bottom-sheet" id="sheet-share-child">
   <span class="sheet-grab"></span>
   <div class="sheet-header">
-    <h3><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-share-network"/></svg> Share <span id="share-child-name">Child</span></h3>
+    <h3>Share <span id="share-child-name">Child</span></h3>
     <button class="btn btn-sm btn-ghost" onclick="closeSheet('sheet-share-child')">✕ Close</button>
   </div>
   <div class="sheet-body">
@@ -1083,7 +1097,7 @@
     <label class="field-label">Parent Username(s) <span class="req-star">*</span></label>
     <input type="text" id="share-child-usernames" placeholder="e.g. Mom, GrandpaJoe">
     <div class="field-msg" id="share-child-msg"></div>
-    <button class="btn btn-primary" onclick="submitShareChild()"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-share-network"/></svg> Share</button>
+    <button class="btn btn-primary" onclick="submitShareChild()">Share</button>
   </div>
 </div>
 

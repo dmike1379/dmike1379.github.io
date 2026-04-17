@@ -1,5 +1,5 @@
 {
-  "version": "32.3",
-  "released": "2026-04-16",
-  "notes": "v32.3 • Exit-without-saving warnings on sheets • Fix 50/50 default for new chores • Child loan payment: Select Loan moved to top • Admin: Add New User above user list • Required field asterisks throughout • Parent-owned children (add/share/remove from Settings, max 6, UID for parent-created kids, PIN uniqueness per display name)"
+  "version": "32.4",
+  "released": "2026-04-17",
+  "notes": "v32.4 • Admin panel converted to bottom sheet • Collapsibles auto-close siblings (one open at a time) • Share button now uses literal text • Bottom sheets capped at 460px on desktop • Admin Email field (seeded) • Parent Email in Your Parent Settings • Auto-open Add Child on first parent login"
 }
