@@ -1,5 +1,5 @@
 {
-  "version": "33.0",
+  "version": "33.1",
   "released": "2026-04-17",
-  "notes": "v33.0 • Account signup requests (parent) with admin approve/deny + email • Loan cards show Principal Paid and Interest Paid • Chore submissions support proof photos (emailed inline) • Guided Child Setup Wizard (9 steps) with live earnings calculator • Persistent Annual Earnings Calculator card in Child Profile"
+  "notes": "v33.1 • Empty assigned-children list now = sees none (not all) • One-parent migration preserves existing Dad account • Wizard offers 'Add Another Child?' prompt after Done"
 }

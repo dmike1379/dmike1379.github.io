@@ -36,7 +36,7 @@
 // ╚═══════════════════════════════════════════════════════════════════╝
 
 // ── API URL — paste this from Apps Script Deploy → Manage Deployments ──
-const API_URL = "https://script.google.com/macros/s/AKfycbzFTOZ__LphDMx0OPyRaXzooQdOYfFT6jx3fiGzAJPZ0YuXvz-Km2S8WiJmCANkRHKYOg/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwk8cM1mmmHMz2F8Ss5nBBkLt4KKTL2m7_PVRSV4X0kHn-B0mpJCc93DaW8j6TMnZa3jw/exec";
 
 // ── Bank identity ──
 const CFG_BANK_NAME    = "Family Bank";
@@ -517,6 +517,25 @@ async function loadFromCloud(){
       if(!state.config.loginStats) state.config.loginStats={};
       // v33.0 — Ensure pendingUsers array exists on every load
       if(!Array.isArray(state.config.pendingUsers)) state.config.pendingUsers=[];
+      // v33.1 — One-time migration: if the system has exactly one parent account
+      // and that parent has no parentChildren assignment yet, seed them with every
+      // existing child. Protects the original single-admin "Dad" setup from
+      // suddenly seeing zero children after the empty-list fallback changed.
+      try {
+        if(!state.config.parentChildren) state.config.parentChildren = {};
+        const parents = (state.users||[]).filter(u => (state.roles||{})[u] === "parent");
+        if(parents.length === 1){
+          const solo = parents[0];
+          const kids = (state.users||[]).filter(u => (state.roles||{})[u] === "child");
+          const existing = state.config.parentChildren[solo] || [];
+          if(!existing.length && kids.length){
+            state.config.parentChildren[solo] = kids.slice();
+            // Persist the migration on next sync — don't sync here because
+            // loadFromCloud runs before the user is logged in.
+            state._needsSingleParentMigrationSave = true;
+          }
+        }
+      } catch(e) { /* migration best-effort */ }
       // v32.4 item #8: seed admin email on first load if empty.
       // TODO: STRIP THIS HARDCODED SEED BEFORE PUBLISHING TO INSTRUCTABLES.
       // Replace with `state.config.adminEmail = state.config.adminEmail || "";`
@@ -766,6 +785,16 @@ function attemptLogin(){
 // Shared landing logic used by both attemptLogin and auto-login restore
 function enterApp(user){
   currentUser=user;
+  // v33.1 — If the one-parent migration ran during loadFromCloud and this login
+  // is that parent, persist the seeded parentChildren list now.
+  try {
+    if(state._needsSingleParentMigrationSave){
+      delete state._needsSingleParentMigrationSave;
+      if((state.roles||{})[user] === "parent"){
+        syncToCloud("Single-parent migration");
+      }
+    }
+  } catch(e){}
   // v32: login counter 5-min guard — only increment if >5 min since last login.
   // stats.lastAt updates ONLY when counter increments (reloads inside window
   // leave both untouched).
@@ -982,7 +1011,9 @@ function getAssignedChildren(){
   const all=getChildNames();
   if(!currentUser || currentRole!=="parent") return all;
   const assigned=(state.config.parentChildren && state.config.parentChildren[currentUser]) || [];
-  if(!assigned.length) return all;  // none selected = sees all
+  // v33.1 — empty assigned list = sees NO children (was: sees all).
+  // Admin can hand-assign via User Edit → Assigned Children. The one-parent
+  // migration in loadFromCloud seeds Dad's list so existing setups don't break.
   return all.filter(c=>assigned.indexOf(c)!==-1);
 }
 
@@ -3333,7 +3364,7 @@ function saveUserEdit(){
 const PICKER_CONFIG = {
   children: {
     title:"Select Children",
-    hint:"Tap to toggle. No selection = parent sees all children.",
+    hint:"Tap to toggle. No selection = parent sees no children.",
     displayId:"edit-child-display",
     noItemsText:"No children added yet.",
     getItems: ()=> getChildNames().map(c=>({value:c, label:c}))
@@ -5100,14 +5131,44 @@ function wizardSaveCurrentStep(){
 
 function wizardFinish(){
   const name = wizardState && wizardState.childName;
+  // v33.1 — Close the wizard sheet first so the modal layers over the parent
+  // panel cleanly. Then ask if they want to add another child.
   wizardState = null;
   closeSheet("sheet-wizard", true);
   if(name){
     syncToCloud("Child Setup Complete");
-    showToast('Setup complete for "'+name+'". 🎉',"success",4200);
+    showToast('Setup complete for "'+name+'". 🎉',"success",3000);
   }
-  renderMyChildren && renderMyChildren();
-  renderParentTabBar && renderParentTabBar();
+  try { renderMyChildren && renderMyChildren(); } catch(e){}
+  try { renderParentTabBar && renderParentTabBar(); } catch(e){}
+
+  // Ask to add another child (Option B — modal after close)
+  setTimeout(()=>{
+    openModal({
+      icon:"👪", title:"Setup complete!",
+      body:"Would you like to add another child?",
+      confirmText:"Yes, add another", confirmClass:"btn-primary",
+      onConfirm:()=>{ try { startWizardForNewChild(); } catch(e){} }
+    });
+    // Relabel the ghost button so "Cancel" reads as "No, I'm done"
+    const cancelBtn = document.getElementById("modal-btns")?.querySelector(".btn-ghost");
+    if(cancelBtn){
+      cancelBtn.textContent = "No, I'm done";
+      // Restore default label after the modal closes so other modals aren't affected
+      const origClose = closeModal;
+      const restoreLabel = ()=>{
+        try { cancelBtn.textContent = "Cancel"; } catch(e){}
+        window.closeModal = origClose;
+      };
+      window.closeModal = function(){ restoreLabel(); return origClose.apply(this, arguments); };
+      // Also handle the case where the Yes button fires
+      const confirmBtn = document.getElementById("modal-confirm-btn");
+      if(confirmBtn){
+        const origOnClick = confirmBtn.onclick;
+        confirmBtn.addEventListener("click", restoreLabel, {once:true});
+      }
+    }
+  }, 350);
 }
 
 function wizardJumpFromSummary(stepN){
