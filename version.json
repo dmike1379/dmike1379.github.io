@@ -1,5 +1,5 @@
 {
-  "version": "33.0",
-  "released": "2026-04-17",
-  "notes": "v33.0 • Account signup requests (parent) with admin approve/deny + email • Loan cards show Principal Paid and Interest Paid • Chore submissions support proof photos (emailed inline) • Guided Child Setup Wizard (9 steps) with live earnings calculator • Persistent Annual Earnings Calculator card in Child Profile"
+  "version": "34.2",
+  "released": "2026-04-18",
+  "notes": "v34.2 • Frontend-only. Modal z-index 750 (fixes all dirty-check close/cancel buttons). Bottom shadow fixed (box-shadow moved to .open only). Percent inputs reformat on sheet open. Loan edit reformats. PIN breach popup fixed (autocomplete=one-time-code). Auto-logout 30s countdown warning. Wizard: 9-step reorder (streaks folded into step 7 inline), chore sheet DOM fix (no longer pops under), payment day selector in step 4, calendar/email gating on chore options, 🪄Setup button in child picker pills, edit-mode wizard prefilled."
 }

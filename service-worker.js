@@ -1,5 +1,5 @@
 /* ╔═══════════════════════════════════════════════════════════════════╗
-   ║                FAMILY BANK — service-worker.js  v33.0            ║
+   ║                FAMILY BANK — service-worker.js  v34.1            ║
    ║                                                                   ║
    ║  HOW THE AUTO-UPDATE WORKS:                                       ║
    ║  1. SW fetches version.json on every page load (network-first).  ║
@@ -15,7 +15,7 @@
    ║  script.google.com is always bypassed — never cached.            ║
    ╚═══════════════════════════════════════════════════════════════════╝ */
 
-const SW_VERSION  = 'v33.0';
+const SW_VERSION  = 'v34.1';
 const CACHE_NAME  = 'family-bank-' + SW_VERSION;
 const CORE_ASSETS = [
   './',
@@ -28,7 +28,7 @@ const CORE_ASSETS = [
   './vendor/jspdf.umd.min.js'
 ];
 
-// ── Install: pre-cache the shell ──────────────────────────────────
+// ── Install: pre-cache the shell ───────────────────────────────────
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_NAME)

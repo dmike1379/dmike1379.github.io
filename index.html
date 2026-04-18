@@ -74,7 +74,7 @@
       </div>
 
       <label class="field-label">PIN</label>
-      <input type="password" id="pin-input" placeholder="••••" maxlength="4" inputmode="numeric" autocomplete="off">
+      <input type="text" id="pin-input" class="pin-input" placeholder="••••" maxlength="4" inputmode="numeric" autocomplete="one-time-code">
       <div class="field-msg" id="pin-error"></div>
 
       <div class="cb-row">
@@ -128,7 +128,7 @@
   <div class="screen hidden" id="main-screen">
     <!-- v32: Single-line parent top bar (hidden for child, shown for parent) -->
     <div class="parent-top-bar hidden" id="parent-top-bar">
-      <button class="ptb-switch" onclick="showChildPicker()">Switch ▼</button>
+      <button class="ptb-switch" id="ptb-switch-btn" onclick="showChildPicker()">Switch ▼</button>
       <div class="ptb-label">Managing <span class="ptb-child-name" id="ptb-child-name">—</span></div>
       <button class="ptb-help" title="Help" onclick="openHelp('main')" aria-label="Help"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-info"/></svg></button>
       <button class="ptb-logout" onclick="logout()">Log Out</button>
@@ -241,13 +241,13 @@
       <div id="parent-week-glance" style="margin-bottom:14px;"></div>
 
       <div class="tab-bar tabs-3" id="parent-tab-bar">
-        <button class="tab-btn active" onclick="switchTab('parent','adjust')"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-currency-dollar"/></svg> Adjust</button>
-        <button class="tab-btn" onclick="switchTab('parent','chores')"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-check-circle"/></svg> Chores <span class="notif-badge hidden" id="parent-chore-badge">0</span></button>
+        <button class="tab-btn active" onclick="switchTab('parent','chores')"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-check-circle"/></svg> Chores <span class="notif-badge hidden" id="parent-chore-badge">0</span></button>
+        <button class="tab-btn" onclick="switchTab('parent','adjust')"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-currency-dollar"/></svg> Adjust</button>
         <button class="tab-btn" onclick="switchTab('parent','settings')"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-gear"/></svg>️ Settings</button>
       </div>
 
       <!-- Adjust tab -->
-      <div class="tab-panel active" id="parent-tab-adjust">
+      <div class="tab-panel" id="parent-tab-adjust">
         <div id="parent-deposit-approvals"></div>
 
         <button class="sheet-trigger" onclick="openSheet('sheet-adjust')">
@@ -291,7 +291,7 @@
       </div>
 
       <!-- Chores tab (parent) -->
-      <div class="tab-panel" id="parent-tab-chores">
+      <div class="tab-panel active" id="parent-tab-chores">
         <div id="parent-chore-approvals"></div>
 
         <button class="sheet-trigger" onclick="openChoreCreator()">
@@ -340,6 +340,10 @@
         <div class="field-msg" id="parent-email-msg"></div>
         <button class="btn-full-ghost" onclick="saveParentEmail()" style="margin-bottom:10px;"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-floppy-disk"/></svg> Save Email</button>
         <button class="btn-full-ghost" onclick="changePinPrompt('parent')"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-key"/></svg> Change My PIN</button>
+
+        <!-- v34.1 Item 9 — Delete My Account -->
+        <div class="reports-divider" style="margin-top:22px;">Danger Zone</div>
+        <button class="btn-full-ghost danger-action" onclick="openDeleteMyAccount()"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-trash"/></svg> Delete My Account</button>
       </div>
     </div>
   </div>
@@ -410,7 +414,7 @@
   <div id="admin-login-section">
     <div class="info-box">Enter the Admin PIN to access bank configuration.</div>
     <label class="field-label">Admin PIN</label>
-    <input type="password" id="admin-pin-input" placeholder="••••" maxlength="4" inputmode="numeric">
+    <input type="text" id="admin-pin-input" class="pin-input" placeholder="••••" maxlength="4" inputmode="numeric" autocomplete="one-time-code">
     <div class="field-msg" id="admin-pin-error">Incorrect Admin PIN.</div>
     <button class="btn btn-primary" onclick="attemptAdminLogin()"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-sign-in"/></svg> Unlock Admin</button>
   </div>
@@ -632,7 +636,7 @@
     </div>
 
     <label class="field-label">Amount $ <span class="req-star">*</span></label>
-    <input type="number" id="child-amt" placeholder="Enter amount" step="0.01" min="0">
+    <input type="number" class="money-input" id="child-amt" placeholder="Enter amount" step="0.01" min="0">
     <div class="field-msg" id="child-amt-msg"></div>
 
     <label class="field-label" id="child-note-label">What is this for? <span class="req-star">*</span></label>
@@ -647,8 +651,10 @@
         <span class="sav-pct"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-bank"/></svg> Savings: <strong><span id="dep-split-sav-label">50</span>%</strong></span>
       </div>
       <input type="range" id="deposit-split" min="0" max="100" value="50" oninput="updateDepositSplitLabel()">
-      <div style="display:flex;justify-content:space-between;font-size:.65rem;color:var(--muted);margin-top:2px;margin-bottom:8px;">
-        <span>← All Savings</span><span>50/50</span><span>All Checking →</span>
+      <div class="split-presets">
+        <button type="button" class="split-preset-btn" onclick="animateSplitTo('deposit-split', 0, 'updateDepositSplitLabel')">← All Savings</button>
+        <button type="button" class="split-preset-btn" onclick="animateSplitTo('deposit-split', 50, 'updateDepositSplitLabel')">50/50</button>
+        <button type="button" class="split-preset-btn" onclick="animateSplitTo('deposit-split', 100, 'updateDepositSplitLabel')">All Checking →</button>
       </div>
     </div>
 
@@ -670,7 +676,7 @@
       <label class="field-label">Goal Name <span class="req-star">*</span></label>
       <input type="text" id="new-goal-name" placeholder="e.g. New game, bike...">
       <label class="field-label">Target Amount $ <span class="req-star">*</span></label>
-      <input type="number" id="new-goal-amount" step="0.01" min="0.01" placeholder="Enter target">
+      <input type="number" class="money-input" id="new-goal-amount" step="0.01" min="0.01" placeholder="Enter target">
       <button class="btn btn-secondary" onclick="addSavingsGoal()"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-plus-circle"/></svg> Add Goal</button>
     </div>
   </div>
@@ -696,146 +702,6 @@
 </div>
 
 <!-- ── Sheet: Chore Creator (parent) ────────────────────────────── -->
-<div class="bottom-sheet" id="sheet-chore-creator">
-  <span class="sheet-grab"></span>
-  <div class="sheet-header">
-    <h3 id="chore-form-title"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-plus-circle"/></svg> Create New Chore</h3>
-    <button class="btn btn-sm btn-ghost" onclick="closeSheet('sheet-chore-creator')">✕ Close</button>
-  </div>
-  <div class="sheet-body">
-    <div class="req-note"><span class="req-star">*</span> required</div>
-    <label class="field-label">Chore Name <span class="req-star">*</span></label>
-    <input type="text" id="chore-name" placeholder="e.g. Vacuum living room">
-    <label class="field-label">Description (optional)</label>
-    <input type="text" id="chore-desc" placeholder="Any extra details...">
-    <div class="row">
-      <div class="col"><label class="field-label">Reward $ <span class="req-star">*</span></label><input type="number" id="chore-amount" step="0.01" min="0" placeholder="Enter amount"></div>
-      <div class="col"><label class="field-label">Schedule</label>
-        <select id="chore-schedule" onchange="onScheduleChange()">
-          <option value="once">One-time</option>
-          <option value="daily">Daily</option>
-          <option value="weekly">Weekly</option>
-          <option value="biweekly">Bi-weekly</option>
-          <option value="monthly">Monthly</option>
-        </select>
-      </div>
-    </div>
-
-    <div id="chore-once-wrap" class="hidden">
-      <label class="field-label">Date Type</label>
-      <select id="chore-once-type" onchange="toggleOnceDateField()">
-        <option value="none">No specific date</option>
-        <option value="by">Due By (anytime before date)</option>
-        <option value="on">Due On (that day only)</option>
-      </select>
-      <div id="chore-once-hint" style="font-size:.72rem;color:var(--muted);margin-top:2px;margin-bottom:6px;display:none;"></div>
-    </div>
-
-    <div id="chore-weekday-wrap" class="hidden">
-      <label class="field-label" id="chore-weekday-label">Due Day of Week</label>
-      <div class="day-toggles" id="chore-weekday-toggles">
-        <button type="button" class="day-toggle" data-day="0" onclick="toggleDayBtn(this)">Su</button>
-        <button type="button" class="day-toggle" data-day="1" onclick="toggleDayBtn(this)">Mo</button>
-        <button type="button" class="day-toggle" data-day="2" onclick="toggleDayBtn(this)">Tu</button>
-        <button type="button" class="day-toggle" data-day="3" onclick="toggleDayBtn(this)">We</button>
-        <button type="button" class="day-toggle" data-day="4" onclick="toggleDayBtn(this)">Th</button>
-        <button type="button" class="day-toggle" data-day="5" onclick="toggleDayBtn(this)">Fr</button>
-        <button type="button" class="day-toggle" data-day="6" onclick="toggleDayBtn(this)">Sa</button>
-      </div>
-      <div class="field-msg info hidden" id="weekday-none-msg">Please select at least one day.</div>
-      <div id="chore-skip-week-wrap" class="cb-row hidden" style="margin-top:8px;">
-        <input type="checkbox" id="chore-skip-first-week">
-        <label for="chore-skip-first-week">Start next week (skip this week)</label>
-      </div>
-    </div>
-
-    <div id="chore-monthly-wrap" class="hidden">
-      <label class="field-label">Day of Month</label>
-      <select id="chore-monthly-day"></select>
-    </div>
-
-    <div class="row">
-      <div class="col" id="chore-enddate-col">
-        <label class="field-label" id="end-date-label">End Date (optional)</label>
-        <input type="date" id="chore-end-date">
-      </div>
-    </div>
-
-    <div id="chore-reminder-row" class="row">
-      <div class="col">
-        <label class="field-label"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-calendar"/></svg> Calendar Reminder Time</label>
-        <select id="chore-reminder-time">
-          <option value="6">6:00 AM</option><option value="7">7:00 AM</option>
-          <option value="8" selected>8:00 AM</option><option value="9">9:00 AM</option>
-          <option value="10">10:00 AM</option><option value="11">11:00 AM</option>
-          <option value="12">12:00 PM (Noon)</option><option value="13">1:00 PM</option>
-          <option value="14">2:00 PM</option><option value="15">3:00 PM (After school)</option>
-          <option value="16">4:00 PM</option><option value="17">5:00 PM</option>
-          <option value="18">6:00 PM (Evening)</option><option value="19">7:00 PM</option>
-          <option value="20">8:00 PM</option>
-        </select>
-      </div>
-      <div class="col" style="display:flex;align-items:flex-end;padding-bottom:10px;">
-        <div style="font-size:.7rem;color:var(--muted);line-height:1.5;">Only used if calendar notifications are enabled in Admin.</div>
-      </div>
-    </div>
-
-    <div id="chore-per-day-time-wrap" class="hidden">
-      <div class="cb-row">
-        <input type="checkbox" id="chore-same-time" checked onchange="onSameTimeToggle()">
-        <label for="chore-same-time">Same time for all selected days</label>
-      </div>
-      <div id="chore-per-day-times" class="per-day-times hidden"></div>
-    </div>
-
-    <!-- Payout split — v32: defaults to 50/50 -->
-    <label class="field-label">Payout Split</label>
-    <div class="split-display">
-      <span class="chk-pct"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-money"/></svg> Checking: <strong><span id="split-chk-label">50</span>%</strong></span>
-      <span class="sav-pct"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-bank"/></svg> Savings: <strong><span id="split-sav-label">50</span>%</strong></span>
-    </div>
-    <input type="range" id="chore-split" min="0" max="100" value="50" oninput="updateSplitLabel()">
-    <div style="display:flex;justify-content:space-between;font-size:.65rem;color:var(--muted);margin-top:2px;margin-bottom:8px;">
-      <span>← All Savings</span><span>50/50</span><span>All Checking →</span>
-    </div>
-
-    <div class="cb-row">
-      <input type="checkbox" id="chore-child-chooses" checked>
-      <label for="chore-child-chooses">Let child choose their own split</label>
-    </div>
-
-    <!-- v33.0 — Require proof photo on submission -->
-    <div class="cb-row">
-      <input type="checkbox" id="chore-require-proof">
-      <label for="chore-require-proof"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-camera"/></svg> Require proof photo</label>
-    </div>
-
-    <div class="section-block" id="chore-streak-section" style="padding-top:14px;">
-      <h3 style="font-size:.82rem;margin-bottom:10px;"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-fire"/></svg> Streak Settings (optional)</h3>
-      <div class="row">
-        <div class="col">
-          <label class="field-label">Starting Streak Count</label>
-          <input type="number" id="chore-streak-start" min="0" step="1" value="0">
-          <div style="font-size:.68rem;color:var(--muted);margin-top:-6px;margin-bottom:8px;">Credit past completions</div>
-        </div>
-        <div class="col">
-          <label class="field-label">Milestone Every X times</label>
-          <input type="number" id="chore-streak-milestone" min="0" step="1" placeholder="e.g. 4">
-          <div style="font-size:.68rem;color:var(--muted);margin-top:-6px;margin-bottom:8px;">0 = no milestone</div>
-        </div>
-      </div>
-      <label class="field-label">Milestone Bonus Reward $</label>
-      <input type="number" id="chore-streak-reward" min="0" step="0.01" placeholder="Enter bonus">
-      <div style="font-size:.68rem;color:var(--muted);margin-top:-6px;margin-bottom:8px;">Deposited to checking when milestone hit</div>
-    </div>
-
-    <div class="field-msg" id="chore-form-msg"></div>
-    <div class="row" style="gap:8px;">
-      <button class="btn btn-secondary" id="chore-submit-btn" onclick="createChore()" style="flex:1;"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-check-circle"/></svg> Add Chore</button>
-      <button class="btn btn-ghost btn-sm hidden" id="chore-cancel-edit-btn" onclick="cancelChoreEdit()" style="flex-shrink:0;padding:13px 16px;">Cancel</button>
-    </div>
-  </div>
-</div>
 
 <!-- ── Sheet: Loan Creator (parent) ─────────────────────────────── -->
 <div class="bottom-sheet" id="sheet-loan-creator">
@@ -850,8 +716,8 @@
     <label class="field-label">Loan Name <span class="req-star">*</span></label>
     <input type="text" id="loan-name" placeholder="e.g. Bicycle loan">
     <div class="row">
-      <div class="col"><label class="field-label">Principal $ <span class="req-star">*</span></label>      <input type="number" id="loan-principal" step="0.01" min="0.01" placeholder="Enter amount" oninput="updateLoanPaymentPreview()"></div>
-      <div class="col"><label class="field-label">Annual Interest %</label><input type="number" id="loan-rate"      step="0.01" min="0"    placeholder="e.g. 5" oninput="updateLoanPaymentPreview()"></div>
+      <div class="col"><label class="field-label">Principal $ <span class="req-star">*</span></label>      <input type="number" class="money-input" id="loan-principal" step="0.01" min="0.01" placeholder="Enter amount" oninput="updateLoanPaymentPreview()"></div>
+      <div class="col"><label class="field-label">Annual Interest %</label><input type="number" class="percent-input" id="loan-rate"      step="0.01" min="0"    placeholder="e.g. 5" oninput="updateLoanPaymentPreview()"></div>
     </div>
     <div class="row">
       <div class="col"><label class="field-label">Term (months) <span class="req-star">*</span></label>   <input type="number" id="loan-term" step="1" min="1" placeholder="12" oninput="updateLoanPaymentPreview()"></div>
@@ -939,8 +805,8 @@
     <div class="info-box">Positive adds money, negative (e.g. −10) removes it.</div>
     <div class="req-note"><span class="req-star">*</span> required</div>
     <div class="row">
-      <div class="col"><label class="field-label">Checking $</label><input type="number" id="adj-chk" step="0.01"></div>
-      <div class="col"><label class="field-label">Savings $</label> <input type="number" id="adj-sav" step="0.01"></div>
+      <div class="col"><label class="field-label">Checking $</label><input type="number" class="money-input" id="adj-chk" step="0.01"></div>
+      <div class="col"><label class="field-label">Savings $</label> <input type="number" class="money-input" id="adj-sav" step="0.01"></div>
     </div>
     <label class="field-label">Reason <span class="req-star">*</span></label>
     <input type="text" id="adj-note" placeholder="e.g. Birthday gift, chore bonus...">
@@ -962,7 +828,7 @@
       <label class="field-label">Goal Name <span class="req-star">*</span></label>
       <input type="text" id="parent-new-goal-name" placeholder="e.g. New game, bike...">
       <label class="field-label">Target Amount $ <span class="req-star">*</span></label>
-      <input type="number" id="parent-new-goal-amount" step="0.01" min="0.01" placeholder="Enter target">
+      <input type="number" class="money-input" id="parent-new-goal-amount" step="0.01" min="0.01" placeholder="Enter target">
       <button class="btn btn-secondary" onclick="addParentSavingsGoal()"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-plus-circle"/></svg> Add Goal</button>
     </div>
   </div>
@@ -1003,8 +869,8 @@
     </div>
 
     <div class="row">
-      <div class="col"><label class="field-label">Checking $</label><input type="number" id="allow-chk" step="0.01"></div>
-      <div class="col"><label class="field-label">Savings $</label> <input type="number" id="allow-sav" step="0.01"></div>
+      <div class="col"><label class="field-label">Checking $</label><input type="number" class="money-input" id="allow-chk" step="0.01"></div>
+      <div class="col"><label class="field-label">Savings $</label> <input type="number" class="money-input" id="allow-sav" step="0.01"></div>
     </div>
     <button class="btn btn-secondary" onclick="saveAllowance()"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-floppy-disk"/></svg> Save Allowance</button>
   </div>
@@ -1020,8 +886,8 @@
   <div class="sheet-body">
     <div class="info-box">Applied on the 1st of each month automatically.</div>
     <div class="row">
-      <div class="col"><label class="field-label">Checking %</label><input type="number" id="rate-chk" step="0.01"></div>
-      <div class="col"><label class="field-label">Savings %</label> <input type="number" id="rate-sav" step="0.01"></div>
+      <div class="col"><label class="field-label">Checking %</label><input type="number" class="percent-input" id="rate-chk" step="0.01"></div>
+      <div class="col"><label class="field-label">Savings %</label> <input type="number" class="percent-input" id="rate-sav" step="0.01"></div>
     </div>
     <button class="btn btn-primary" onclick="saveRates()"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-floppy-disk"/></svg> Save Rates</button>
   </div>
@@ -1044,7 +910,7 @@
       <option value="parent">Parent</option>
     </select>
     <label class="field-label" id="edit-user-pin-label">PIN (4 digits) <span class="req-star">*</span></label>
-    <input type="password" id="edit-user-pin" maxlength="4" inputmode="numeric" placeholder="••••">
+    <input type="text" id="edit-user-pin" class="pin-input" maxlength="4" inputmode="numeric" autocomplete="one-time-code" placeholder="••••">
     <label class="field-label">Email Address</label>
     <input type="email" id="edit-user-email" placeholder="their@email.com">
 
@@ -1067,11 +933,19 @@
         <label class="field-label">Calendar ID</label>
         <input type="text" id="edit-cal-id" placeholder="abc123@group.calendar.google.com" style="font-size:13px;">
       </div>
+
+      <!-- v34.1 Item 16 — Assign to Parent(s) picker (admin add-child flow only; hidden in edit mode) -->
+      <div id="edit-child-parent-assignment" style="display:none;">
+        <label class="field-label" style="margin-top:10px;"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-users"/></svg> Assign to Parent(s)</label>
+        <div class="info-box" style="margin-bottom:8px;">Tap to toggle. Leave empty to auto-assign to you only.</div>
+        <button type="button" class="btn btn-outline btn-sm" style="width:auto;margin-bottom:8px;" onclick="openPicker('assignParents')"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-users"/></svg> Select Parents →</button>
+        <div id="edit-child-parents-display" style="display:flex;flex-wrap:wrap;gap:6px;min-height:36px;"></div>
+      </div>
     </div>
 
     <div id="edit-parent-assignment" style="display:none;">
       <label class="field-label" style="margin-top:10px;"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-baby"/></svg> Assigned Children</label>
-      <div class="info-box" style="margin-bottom:8px;">Tap to toggle. No selection = sees all children.</div>
+      <div class="info-box" style="margin-bottom:8px;">Tap to toggle. No selection = parent sees no children (new parents use the setup wizard to add their own).</div>
       <button type="button" class="btn btn-outline btn-sm" style="width:auto;margin-bottom:8px;" onclick="openPicker('children')"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-user"/></svg> Select Children →</button>
       <div id="edit-child-display" style="display:flex;flex-wrap:wrap;gap:6px;min-height:36px;"></div>
     </div>
@@ -1114,7 +988,7 @@
     <label class="field-label">Display Name <span class="req-star">*</span></label>
     <input type="text" id="add-child-name" placeholder="e.g. Emma">
     <label class="field-label">PIN (4 digits) <span class="req-star">*</span></label>
-    <input type="password" id="add-child-pin" maxlength="4" inputmode="numeric" placeholder="••••">
+    <input type="text" id="add-child-pin" class="pin-input" maxlength="4" inputmode="numeric" autocomplete="one-time-code" placeholder="••••">
     <div class="info-box" style="margin-top:4px;">If another child already uses this name, the PIN must be different so they can each log in.</div>
     <div class="field-msg" id="add-child-msg"></div>
     <button class="btn btn-primary" onclick="submitAddChild()"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-plus-circle"/></svg> Create Child</button>
@@ -1153,7 +1027,7 @@
     <label class="field-label">Email <span class="req-star">*</span></label>
     <input type="email" id="signup-email" placeholder="you@example.com">
     <label class="field-label">PIN (4 digits) <span class="req-star">*</span></label>
-    <input type="password" id="signup-pin" maxlength="4" inputmode="numeric" placeholder="••••">
+    <input type="text" id="signup-pin" class="pin-input" maxlength="4" inputmode="numeric" autocomplete="one-time-code" placeholder="••••">
     <!-- Honeypot — hidden from real users -->
     <div style="position:absolute;left:-9999px;height:0;overflow:hidden;" aria-hidden="true">
       <label>Leave this empty</label>
@@ -1196,6 +1070,173 @@
     <div id="wizard-progress" class="wizard-progress"></div>
     <div id="wizard-body"></div>
     <div id="wizard-nav" class="wizard-nav"></div>
+  </div>
+</div>
+
+<div class="bottom-sheet" id="sheet-chore-creator">
+  <span class="sheet-grab"></span>
+  <div class="sheet-header">
+    <h3 id="chore-form-title"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-plus-circle"/></svg> Create New Chore</h3>
+    <button class="btn btn-sm btn-ghost" onclick="closeSheet('sheet-chore-creator')">✕ Close</button>
+  </div>
+  <div class="sheet-body">
+    <div class="req-note"><span class="req-star">*</span> required</div>
+    <label class="field-label">Chore Name <span class="req-star">*</span></label>
+    <input type="text" id="chore-name" placeholder="e.g. Vacuum living room">
+    <label class="field-label">Description (optional)</label>
+    <input type="text" id="chore-desc" placeholder="Any extra details...">
+    <div class="row">
+      <div class="col"><label class="field-label">Reward $ <span class="req-star">*</span></label><input type="number" class="money-input" id="chore-amount" step="0.01" min="0" placeholder="Enter amount"></div>
+      <div class="col"><label class="field-label">Schedule</label>
+        <select id="chore-schedule" onchange="onScheduleChange()">
+          <option value="once">One-time</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="biweekly">Bi-weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="chore-once-wrap" class="hidden">
+      <label class="field-label">Date Type</label>
+      <select id="chore-once-type" onchange="toggleOnceDateField()">
+        <option value="none">No specific date</option>
+        <option value="by">Due By (anytime before date)</option>
+        <option value="on">Due On (that day only)</option>
+      </select>
+      <div id="chore-once-hint" style="font-size:.72rem;color:var(--muted);margin-top:2px;margin-bottom:6px;display:none;"></div>
+    </div>
+
+    <div id="chore-weekday-wrap" class="hidden">
+      <label class="field-label" id="chore-weekday-label">Due Day of Week</label>
+      <div class="day-toggles" id="chore-weekday-toggles">
+        <button type="button" class="day-toggle" data-day="0" onclick="toggleDayBtn(this)">Su</button>
+        <button type="button" class="day-toggle" data-day="1" onclick="toggleDayBtn(this)">Mo</button>
+        <button type="button" class="day-toggle" data-day="2" onclick="toggleDayBtn(this)">Tu</button>
+        <button type="button" class="day-toggle" data-day="3" onclick="toggleDayBtn(this)">We</button>
+        <button type="button" class="day-toggle" data-day="4" onclick="toggleDayBtn(this)">Th</button>
+        <button type="button" class="day-toggle" data-day="5" onclick="toggleDayBtn(this)">Fr</button>
+        <button type="button" class="day-toggle" data-day="6" onclick="toggleDayBtn(this)">Sa</button>
+      </div>
+      <div class="field-msg info hidden" id="weekday-none-msg">Please select at least one day.</div>
+      <div id="chore-skip-week-wrap" class="cb-row hidden" style="margin-top:8px;">
+        <input type="checkbox" id="chore-skip-first-week">
+        <label for="chore-skip-first-week">Start next week (skip this week)</label>
+      </div>
+    </div>
+
+    <div id="chore-monthly-wrap" class="hidden">
+      <label class="field-label">Day of Month</label>
+      <select id="chore-monthly-day"></select>
+    </div>
+
+    <div class="row">
+      <div class="col" id="chore-enddate-col">
+        <label class="field-label" id="end-date-label">End Date (optional)</label>
+        <input type="date" id="chore-end-date">
+      </div>
+    </div>
+
+    <div id="chore-reminder-row" class="row">
+      <div class="col">
+        <label class="field-label"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-calendar"/></svg> Calendar Reminder Time</label>
+        <select id="chore-reminder-time">
+          <option value="6">6:00 AM</option><option value="7">7:00 AM</option>
+          <option value="8" selected>8:00 AM</option><option value="9">9:00 AM</option>
+          <option value="10">10:00 AM</option><option value="11">11:00 AM</option>
+          <option value="12">12:00 PM (Noon)</option><option value="13">1:00 PM</option>
+          <option value="14">2:00 PM</option><option value="15">3:00 PM (After school)</option>
+          <option value="16">4:00 PM</option><option value="17">5:00 PM</option>
+          <option value="18">6:00 PM (Evening)</option><option value="19">7:00 PM</option>
+          <option value="20">8:00 PM</option>
+        </select>
+      </div>
+      <div class="col" style="display:flex;align-items:flex-end;padding-bottom:10px;">
+        <div style="font-size:.7rem;color:var(--muted);line-height:1.5;">Only used if calendar notifications are enabled in Admin.</div>
+      </div>
+    </div>
+
+    <div id="chore-per-day-time-wrap" class="hidden">
+      <div class="cb-row">
+        <input type="checkbox" id="chore-same-time" checked onchange="onSameTimeToggle()">
+        <label for="chore-same-time">Same time for all selected days</label>
+      </div>
+      <div id="chore-per-day-times" class="per-day-times hidden"></div>
+    </div>
+
+    <!-- Payout split — v32: defaults to 50/50 -->
+    <label class="field-label">Payout Split</label>
+    <div class="split-display">
+      <span class="chk-pct"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-money"/></svg> Checking: <strong><span id="split-chk-label">50</span>%</strong></span>
+      <span class="sav-pct"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-bank"/></svg> Savings: <strong><span id="split-sav-label">50</span>%</strong></span>
+    </div>
+    <input type="range" id="chore-split" min="0" max="100" value="50" oninput="updateSplitLabel()">
+    <div class="split-presets">
+      <button type="button" class="split-preset-btn" onclick="animateSplitTo('chore-split', 0, 'updateSplitLabel')">← All Savings</button>
+      <button type="button" class="split-preset-btn" onclick="animateSplitTo('chore-split', 50, 'updateSplitLabel')">50/50</button>
+      <button type="button" class="split-preset-btn" onclick="animateSplitTo('chore-split', 100, 'updateSplitLabel')">All Checking →</button>
+    </div>
+
+    <div class="cb-row">
+      <input type="checkbox" id="chore-child-chooses" checked>
+      <label for="chore-child-chooses">Let child choose their own split</label>
+    </div>
+
+    <!-- v33.0 — Require proof photo on submission -->
+    <div class="cb-row">
+      <input type="checkbox" id="chore-require-proof">
+      <label for="chore-require-proof"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-camera"/></svg> Require proof photo</label>
+    </div>
+
+    <div class="section-block" id="chore-streak-section" style="padding-top:14px;">
+      <h3 style="font-size:.82rem;margin-bottom:10px;"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-fire"/></svg> Streak Settings (optional)</h3>
+      <div class="row">
+        <div class="col">
+          <label class="field-label">Starting Streak Count</label>
+          <input type="number" id="chore-streak-start" min="0" step="1" value="0">
+          <div style="font-size:.68rem;color:var(--muted);margin-top:-6px;margin-bottom:8px;">Credit past completions</div>
+        </div>
+        <div class="col">
+          <label class="field-label">Milestone Every X times</label>
+          <input type="number" id="chore-streak-milestone" min="0" step="1" placeholder="e.g. 4">
+          <div style="font-size:.68rem;color:var(--muted);margin-top:-6px;margin-bottom:8px;">0 = no milestone</div>
+        </div>
+      </div>
+      <label class="field-label">Milestone Bonus Reward $</label>
+      <input type="number" class="money-input" id="chore-streak-reward" min="0" step="0.01" placeholder="Enter bonus">
+      <div style="font-size:.68rem;color:var(--muted);margin-top:-6px;margin-bottom:8px;">Deposited to checking when milestone hit</div>
+    </div>
+
+    <!-- v34.1 Item 14 — calendar status (injected by app.js editChore when calendar is enabled) -->
+    <div id="chore-cal-status" class="chore-cal-status hidden"></div>
+
+    <div class="field-msg" id="chore-form-msg"></div>
+    <div class="row" style="gap:8px;">
+      <button class="btn btn-secondary" id="chore-submit-btn" onclick="createChore()" style="flex:1;"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-check-circle"/></svg> Add Chore</button>
+      <button class="btn btn-ghost btn-sm hidden" id="chore-cancel-edit-btn" onclick="cancelChoreEdit()" style="flex-shrink:0;padding:13px 16px;">Cancel</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- v34.0 — Setup-complete bottom sheet (replaces the old modal prompt) -->
+<div class="bottom-sheet" id="sheet-setup-complete">
+  <span class="sheet-grab"></span>
+  <div class="sheet-header">
+    <h3><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-check-circle"/></svg> Setup complete!</h3>
+    <button class="btn btn-sm btn-ghost" onclick="closeSheet('sheet-setup-complete', true)">✕ Close</button>
+  </div>
+  <div class="sheet-body">
+    <div class="setup-complete-hero">
+      <div class="setup-complete-icon" aria-hidden="true">👪</div>
+      <div class="setup-complete-child-name" id="setup-complete-child-name"></div>
+      <div class="setup-complete-msg">is all set up. Would you like to add another child?</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:18px;">
+      <button class="btn btn-primary" onclick="setupCompleteAddAnother()"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-user-plus"/></svg> Yes, add another</button>
+      <button class="btn btn-ghost" onclick="closeSheet('sheet-setup-complete', true)">No, I'm done</button>
+    </div>
   </div>
 </div>
 

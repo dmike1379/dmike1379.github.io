@@ -456,7 +456,7 @@ input[type=range]{
 
 /* ── 9. MODAL + TOAST + PICKER + EARNED POPUP ────────────────────── */
 .modal-overlay{
-  position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:500;
+  position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:750; /* v34.2 — above sheets(500+), picker(600), quick-approve(700) so dirty-discard modal is never blocked */
   display:flex;align-items:flex-end;justify-content:center;padding:0 8px 8px;
   opacity:0;pointer-events:none;transition:opacity .2s;backdrop-filter:blur(2px);
 }
@@ -714,6 +714,9 @@ h3 .icon,label .icon,.field-label .icon{margin-right:4px;opacity:.85}
 .child-btn{position:relative}
 .child-btn .avatar{position:absolute;left:16px;top:50%;transform:translateY(-50%)}
 .child-btn.with-avatar{padding-left:70px !important}
+.child-btn-wrap{display:flex;align-items:stretch;gap:6px;margin-bottom:0;}
+.child-btn-wrap .child-btn{flex:1;margin-bottom:0;}
+.child-btn-wizard{flex-shrink:0;align-self:center;font-size:.75rem;padding:8px 10px;width:auto;margin:0;white-space:nowrap;}
 /* Welcome header — avatar + text */
 .welcome-wrap{display:flex;align-items:center;gap:10px}
 .welcome-wrap .welcome-text{flex:1;min-width:0}
@@ -896,9 +899,9 @@ h3 .icon,label .icon,.field-label .icon{margin-right:4px;opacity:.85}
   transform:translateY(100%);
   transition:transform .32s cubic-bezier(.32,.72,0,1);
   overflow-y:auto;
-  box-shadow:0 -8px 40px rgba(0,0,0,.18);
+  box-shadow:none; /* v34.2 — shadow only when open; was bleeding through viewport bottom on login screen */
 }
-.bottom-sheet.open{transform:translateY(0)}
+.bottom-sheet.open{transform:translateY(0);box-shadow:0 -8px 40px rgba(0,0,0,.18);}
 .bottom-sheet .sheet-header{
   position:sticky;top:0;background:var(--surface);
   display:flex;justify-content:space-between;align-items:center;
@@ -1269,4 +1272,164 @@ h3 .icon,label .icon,.field-label .icon{margin-right:4px;opacity:.85}
   justify-content: space-between;
   align-items: center;
   margin-bottom: 4px;
+}
+
+/* v34.0 — Setup-complete bottom sheet (replaces the old openModal prompt) */
+.setup-complete-hero {
+  text-align: center;
+  padding: 12px 8px 4px;
+}
+.setup-complete-icon {
+  font-size: 56px;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+.setup-complete-child-name {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--primary);
+  letter-spacing: -0.5px;
+  margin-bottom: 6px;
+  word-break: break-word;
+}
+.setup-complete-msg {
+  font-size: 0.95rem;
+  color: #475569;
+  line-height: 1.45;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   v34.1 ADDITIONS
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* Item 1 — PIN field visual mask (text-type input with -webkit-text-security
+   to dodge Chrome breach-popup on type=password fields) */
+.pin-input {
+  -webkit-text-security: disc;
+  text-security: disc;
+  font-family: var(--mono);
+  letter-spacing: 0.3em;
+}
+
+/* Items 2 + 8 — money + percent inputs share monospace + right-alignment
+   for readability; the actual $/% formatting is applied by app.js */
+.money-input, .percent-input {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Item 5 — setup-complete bottom sheet: match the setup wizard's tall
+   full-height feel (instead of auto-sizing to the short content) */
+#sheet-setup-complete.open .sheet-body {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Item 9 — Delete My Account danger button */
+.btn-full-ghost.danger-action {
+  color: var(--danger);
+}
+.btn-full-ghost.danger-action:active {
+  background: #fef2f2;
+}
+
+/* Item 10 — Chore-split clickable preset labels */
+.split-presets {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 2px;
+  margin-bottom: 8px;
+}
+.split-preset-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 4px 6px;
+  font-family: var(--font);
+  font-size: 0.65rem;
+  color: var(--primary);
+  text-decoration: underline;
+  cursor: pointer;
+  width: auto;
+  margin: 0;
+  border-radius: 4px;
+  transition: background 0.12s;
+  white-space: nowrap;
+}
+.split-preset-btn:first-child  { text-align: left; }
+.split-preset-btn:nth-child(2) { text-align: center; }
+.split-preset-btn:last-child   { text-align: right; }
+.split-preset-btn:active {
+  background: rgba(37,99,235,0.08);
+  transform: scale(0.97);
+}
+
+/* v34.2 — Root cause of bottom shadow was bottom-sheet box-shadow bleeding
+   through viewport when off-screen. Fixed at source (shadow moved to .open only).
+   Keeping .tab-btn.active and .app-card::after overrides as harmless guards. */
+.tab-btn.active {
+  box-shadow: none;
+}
+.app-card::after {
+  display: none !important;
+}
+
+/* Item 13 — "Next: <date>" pill below chore card meta */
+.chore-next-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 3px 9px;
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--primary-dark);
+}
+.chore-next-pill.today {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.25);
+  color: var(--secondary-dark);
+}
+.chore-next-pill.overdue {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
+/* Item 14 — Calendar status section inside chore editor */
+.chore-cal-status {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 10px;
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.chore-cal-status.on {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+}
+.chore-cal-status.off {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+}
+.chore-cal-status .cal-status-label {
+  flex: 1;
+  font-weight: 600;
+}
+.chore-cal-status .btn {
+  width: auto;
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 0.72rem;
+  flex-shrink: 0;
 }
