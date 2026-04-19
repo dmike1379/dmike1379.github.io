@@ -91,12 +91,17 @@
         </div>
       </div>
 
-      <button class="btn btn-primary" onclick="attemptLogin()"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-sign-in"/></svg> Log In</button>
-
-      <!-- v33.0 — Request an account (parent signup request) -->
-      <div class="text-center" style="margin-top:10px;">
-        <button class="admin-link" onclick="openSignupRequest()" type="button">Request an account</button>
+      <!-- v34.2 — Request account prominent, parent-only, above Log In -->
+      <div style="margin-bottom:14px;padding:12px 14px;background:var(--bg);border-radius:var(--radius);border:1.5px solid var(--primary);text-align:center;">
+        <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--primary);margin-bottom:4px;">New Parent Account</div>
+        <button class="btn btn-outline" onclick="openSignupRequest()" type="button" style="font-weight:800;font-size:.95rem;width:100%;margin:0;">
+          <svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-user-plus"/></svg>
+          Request a Parent Account
+        </button>
+        <div style="font-size:.68rem;color:var(--muted);margin-top:5px;">Parents only · Requires admin approval</div>
       </div>
+
+      <button class="btn btn-primary" onclick="attemptLogin()"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-sign-in"/></svg> Log In</button>
 
       <div class="text-center" style="margin-top:14px;">
         <span class="status-pill" id="status-pill">
@@ -122,6 +127,11 @@
     </div>
     <p class="page-subtitle" style="text-align:left;margin-bottom:20px;">Which account would you like to manage?</p>
     <div id="child-picker-list"></div>
+    <button class="sheet-trigger" onclick="openParentSettingsSheet()" style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px;">
+      <span class="icon"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-user-gear"/></svg></span>
+      <span class="st-label" style="font-weight:700;">Parent Settings</span>
+      <span class="st-chevron">›</span>
+    </button>
   </div>
 
   <!-- ═══════════════════════ MAIN SCREEN ═══════════════════════ -->
@@ -181,7 +191,7 @@
 
       <!-- Money tab — v32 restructured into sheet-trigger launchers -->
       <div class="tab-panel active" id="child-tab-money">
-        <button class="sheet-trigger" onclick="openSheet('sheet-manage-money')">
+        <button class="sheet-trigger" onclick="openManageMoneySheet()">
           <span class="icon"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-currency-dollar"/></svg></span>
           <span class="st-label">Manage Money</span>
           <span class="st-chevron">›</span>
@@ -242,22 +252,17 @@
 
       <div class="tab-bar tabs-3" id="parent-tab-bar">
         <button class="tab-btn active" onclick="switchTab('parent','chores')"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-check-circle"/></svg> Chores <span class="notif-badge hidden" id="parent-chore-badge">0</span></button>
-        <button class="tab-btn" onclick="switchTab('parent','adjust')"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-currency-dollar"/></svg> Adjust</button>
+        <button class="tab-btn" onclick="switchTab('parent','adjust')"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-currency-dollar"/></svg> Money</button>
         <button class="tab-btn" onclick="switchTab('parent','settings')"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-gear"/></svg>️ Settings</button>
       </div>
 
-      <!-- Adjust tab -->
+      <!-- Money tab (v34.2 — was Adjust) -->
       <div class="tab-panel" id="parent-tab-adjust">
         <div id="parent-deposit-approvals"></div>
 
         <button class="sheet-trigger" onclick="openSheet('sheet-adjust')">
           <span class="icon"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-lightning"/></svg></span>
           <span class="st-label">Instant Adjustment</span>
-          <span class="st-chevron">›</span>
-        </button>
-        <button class="sheet-trigger" onclick="openSheet('sheet-parent-goals')">
-          <span class="icon"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-target"/></svg></span>
-          <span class="st-label">Savings Goals for <span id="goals-child-name">Child</span></span>
           <span class="st-chevron">›</span>
         </button>
 
@@ -306,7 +311,7 @@
         </div>
       </div>
 
-      <!-- Settings tab -->
+      <!-- Settings tab (v34.2 — child-only settings) -->
       <div class="tab-panel" id="parent-tab-settings">
         <button class="sheet-trigger" onclick="openSheet('sheet-allowance')">
           <span class="icon"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-calendar"/></svg></span>
@@ -318,32 +323,23 @@
           <span class="st-label">Interest Rates</span>
           <span class="st-chevron">›</span>
         </button>
+        <button class="sheet-trigger" onclick="openSheet('sheet-parent-goals')">
+          <span class="icon"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-target"/></svg></span>
+          <span class="st-label">Savings Goals for <span id="goals-child-name">Child</span></span>
+          <span class="st-chevron">›</span>
+        </button>
         <button class="sheet-trigger" onclick="openChildProfileSheet()">
           <span class="icon"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-user-circle-gear"/></svg></span>
           <span class="st-label">Child Profile</span>
           <span class="st-chevron">›</span>
         </button>
 
-        <!-- v32.3: My Children — parent-owned children management -->
-        <div class="reports-divider" style="margin-top:22px;">My Children</div>
-        <div class="info-box">Children you've added or that have been shared with you. Up to 6 per parent.</div>
-        <div id="my-children-list"></div>
-        <button class="sheet-trigger" onclick="openSheet('sheet-add-child')">
-          <span class="icon"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-user-plus"/></svg></span>
-          <span class="st-label">Add Child</span>
+        <div class="reports-divider" style="margin-top:22px;"></div>
+        <button class="sheet-trigger" onclick="openSheet('sheet-parent-settings')">
+          <span class="icon"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-user-gear"/></svg></span>
+          <span class="st-label" style="font-weight:700;">Parent Settings →</span>
           <span class="st-chevron">›</span>
         </button>
-
-        <div class="reports-divider" style="margin-top:22px;">Your Parent Settings</div>
-        <label class="field-label" for="parent-email-input">Email Address</label>
-        <input type="email" id="parent-email-input" placeholder="you@example.com" autocomplete="email">
-        <div class="field-msg" id="parent-email-msg"></div>
-        <button class="btn-full-ghost" onclick="saveParentEmail()" style="margin-bottom:10px;"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-floppy-disk"/></svg> Save Email</button>
-        <button class="btn-full-ghost" onclick="changePinPrompt('parent')"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-key"/></svg> Change My PIN</button>
-
-        <!-- v34.1 Item 9 — Delete My Account -->
-        <div class="reports-divider" style="margin-top:22px;">Danger Zone</div>
-        <button class="btn-full-ghost danger-action" onclick="openDeleteMyAccount()"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-trash"/></svg> Delete My Account</button>
       </div>
     </div>
   </div>
@@ -1060,6 +1056,45 @@
 </div>
 
 <!-- Guided Child Setup Wizard -->
+<!-- ── Sheet: Parent Settings (v34.2) ─────────────────────────── -->
+<div class="bottom-sheet" id="sheet-parent-settings">
+  <span class="sheet-grab"></span>
+  <div class="sheet-header">
+    <h3><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-user-gear"/></svg> Parent Settings</h3>
+    <button class="btn btn-sm btn-ghost" onclick="closeSheet('sheet-parent-settings')">✕ Close</button>
+  </div>
+  <div class="sheet-body">
+
+    <!-- My Children -->
+    <div class="reports-divider">My Children</div>
+    <div class="info-box">Children you've added or that have been shared with you. Up to 6 per parent.</div>
+    <button class="sheet-trigger" onclick="startWizardForNewChild();closeSheet('sheet-parent-settings',true);">
+      <span class="icon">🪄</span>
+      <span class="st-label" style="font-weight:700;">Add Child with Setup Wizard</span>
+      <span class="st-chevron">›</span>
+    </button>
+    <div id="my-children-list-ps"></div>
+    <button class="sheet-trigger" onclick="openSheet('sheet-add-child')">
+      <span class="icon"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-user-plus"/></svg></span>
+      <span class="st-label">Add Child (Quick)</span>
+      <span class="st-chevron">›</span>
+    </button>
+
+    <!-- Parent Account -->
+    <div class="reports-divider" style="margin-top:22px;">Your Account</div>
+    <label class="field-label" for="ps-email-input">Email Address</label>
+    <input type="email" id="ps-email-input" placeholder="you@example.com" autocomplete="email">
+    <div class="field-msg" id="ps-email-msg"></div>
+    <button class="btn-full-ghost" onclick="saveParentEmailFromSheet()" style="margin-bottom:10px;"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-floppy-disk"/></svg> Save Email</button>
+    <button class="btn-full-ghost" onclick="changePinPrompt('parent')"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-key"/></svg> Change My PIN</button>
+
+    <!-- Danger Zone -->
+    <div class="reports-divider" style="margin-top:22px;">Danger Zone</div>
+    <button class="btn-full-ghost danger-action" onclick="openDeleteMyAccount()"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-trash"/></svg> Delete My Account</button>
+
+  </div>
+</div>
+
 <div class="bottom-sheet" id="sheet-wizard">
   <span class="sheet-grab"></span>
   <div class="sheet-header">

@@ -36,7 +36,7 @@
 // ╚═══════════════════════════════════════════════════════════════════╝
 
 // ── API URL — paste this from Apps Script Deploy → Manage Deployments ──
-const API_URL = "https://script.google.com/macros/s/AKfycbzFTOZ__LphDMx0OPyRaXzooQdOYfFT6jx3fiGzAJPZ0YuXvz-Km2S8WiJmCANkRHKYOg/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwk8cM1mmmHMz2F8Ss5nBBkLt4KKTL2m7_PVRSV4X0kHn-B0mpJCc93DaW8j6TMnZa3jw/exec";
 
 // ── Bank identity ──
 const CFG_BANK_NAME    = "Family Bank";
@@ -889,6 +889,22 @@ function enterApp(user){
     // logs in and does nothing, we lose one login-count update — acceptable.
   }
   currentRole=state.roles[user]||"child";
+  // v34.2 — persist session so page refresh doesn't log out
+  try { sessionStorage.setItem("fb_session_user", user); } catch(e){}
+  // v34.2 — show share notification if another parent shared a child with this user
+  try {
+    const notifs = state.config.shareNotifications && state.config.shareNotifications[user];
+    if(notifs && notifs.length){
+      const unseen = notifs.filter(n => !n.seen);
+      if(unseen.length){
+        unseen.forEach(n => { n.seen = true; });
+        const names = [...new Set(unseen.map(n => n.child))].join(", ");
+        const froms = [...new Set(unseen.map(n => n.from))].join(", ");
+        setTimeout(()=>{ showToast(froms+" shared "+names+" with you! 🎉","success",5000); }, 800);
+        syncToCloud("Share Notification Cleared");
+      }
+    }
+  } catch(e){}
   document.getElementById("login-screen").classList.add("hidden");
   updateLogoutButtonLabel();
   if(currentRole==="parent"){
@@ -934,6 +950,7 @@ function enterApp(user){
 }
 
 function logout(){
+  try { sessionStorage.removeItem("fb_session_user"); sessionStorage.removeItem("fb_session_child"); } catch(e){}
   currentUser=null; currentRole=null; activeChild=null;
   pendingTransactions=[];
   document.getElementById("main-screen").classList.add("hidden");
@@ -1015,6 +1032,27 @@ function clearRememberedUser(){
   if(aw) aw.style.display="none";
 }
 function restoreRememberedUser(){
+  // v34.2 — Restore active session on page refresh (sessionStorage survives refresh, not tab close)
+  try{
+    const sessUser = sessionStorage.getItem("fb_session_user");
+    if(sessUser){
+      const valid = state.users.find(u=>u.toLowerCase()===sessUser.toLowerCase());
+      if(valid && state.pins[valid] !== undefined){
+        // Re-enter without re-validating PIN (session already authenticated)
+        enterApp(valid);
+        // If a child was active, re-select them after enterApp renders
+        const sessChild = sessionStorage.getItem("fb_session_child");
+        if(sessChild && (state.roles[valid]==="parent")){
+          const ch = (state.children && state.children[sessChild]) ? sessChild : null;
+          if(ch) setTimeout(()=>{ try{ selectChild(ch); }catch(e){} }, 100);
+        }
+        return;
+      } else {
+        sessionStorage.removeItem("fb_session_user");
+        sessionStorage.removeItem("fb_session_child");
+      }
+    }
+  } catch(e){}
   try{
     const saved=localStorage.getItem("fb_remembered_user");
     if(!saved) return;
@@ -1072,6 +1110,7 @@ function showChildPicker(){
 
 function selectChild(childName){
   activeChild=childName;
+  try { sessionStorage.setItem("fb_session_child", childName); } catch(e){}
   document.getElementById("child-picker-screen").classList.add("hidden");
   document.getElementById("main-screen").classList.remove("hidden");
   // v32: Parent uses single-line top bar; child-top-bar stays hidden for parent
@@ -1116,6 +1155,32 @@ function updateChildSwitcherVisibility(){
 // ════════════════════════════════════════════════════════════════════
 // 9. CHILD MONEY ACTIONS
 // ════════════════════════════════════════════════════════════════════
+
+// v34.2 — Open Manage Money sheet with options filtered to what's available
+function openManageMoneySheet(){
+  const child = activeChild || currentUser;
+  const data = getChildData ? getChildData(child) : {};
+  const hasSavings = !!(data.balances && (data.balances.savings !== undefined));
+  const hasLoans   = !!(data.loans && data.loans.length);
+  const hasBothAccounts = !!(data.balances && data.balances.checking !== undefined && data.balances.savings !== undefined);
+
+  const sel = document.getElementById("child-action");
+  if(sel){
+    Array.from(sel.options).forEach(opt => {
+      if(opt.value === "loanpayment") opt.style.display = hasLoans ? "" : "none";
+      if(opt.value === "transfer")    opt.style.display = hasBothAccounts ? "" : "none";
+    });
+    // If current selection is now hidden, reset to first visible
+    const cur = sel.options[sel.selectedIndex];
+    if(cur && cur.style.display === "none"){
+      for(let i=0; i<sel.options.length; i++){
+        if(sel.options[i].style.display !== "none"){ sel.selectedIndex = i; break; }
+      }
+    }
+    onChildActionChange();
+  }
+  openSheet("sheet-manage-money");
+}
 function onChildActionChange(){
   const action=document.getElementById("child-action").value;
   const hint=document.getElementById("child-action-hint");
@@ -1381,8 +1446,9 @@ function renderParentSettings(){
   // v30.1: populate child profile section
   renderChildProfileSection();
   // v32.4 item #9: populate parent's own email + clear any prior message
-  const peInput = document.getElementById("parent-email-input");
-  const peMsg   = document.getElementById("parent-email-msg");
+  // v34.2 — email now in parent settings sheet (ps-email-input); legacy id removed from HTML
+  const peInput = document.getElementById("ps-email-input") || document.getElementById("parent-email-input");
+  const peMsg   = document.getElementById("ps-email-msg")   || document.getElementById("parent-email-msg");
   if(peInput && currentRole === "parent" && currentUser){
     peInput.value = (state.config.emails && state.config.emails[currentUser]) || "";
   } else if(peInput){
@@ -1463,8 +1529,8 @@ function openProfilePicker(){ openPicker("profileTabs"); }
 // Parent emails share the same emails map as child notification emails, keyed by
 // display name. User renaming isn't supported so collision isn't a concern.
 function saveParentEmail(){
-  const input = document.getElementById("parent-email-input");
-  const msg   = document.getElementById("parent-email-msg");
+  const input = document.getElementById("parent-email-input") || document.getElementById("ps-email-input");
+  const msg   = document.getElementById("parent-email-msg")   || document.getElementById("ps-email-msg");
   if(!input || !currentUser || currentRole !== "parent") return;
   const val = input.value.trim();
   if(val && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)){
@@ -3119,6 +3185,7 @@ function saveAdminSettings(){
   applyBranding();
   syncToCloud("Admin Settings Updated");
   showToast("All settings saved! 💾","success");
+  initInactivityTimer(); // v34.2 — apply new auto-logout setting immediately
 }
 
 function changeAdminPin(){
@@ -3758,10 +3825,17 @@ function resetInactivityTimer(){
   }, mins*60*1000);
 }
 function initInactivityTimer(){
-  const mins=parseInt((state.config && state.config.autoLogout)||0);
-  if(!mins) return;
+  // v34.2 — idempotent: remove old listeners before (re-)attaching so changing
+  // the admin setting during a live session takes effect immediately.
   ["click","touchstart","keydown","scroll"].forEach(ev=>
-    document.addEventListener(ev,resetInactivityTimer,{passive:true})
+    document.removeEventListener(ev, resetInactivityTimer)
+  );
+  _cancelLogoutCountdown();
+  clearTimeout(inactivityTimer);
+  const mins=parseInt((state.config && state.config.autoLogout)||0);
+  if(!mins) return; // disabled — timers already cleared above
+  ["click","touchstart","keydown","scroll"].forEach(ev=>
+    document.addEventListener(ev, resetInactivityTimer, {passive:true})
   );
   resetInactivityTimer();
 }
@@ -4095,8 +4169,6 @@ const EXIT_WARN_SHEETS = new Set([
   "sheet-allowance",
   "sheet-rates",
   "sheet-manage-money",
-  "sheet-savings-goals",
-  "sheet-parent-goals",
   "sheet-child-profile",
   "sheet-add-child",
   "sheet-share-child",
@@ -4418,6 +4490,8 @@ function getParentsOfChild(childName){
  */
 function renderMyChildren(){
   const el = document.getElementById("my-children-list");
+  // v34.2 — also refresh parent settings sheet list if open
+  try { renderMyChildrenInSheet("my-children-list-ps"); } catch(e){}
   if(!el) return;
   if(currentRole !== "parent"){ el.innerHTML = ""; return; }
   const mine = getMyChildrenList();
@@ -4496,11 +4570,11 @@ function submitAddChild(){
   if(!state.config.parentChildren[currentUser]) state.config.parentChildren[currentUser] = [];
   state.config.parentChildren[currentUser].push(name);
   syncToCloud("Child Created");
-  showToast('"'+name+'" added to your account.',"success");
+  showToast('"'+name+'" added! Refreshing...',"success",2000);
   nameEl.value = ""; pinEl.value = "";
   closeSheet("sheet-add-child", true);
-  renderMyChildren();
-  renderParentTabBar && renderParentTabBar();
+  // v34.2 — reload to pick up new child; sessionStorage preserves login
+  setTimeout(()=>location.reload(), 2200);
 }
 
 /** Open the share sheet for a specific child. */
@@ -4558,12 +4632,20 @@ function submitShareChild(){
   }
   // Apply
   if(!state.config.parentChildren) state.config.parentChildren = {};
+  if(!state.config.shareNotifications) state.config.shareNotifications = {};
   valid.forEach(p => {
     if(!state.config.parentChildren[p]) state.config.parentChildren[p] = [];
     state.config.parentChildren[p].push(_sharingChildName);
+    // v34.2 — store pending notification for recipient; Code.gs will send email on next sync
+    if(!state.config.shareNotifications[p]) state.config.shareNotifications[p] = [];
+    state.config.shareNotifications[p].push({
+      child: _sharingChildName,
+      from: currentUser,
+      at: new Date().toISOString(),
+      seen: false
+    });
   });
   syncToCloud("Child Shared");
-  // Silent success per Mike's spec
   showToast(_sharingChildName+" shared with "+valid.join(", "),"success");
   closeSheet("sheet-share-child", true);
   _sharingChildName = null;
@@ -4574,6 +4656,9 @@ function submitShareChild(){
  * Remove child from *this* parent's view. If they're the last parent
  * assigned, warn that it's a full delete of the child + all data.
  */
+// v34.2 — alias used in parent settings sheet
+function confirmRemoveChild(childName){ removeChildFromMyView(childName); }
+
 function removeChildFromMyView(childName){
   const parents = getParentsOfChild(childName);
   const isLast = parents.length <= 1;
@@ -5065,6 +5150,7 @@ function startWizardForNewChild(){
       schedule: "weekly",
       allowWeekday: 1,  // Monday default
       allowMonthlyDay: "1",
+      choreRewards: true,  // v34.2
       allowChk: 0,
       allowSav: 0,
       rateChk: "",
@@ -5108,6 +5194,7 @@ function startWizardForExistingChild(name){
       schedule: ad.schedule || "weekly",
       allowWeekday: ad.weekday !== undefined ? ad.weekday : 1,
       allowMonthlyDay: ad.monthlyDay || "1",
+      choreRewards: !!(state.config.notify && state.config.notify[name] && state.config.notify[name].choreRewards !== false),
       allowChk: ad.checking || 0,
       allowSav: ad.savings  || 0,
       rateChk: rates.checking || "",
@@ -5236,6 +5323,8 @@ function wizardSaveCurrentStep(){
     case 1: {
       d.name = (document.getElementById("wiz-name").value||"").trim();
       d.pin  = (document.getElementById("wiz-pin").value||"").trim();
+      const crEl = document.querySelector('input[name="wiz-chore-rewards"]:checked');
+      d.choreRewards = !crEl || crEl.value !== "no"; // v34.2 — default true
       // Progressive save: create child on first time through Step 1
       if(st.mode === "new" && !st.childName){
         state.users = state.users || [];
@@ -5246,7 +5335,9 @@ function wizardSaveCurrentStep(){
         state.config.tabs = state.config.tabs || {};
         state.config.tabs[d.name] = {...d.tabs};
         state.config.notify = state.config.notify || {};
-        state.config.notify[d.name] = {email:d.notifyEmail, calendar:false, choreRewards:d.notifyChoreRewards};
+        state.config.notify[d.name] = {email:d.notifyEmail, calendar:false, choreRewards:d.notifyChoreRewards && d.choreRewards!==false};
+        // v34.2 — also persist choreRewards display flag set in step 1
+        state.config.notify[d.name].choreRewards = d.choreRewards !== false;
         state.usersData = state.usersData || {};
         state.usersData[d.name] = {
           celebrationSound: d.celebrationSound,
@@ -5449,12 +5540,18 @@ function wizardRenderStep1(){
         : `<button type="button" class="btn btn-outline btn-sm" style="width:auto;margin:0;" onclick="document.getElementById('wiz-avatar-file').click()">Upload Photo</button>`)
     : `<div class="wizard-helper" style="margin:0;">Photo upload available after Next.</div>`;
   return `
-    <h3 class="wizard-step-title">Basic Profile</h3>
+    <h3 class="wizard-step-title">${wizardState.mode==="edit" ? "Edit " + (wizardState.childName||"Child") + "'s Account" : "Set Up Your Child's Account"}</h3>
+    <div class="wizard-helper" style="margin-bottom:14px;">${wizardState.mode==="edit" ? "Update the settings below. Changes save as you go." : "Let's get started! We'll walk through your child's profile, allowance, chores, and more."}</div>
     <label class="field-label">Display Name <span class="req-star">*</span></label>
     <input type="text" id="wiz-name" value="${(d.name||"").replace(/"/g,"&quot;")}" placeholder="e.g. Linnea">
     <label class="field-label">PIN (4 digits) <span class="req-star">*</span></label>
     <input type="text" id="wiz-pin" class="pin-input" maxlength="4" inputmode="numeric" autocomplete="off" value="${(d.pin||"")}" placeholder="••••">
     <div class="field-msg" id="wiz-msg"></div>
+    <label class="field-label" style="margin-top:14px;">Do you want your child to earn rewards for chores?</label>
+    <div class="wizard-pill-group">
+      <label class="wizard-pill"><input type="radio" name="wiz-chore-rewards" value="yes" ${d.choreRewards!==false?"checked":""}> Yes</label>
+      <label class="wizard-pill"><input type="radio" name="wiz-chore-rewards" value="no"  ${d.choreRewards===false?"checked":""}> No</label>
+    </div>
     <div class="wizard-helper">Your child can change their PIN from their own settings. If they forget it, you can reset it from Settings → My Children.</div>
     <label class="field-label" style="margin-top:14px;"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-user"/></svg> Avatar</label>
     <div class="avatar-picker-current" id="wiz-avatar-current">${curEmoji} <span style="font-size:.78rem;color:var(--muted);margin-left:8px;">Emoji or photo — choose below</span></div>
@@ -5558,8 +5655,8 @@ function wizardRenderStep4(){
       <select id="wiz-monthly-day" onchange=""></select>
     </div>
     <div class="row">
-      <div class="col" id="wiz-col-chk"><label class="field-label">Checking per cycle $</label><input type="number" class="money-input" id="wiz-allow-chk" step="0.01" min="0" value="${d.allowChk||""}"></div>
-      <div class="col" id="wiz-col-sav"><label class="field-label">Savings per cycle $</label><input type="number" class="money-input" id="wiz-allow-sav" step="0.01" min="0" value="${d.allowSav||""}"></div>
+      <div class="col" id="wiz-col-chk"><label class="field-label">Checking each allowance payment</label><input type="number" class="money-input" id="wiz-allow-chk" step="0.01" min="0" value="${d.allowChk||""}"></div>
+      <div class="col" id="wiz-col-sav"><label class="field-label">Savings each allowance payment</label><input type="number" class="money-input" id="wiz-allow-sav" step="0.01" min="0" value="${d.allowSav||""}"></div>
     </div>
     <div class="row">
       <div class="col"><label class="field-label">Checking APR %</label><input type="number" class="percent-input" id="wiz-rate-chk" step="0.01" min="0" value="${d.rateChk===""?"":d.rateChk}" placeholder="e.g. 1.0"></div>
@@ -5698,13 +5795,18 @@ function wizardRenderStep7(){
     <div class="wizard-chore-totals" id="wiz-chore-totals"></div>`;
 }
 
-// v34.2 — Step 8 = Celebration (was step 9; streaks folded into step 7)
+// v34.2 — Step 8 = Celebration + Share Child
 function wizardRenderStep8(){
   const d = wizardState.data;
+  const childName = wizardState.childName || "";
   return `
-    <h3 class="wizard-step-title">Celebration 🎉</h3>
+    <h3 class="wizard-step-title">Celebration & Sharing 🎉</h3>
     <div class="wizard-helper">When ${d.name||"your child"} completes a chore, a celebration plays. Milestones like savings goals and streak rewards also celebrate.</div>
-    <div class="cb-row"><input type="checkbox" id="wiz-celebration" ${d.celebrationSound?"checked":""}><label for="wiz-celebration">Celebration sound</label></div>`;
+    <div class="cb-row"><input type="checkbox" id="wiz-celebration" ${d.celebrationSound?"checked":""}><label for="wiz-celebration">Celebration sound</label></div>
+    ${childName ? `
+    <div class="reports-divider" style="margin-top:20px;">Share Child</div>
+    <div class="wizard-helper">Share ${childName} with another parent account so they can also manage this child.</div>
+    <button class="btn btn-outline" onclick="openShareChildSheet('${childName}')" style="margin-top:4px;"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-share-network"/></svg> Share ${childName}</button>` : ""}`;
 }
 
 function wizardStep8RenderStreaksList(){
@@ -5865,6 +5967,23 @@ function wizardAddChoreStart(){
   const reminderRow = document.getElementById("chore-reminder-time")?.closest(".row,.section-block") ||
                       document.getElementById("chore-reminder-time")?.parentElement;
   if(reminderRow) reminderRow.style.display = hasCalendar ? "" : "none";
+  // v34.2 — hide streak start-at field in wizard
+  const streakStartRow = document.getElementById("chore-streak-start")?.closest(".row,.section-block") ||
+                         document.getElementById("chore-streak-start")?.parentElement;
+  if(streakStartRow) streakStartRow.style.display = "none";
+  // v34.2 — hide reward $ and streak reward when choreRewards=false; show $0 hint when true
+  const noRewards = wizardState.data.choreRewards === false;
+  const amtRow = document.getElementById("chore-amount")?.closest(".row");
+  if(amtRow) amtRow.style.display = noRewards ? "none" : "";
+  const streakRewardRow = document.getElementById("chore-streak-reward")?.closest(".row,.section-block") ||
+                          document.getElementById("chore-streak-reward")?.parentElement;
+  if(streakRewardRow) streakRewardRow.style.display = noRewards ? "none" : "";
+  // $0 hint
+  const amtHint = document.getElementById("chore-amount-wiz-hint");
+  if(!amtHint && !noRewards){
+    const amtEl = document.getElementById("chore-amount");
+    if(amtEl){ const h=document.createElement("div"); h.id="chore-amount-wiz-hint"; h.className="wizard-helper"; h.style.marginTop="-8px"; h.style.marginBottom="8px"; h.textContent="$0 is OK for unpaid chores."; amtEl.closest(".row")?.after(h); }
+  }
   openSheet("sheet-chore-creator");
 }
 
@@ -5877,6 +5996,9 @@ function wizardEditChoreStart(choreId){
   const reminderRow = document.getElementById("chore-reminder-time")?.closest(".row,.section-block") ||
                       document.getElementById("chore-reminder-time")?.parentElement;
   if(reminderRow) reminderRow.style.display = hasCalendar ? "" : "none";
+  const streakStartRow2 = document.getElementById("chore-streak-start")?.closest(".row,.section-block") ||
+                          document.getElementById("chore-streak-start")?.parentElement;
+  if(streakStartRow2) streakStartRow2.style.display = "none";
   const schedSel = document.getElementById("chore-schedule");
   if(schedSel){
     const onceOpt = schedSel.querySelector('option[value="once"]');
@@ -5915,7 +6037,7 @@ function wizardDeleteChore(choreId){
           if(onceOpt && onceOpt.dataset.wizardHidden){ onceOpt.style.display=""; delete onceOpt.dataset.wizardHidden; }
         }
         if(wizardState.step === 7) wizardStep7RenderChoreList();
-        if(wizardState.step === 8) wizardStep8RenderStreaksList();
+        // v34.2 — step 8 is Celebration+Share, no streak list
       }
     } catch(e){}
     return r;
@@ -5924,34 +6046,7 @@ function wizardDeleteChore(choreId){
 
 
 // ── Hook Guided Setup buttons into My Children list ───────────────
-// Patch renderMyChildren to append a "Guided Setup" button row at the top.
-(function wireGuidedSetupButton(){
-  const orig = typeof renderMyChildren === "function" ? renderMyChildren : null;
-  if(!orig) return;
-  window.renderMyChildren = function(){
-    const r = orig.apply(this, arguments);
-    try {
-      const el = document.getElementById("my-children-list");
-      if(!el) return r;
-      // Prepend action row if not already there
-      if(!document.getElementById("my-children-guided-row")){
-        const row = document.createElement("div");
-        row.id = "my-children-guided-row";
-        row.style.cssText = "display:flex;gap:8px;margin-bottom:10px;";
-        row.innerHTML = '<button class="btn btn-primary" style="flex:1;margin:0;" onclick="startWizardForNewChild()"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-magic-wand"/></svg> Guided Setup</button>';
-        el.parentNode.insertBefore(row, el);
-      }
-      // Add "Run Setup Wizard" to each existing child's row.
-      // Lightweight: append a button after the trash icon if not already present.
-      const mine = (typeof getMyChildrenList === "function") ? getMyChildrenList() : [];
-      mine.forEach(name => {
-        // Best-effort hook: find the share button for this child and append a wizard button next to it
-        // (the existing rendering puts share+delete in a row; we tack on a third action via delegation).
-      });
-    } catch(e){}
-    return r;
-  };
-})();
+// v34.2 — wireGuidedSetupButton removed; Guided Setup is now in the Parent Settings sheet
 
 // Attach earnings card auto-refresh to Child Profile sheet open
 (function wireEarningsCardRefresh(){
@@ -6352,6 +6447,55 @@ function _purgeUserFromState(name){
 }
 window._purgeUserFromState = _purgeUserFromState;
 
+
+// v34.2 — Parent Settings sheet
+function openParentSettingsSheet(){
+  // Populate email
+  const emailEl = document.getElementById("ps-email-input");
+  const msgEl   = document.getElementById("ps-email-msg");
+  if(emailEl && currentUser) emailEl.value = (state.config.emails && state.config.emails[currentUser]) || "";
+  if(msgEl) { msgEl.className="field-msg"; msgEl.textContent=""; }
+  // Render children list (mirrors renderMyChildren but targets ps-specific container)
+  renderMyChildrenInSheet("my-children-list-ps");
+  openSheet("sheet-parent-settings");
+}
+
+function renderMyChildrenInSheet(containerId){
+  const list = document.getElementById(containerId);
+  if(!list) return;
+  const children = getAssignedChildren ? getAssignedChildren() : [];
+  if(!children.length){ list.innerHTML = ""; return; }
+  list.innerHTML = children.map(name => {
+    const shared = getParentsOfChild ? getParentsOfChild(name).length > 1 : false;
+    return `<div class="child-btn-wrap" style="margin-bottom:6px;">
+      <div class="child-btn with-avatar" style="cursor:default;pointer-events:none;">
+        ${renderAvatar(name,"sm")}
+        <span style="font-weight:700;">${name}</span>
+        <div class="child-btn-balance" style="font-size:.72rem;">${shared?"Shared":"Only on your account"}</div>
+      </div>
+      <button class="btn btn-sm btn-outline child-btn-wizard" onclick="startWizardForExistingChild('${name}');closeSheet('sheet-parent-settings',true);" title="Edit with Wizard">🪄</button>
+      <button class="btn btn-sm btn-outline" style="width:auto;margin:0;padding:6px 10px;" onclick="openShareChildSheet('${name}')">Share</button>
+      <button class="btn btn-sm btn-ghost" style="width:auto;margin:0;padding:6px 10px;color:var(--danger);" onclick="confirmRemoveChild('${name}')"><svg class="icon" aria-hidden="true"><use href="vendor/phosphor-sprite.svg#ph-trash"/></svg></button>
+    </div>`;
+  }).join("");
+}
+
+function saveParentEmailFromSheet(){
+  const input = document.getElementById("ps-email-input");
+  const msg   = document.getElementById("ps-email-msg");
+  if(!input || !currentUser || currentRole !== "parent") return;
+  const val = input.value.trim();
+  if(val && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)){
+    if(msg){ msg.className="field-msg error"; msg.textContent="Please enter a valid email."; }
+    return;
+  }
+  if(!state.config.emails) state.config.emails = {};
+  if(val) state.config.emails[currentUser] = val;
+  else    delete state.config.emails[currentUser];
+  syncToCloud("Parent Email Updated");
+  if(msg){ msg.className="field-msg success"; msg.textContent = val ? "Email saved." : "Email cleared."; }
+  showToast(val ? "Your email was saved." : "Your email was cleared.","success");
+}
 function openDeleteMyAccount(){
   if(!currentUser){ return; }
   // Guard: cannot delete the last parent
@@ -6380,19 +6524,14 @@ function openDeleteMyAccount(){
     if(otherParents > 0) sharedKids.push(k);
     else soloKids.push(k);
   });
-  let detail = "<strong>This will permanently:</strong><br>• Delete your parent account (" + currentUser + ")";
-  if(soloKids.length){
-    detail += "<br>• <strong style='color:var(--danger);'>Delete</strong> " + soloKids.length + " child account" + (soloKids.length===1?"":"s") + " you solo-parent: " + soloKids.join(", ");
-  }
-  if(sharedKids.length){
-    detail += "<br>• Unassign you from " + sharedKids.length + " shared child" + (sharedKids.length===1?"":"ren") + ": " + sharedKids.join(", ") + " (accounts stay with the other parent)";
-  }
-  detail += "<br><br><strong>This cannot be undone.</strong>";
+  let bodyText = "This will permanently delete your parent account (" + currentUser + ").";
+  if(soloKids.length) bodyText += " Also deletes " + soloKids.join(", ") + " (solo-parented).";
+  if(sharedKids.length) bodyText += " Unassigns you from shared: " + sharedKids.join(", ") + ".";
+  bodyText += " This cannot be undone.";
   openModal({
     icon:"⚠️",
     title:"Delete your account?",
-    body:"Type DELETE on the next screen to confirm — or Cancel to back out.",
-    detail: detail,
+    body: bodyText,
     confirmText:"I understand, continue",
     confirmClass:"btn-danger",
     onConfirm:()=>{

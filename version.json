@@ -1,5 +1,5 @@
 {
-  "version": "34.2",
+  "version": "34.3",
   "released": "2026-04-18",
-  "notes": "v34.2 • Frontend-only. Modal z-index 750 (fixes all dirty-check close/cancel buttons). Bottom shadow fixed (box-shadow moved to .open only). Percent inputs reformat on sheet open. Loan edit reformats. PIN breach popup fixed (autocomplete=one-time-code). Auto-logout 30s countdown warning. Wizard: 9-step reorder (streaks folded into step 7 inline), chore sheet DOM fix (no longer pops under), payment day selector in step 4, calendar/email gating on chore options, 🪄Setup button in child picker pills, edit-mode wizard prefilled."
+  "notes": "v34.3 • Frontend-only. Session persistence (sessionStorage, refresh stays logged in). Tab restructure: Adjust→Money (Instant Adjustment, Reports), Settings child-only (Allowance, Rates, Savings Goals, Child Profile, Parent Settings →). Parent Settings sheet with My Children, email, PIN, Danger Zone — accessible from child selector and Settings tab. Manage Money dropdown hides Loan payment/Move to Savings when not applicable. Savings Goals removed from EXIT_WARN_SHEETS. Delete Account modal body fix. Share child in-app notification on recipient login. Wizard: chore rewards Yes/No pill (Step 1), hides reward+streak reward in chore creator, $0 hint, streak start-at hidden, Step 8 adds Share Child alongside Celebration. Dead code cleanup."
 }
